@@ -2,76 +2,99 @@
 
 CREATE TABLE Pharmacies (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(200) NOT NULL,                -- اسم الصيدلية
-    OwnerName NVARCHAR(150) NULL,               -- اسم صاحب الصيدلية
-    LicenseNumber NVARCHAR(100) NULL,           -- رقم الترخيص الخاص بالصيدلية
-    PhoneNumber NVARCHAR(20) NULL,              -- رقم الهاتف
-    Email NVARCHAR(150) NULL,                   -- البريد الإلكتروني
-    Address NVARCHAR(300) NULL,                 -- العنوان الكامل
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),  -- تاريخ إنشاء السجل
-    IsActive BIT NOT NULL DEFAULT 1             -- حالة التفعيل (مفعل / غير مفعل)
+    Name NVARCHAR(200) NOT NULL,                
+    OwnerName NVARCHAR(150) NULL,               
+    LicenseNumber NVARCHAR(100) NULL,           
+    PhoneNumber NVARCHAR(20) NULL,              
+    Email NVARCHAR(150) NULL,                   
+    Address NVARCHAR(300) NULL,                 
+	Latitude FLOAT NULL,               
+    Longitude FLOAT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), 
+    IsActive BIT NOT NULL DEFAULT 1            
 );
 
 
 CREATE TABLE Customers (
     Id INT PRIMARY KEY IDENTITY(1,1),
     FullName NVARCHAR(200) NOT NULL,
-    Email NVARCHAR(200) NULL, -- يمكن تركه فارغًا إذا لم يكن مطلوبًا
+    Email NVARCHAR(200) NULL,
     PhoneNumber NVARCHAR(20) NOT NULL,
     PasswordHash NVARCHAR(500) NOT NULL,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    IsActive BIT NOT NULL DEFAULT 1
+    IsActive BIT NOT NULL DEFAULT 1,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
 );
 
 CREATE TABLE CustomerAddresses (
     Id INT PRIMARY KEY IDENTITY(1,1),
     CustomerId INT NOT NULL,
-    Title NVARCHAR(100) NOT NULL,      -- مثال: المنزل، العمل
-    Street NVARCHAR(300) NOT NULL,
+    Title NVARCHAR(100) NOT NULL,      
     City NVARCHAR(100) NOT NULL,
-    Region NVARCHAR(100) NULL,         -- المنطقة أو الحي
-    Latitude FLOAT NULL,               -- إحداثيات GPS (اختياري)
+    Region NVARCHAR(100) NULL,         
+    Street NVARCHAR(300) NOT NULL,
+    Latitude FLOAT NULL,               
     Longitude FLOAT NULL,
-    IsDefault BIT NOT NULL DEFAULT 0,  -- العنوان الافتراضي
-
+    IsDefault BIT NOT NULL DEFAULT 0,  
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
 
-    CONSTRAINT FK_CustomerAddresses_Customer 
-        FOREIGN KEY (CustomerId) 
-        REFERENCES Customers(Id)
-);
-
-
-CREATE TABLE Products (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    Name NVARCHAR(250) NOT NULL,
-    GenericName NVARCHAR(250) NULL,
-    Description NVARCHAR(MAX) NULL,
-    Barcode VARCHAR(50) NOT NULL, -- الباركود الخاص بالصيدلية
-    InternationalCode VARCHAR(50) NULL,  -- الكود الدولي إن وجد
-    StockProductCode VARCHAR(50) NULL, -- الكود في نظام stock
-    Price DECIMAL(18,2) NOT NULL,
-    OldPrice DECIMAL(18,2) NULL,
-    IsAvailable BIT NOT NULL DEFAULT 1,
-    ImageUrl NVARCHAR(500) NULL, -- يتم حذفه
-    IsIntegrated BIT NOT NULL DEFAULT 0,
-    IntegratedAt DATETIME NULL,
-    CategoryId INT NULL,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    CreatedBy NVARCHAR(100) NULL,
-    IsActive BIT NOT NULL DEFAULT 1
+    CONSTRAINT FK_CustomerAddresses_Customer FOREIGN KEY (CustomerId) REFERENCES Customers(Id)
 );
 
 CREATE TABLE Categories (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(200) NOT NULL,
     Description NVARCHAR(MAX) NULL,
-    ParentCategoryId INT NULL,
     ImageUrl NVARCHAR(500) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
+    UpdatedAt DATETIME NULL,
+	ParentCategoryId INT NULL, -- ++
+);
+
+CREATE TABLE Sub1categories (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(200) NOT NULL,
+    Description NVARCHAR(MAX) NULL,
+    CategoryId INT NOT NULL,
+    ImageUrl NVARCHAR(500) NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME NULL,
+    CONSTRAINT FK_Subcategories_CategoryId FOREIGN KEY (CategoryId) REFERENCES Categories(Id)
+);
+
+CREATE TABLE Sub2categories (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(200) NOT NULL,
+    Description NVARCHAR(MAX) NULL,
+    CategoryId INT NOT NULL,
+    ImageUrl NVARCHAR(500) NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME NULL,
+    CONSTRAINT FK_Subcategories_CategoryId FOREIGN KEY (CategoryId) REFERENCES Categories(Id)
+);
+
+CREATE TABLE Products (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+	SubCategoryId INT NOT NULL,
+    Name NVARCHAR(250) NOT NULL,
+    Description NVARCHAR(MAX) NULL,
+    Barcode VARCHAR(50) NOT NULL, -- الباركود الخاص بالصيدلية
+    InternationalCode VARCHAR(50) NULL,  -- الكود الدولي إن وجد
+    StockProductCode VARCHAR(50) NULL, -- الكود في نظام stock
+    Price DECIMAL(18,2) NOT NULL,
+    OldPrice DECIMAL(18,2) NULL,
+    IsAvailable BIT NOT NULL DEFAULT 1, -- InStock
+    IsIntegrated BIT NOT NULL DEFAULT 0,
+    IntegratedAt DATETIME NULL,
+    CategoryId INT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME NULL,
+    CreatedBy NVARCHAR(100) NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+
+	CONSTRAINT FK_Products_CategoryId FOREIGN KEY (SubCategoryId) REFERENCES Sub2categories(Id)
 );
 
 CREATE TABLE ProductImages (
@@ -82,28 +105,26 @@ CREATE TABLE ProductImages (
     SortOrder INT NULL, -- ترتيب عرض الصور
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
 
-    CONSTRAINT FK_ProductImages_Products FOREIGN KEY (ProductId) REFERENCES Products(Id)
-        ON DELETE CASCADE
+    CONSTRAINT FK_ProductImages_Products_ID FOREIGN KEY (ProductId) 
+	REFERENCES Products(Id)ON DELETE CASCADE ON UPDATE CASCADE,
 );
 
-CREATE TABLE ProductCategories (
-    Id INT PRIMARY KEY IDENTITY(1,1),
+CREATE TABLE Tags (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
+);
+
+CREATE TABLE ProductTags (
     ProductId INT NOT NULL,
-    CategoryId INT NOT NULL,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT FK_ProductCategories_Products FOREIGN KEY (ProductId)
-        REFERENCES Products(Id) ON DELETE CASCADE,
-
-    CONSTRAINT FK_ProductCategories_Categories FOREIGN KEY (CategoryId)
-        REFERENCES Categories(Id) ON DELETE CASCADE,
-
-    CONSTRAINT UQ_ProductCategory UNIQUE (ProductId, CategoryId)
+    TagId INT NOT NULL,
+    PRIMARY KEY (ProductId, TagId),
+    FOREIGN KEY (ProductId) REFERENCES Products(Id),
+    FOREIGN KEY (TagId) REFERENCES Tags(Id)
 );
-
 
 CREATE TABLE SalesHeader (
-    Id INT PRIMARY KEY IDENTITY(1,1),
+    Id int PRIMARY KEY IDENTITY(1,1),
     InvoiceNumber NVARCHAR(50) NOT NULL,
     CustomerId INT NULL,
     OrderDate DATETIME NOT NULL DEFAULT GETDATE(),
@@ -112,7 +133,7 @@ CREATE TABLE SalesHeader (
     NetAmount AS (TotalAmount - Discount) PERSISTED,
     PaymentMethod NVARCHAR(50) NOT NULL,
     Notes NVARCHAR(MAX) NULL,
-    Status NVARCHAR(20) NOT NULL DEFAULT 'Pending',
+    Status NVARCHAR(20) NOT NULL DEFAULT 'Pending', --Pending, Processing, Completed, Returned, PartiallyReturned, Cancelled
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
 
     CONSTRAINT FK_SalesHeader_Customers FOREIGN KEY (CustomerId)
@@ -136,44 +157,41 @@ CREATE TABLE SalesDetails (
         REFERENCES Products(Id)
 );
 
-
-
 CREATE TABLE SalesHeaderReturns (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    ReturnNumber NVARCHAR(50) NOT NULL,              -- رقم المرجع للمرتجع يمكن أن يكون تلقائيًا
-    ReturnDate DATETIME NOT NULL DEFAULT GETDATE(),  -- تاريخ الإرجاع
-    OriginalSalesHeaderId INT NOT NULL,              -- مرجع إلى الفاتورة الأصلية
+    ReturnNumber NVARCHAR(50) NOT NULL,              
+    ReturnDate DATETIME NOT NULL DEFAULT GETDATE(),  
+    OriginalSalesHeaderId INT NOT NULL,              
 
-    PharmacyId INT NOT NULL,                         -- رقم الصيدلية إذا كانت قاعدة مركزية
-    CustomerId INT NULL,                             -- العميل الذي أرجع المنتج اختياري
+    PharmacyId INT NOT NULL,                         
+    CustomerId INT NULL,                             
     
-    TotalAmount DECIMAL(18,2) NOT NULL,              -- القيمة الإجمالية للإرجاع
-    Notes NVARCHAR(500) NULL,                        -- ملاحظات الإرجاع سبب الإرجاع، إلخ
+    TotalAmount DECIMAL(18,2) NOT NULL,              
+    Notes NVARCHAR(500) NULL,                        
     
-    CreatedBy NVARCHAR(100) NOT NULL,                -- اسم المستخدم الذي قام بالإرجاع
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),   -- تاريخ الإنشاء
+    CreatedBy NVARCHAR(100) NOT NULL,                
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),   
 
     CONSTRAINT FK_SalesHeaderReturns_OriginalSalesHeader 
         FOREIGN KEY (OriginalSalesHeaderId) 
         REFERENCES SalesHeader(Id),
 
     -- إذا كنت تستخدم جداول Customers أو Pharmacies:
-    -- CONSTRAINT FK_SalesHeaderReturns_Customers FOREIGN KEY (CustomerId) REFERENCES Customers(Id),
-    -- CONSTRAINT FK_SalesHeaderReturns_Pharmacies FOREIGN KEY (PharmacyId) REFERENCES Pharmacies(Id)
+     CONSTRAINT FK_SalesHeaderReturns_Customers FOREIGN KEY (CustomerId) REFERENCES Customers(Id),
+     CONSTRAINT FK_SalesHeaderReturns_Pharmacies FOREIGN KEY (PharmacyId) REFERENCES Pharmacies(Id)
 );
-
 
 CREATE TABLE SalesDetailsReturns (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    SalesHeaderReturnId INT NOT NULL,         -- مفتاح خارجي إلى رأس المرتجع
-    ProductId INT NOT NULL,                   -- المنتج المرتجع
-    Quantity DECIMAL(18,2) NOT NULL,          -- الكمية المرتجعة
-    UnitPrice DECIMAL(18,2) NOT NULL,         -- سعر الوحدة في وقت الإرجاع
-    TotalPrice AS (Quantity * UnitPrice) PERSISTED,  -- السعر الإجمالي
+    SalesHeaderReturnId INT NOT NULL,         
+    ProductId INT NOT NULL,                   
+    Quantity DECIMAL(18,2) NOT NULL,          
+    UnitPrice DECIMAL(18,2) NOT NULL,         
+    TotalPrice AS (Quantity * UnitPrice) PERSISTED,  
 
-    Reason NVARCHAR(500) NULL,                -- سبب الإرجاع-اختياري
+    Reason NVARCHAR(500) NULL,                
     
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),  -- وقت الإضافة
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),  
 
     CONSTRAINT FK_SalesDetailsReturns_Header 
         FOREIGN KEY (SalesHeaderReturnId) 
@@ -184,20 +202,22 @@ CREATE TABLE SalesDetailsReturns (
         REFERENCES Products(Id)
 );
 
-CREATE TABLE Payments (
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    SalesHeaderId INT NOT NULL,
-    PaymentMethod NVARCHAR(100) NOT NULL,  -- مثال: Cash, Credit Card, Wallet
-    Amount DECIMAL(18,2) NOT NULL,
-    PaidAt DATETIME NOT NULL DEFAULT GETDATE(),
+--CREATE TABLE Payments (
+--    Id INT PRIMARY KEY IDENTITY(1,1),
+--    SalesHeaderId INT NOT NULL,
+--    PaymentMethod NVARCHAR(100) NOT NULL,  -- مثال: Cash, Credit Card, Wallet
+--    Amount DECIMAL(18,2) NOT NULL,
+--    PaidAt DATETIME NOT NULL DEFAULT GETDATE(),
 
-    Notes NVARCHAR(500) NULL,
+--    Notes NVARCHAR(500) NULL,
 
-    CONSTRAINT FK_Payments_SalesHeader 
-        FOREIGN KEY (SalesHeaderId) 
-        REFERENCES SalesHeader(Id)
-);
-CREATE TABLE Prescriptions (
+--    CONSTRAINT FK_Payments_SalesHeader 
+--        FOREIGN KEY (SalesHeaderId) 
+--        REFERENCES SalesHeader(Id)
+--);
+
+-- الوصفات الطبية
+CREATE TABLE Prescriptions(
     Id INT PRIMARY KEY IDENTITY(1,1),
     SalesHeaderId INT NULL,  -- يمكن أن تكون الروشتة محفوظة بدون طلب بعد
     ImageUrl NVARCHAR(500) NOT NULL,
@@ -205,9 +225,10 @@ CREATE TABLE Prescriptions (
     Notes NVARCHAR(500) NULL,
 
     CONSTRAINT FK_Prescriptions_SalesHeader 
-        FOREIGN KEY (SalesHeaderId) 
+        FOREIGN KEY (SalesHeaderId)
         REFERENCES SalesHeader(Id)
 );
+
 CREATE TABLE ProductsOffer (
     Id INT PRIMARY KEY IDENTITY(1,1),
     ProductId INT NOT NULL,
@@ -221,18 +242,23 @@ CREATE TABLE ProductsOffer (
         FOREIGN KEY (ProductId) 
         REFERENCES Products(Id)
 );
+
 CREATE TABLE CustomerPointsHistory (
     Id INT PRIMARY KEY IDENTITY(1,1),
     CustomerId INT NOT NULL,
+	RelatedOrderId INT NULL,
     Points INT NOT NULL,
     Reason NVARCHAR(500) NULL,
     IsAddition BIT NOT NULL,  -- true لإضافة نقاط، false لخصم
+	Note NVARCHAR(500) NULL,
+	ExpiresAt DATETIME NULL,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
 
     CONSTRAINT FK_CustomerPointsHistory_Customer 
         FOREIGN KEY (CustomerId) 
         REFERENCES Customers(Id)
 );
+
 CREATE TABLE Reviews (
     Id INT PRIMARY KEY IDENTITY(1,1),
     CustomerId INT NOT NULL,
