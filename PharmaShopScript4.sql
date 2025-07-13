@@ -14,15 +14,60 @@ CREATE TABLE Pharmacies (
     IsActive BIT NOT NULL DEFAULT 1            
 );
 
+CREATE TABLE Users (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Username NVARCHAR(100) NOT NULL UNIQUE,
+    Email NVARCHAR(150) NULL,
+    PhoneNumber NVARCHAR(20) NULL,
+    PasswordHash NVARCHAR(256) NOT NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    IsEmailVerified BIT NOT NULL DEFAULT 0,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME NULL
+);
+
+CREATE TABLE Roles (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(50) NOT NULL UNIQUE, -- أمثلة: Customer, Admin, Doctor, DeliveryRep
+    Description NVARCHAR(200) NULL
+);
+
+CREATE TABLE UserRoles (
+    UserId INT NOT NULL,
+    RoleId INT NOT NULL,
+    EntityId INT NULL,  -- مثل CustomerId أو DoctorId إن أردت الربط الصريح
+    PRIMARY KEY (UserId, RoleId),
+    FOREIGN KEY (UserId) REFERENCES Users(Id),
+    FOREIGN KEY (RoleId) REFERENCES Roles(Id)
+    -- ملاحظة: لا يوجد FK مباشر على EntityId لأنه يمكن أن يشير لجداول مختلفة
+);
+
 
 CREATE TABLE Customers (
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    FullName NVARCHAR(200) NOT NULL,
-    Email NVARCHAR(200) NULL,
-    PhoneNumber NVARCHAR(20) NOT NULL,
-    PasswordHash NVARCHAR(500) NOT NULL,
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+	UserId INT UNIQUE NULL, 
+    PharmacyId INT NOT NULL,                    -- العميل ينتمي لأي صيدلية
+    FullName NVARCHAR(200) NOT NULL,            
+    PhoneNumber NVARCHAR(20) NULL,             
+    Gender NVARCHAR(10) NULL,                
+    DateOfBirth DATE NULL,
+
+    Email NVARCHAR(150) NULL,
+    NationalId NVARCHAR(20) NULL,               
+
+    CustomerType NVARCHAR(50) DEFAULT 'Regular', -- Regular / VIP / Corporate
+
+    Points INT NOT NULL DEFAULT 0,              -- عدد النقاط المتاحة
+    PointsExpiryDate DATETIME NULL,             -- أقرب تاريخ انتهاء للنقاط
+
+    Notes NVARCHAR(500) NULL,
+
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME NULL,
     IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
+
+	CONSTRAINT FK_Customers_Users FOREIGN KEY (UserId) REFERENCES Users(Id),
+    CONSTRAINT FK_Customers_Pharmacies FOREIGN KEY (PharmacyId) REFERENCES Pharmacies(Id)
 );
 
 CREATE TABLE CustomerAddresses (
@@ -243,21 +288,44 @@ CREATE TABLE ProductsOffer (
         REFERENCES Products(Id)
 );
 
-CREATE TABLE CustomerPointsHistory (
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    CustomerId INT NOT NULL,
-	RelatedOrderId INT NULL,
-    Points INT NOT NULL,
-    Reason NVARCHAR(500) NULL,
-    IsAddition BIT NOT NULL,  -- true لإضافة نقاط، false لخصم
-	Note NVARCHAR(500) NULL,
-	ExpiresAt DATETIME NULL,
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
 
-    CONSTRAINT FK_CustomerPointsHistory_Customer 
-        FOREIGN KEY (CustomerId) 
-        REFERENCES Customers(Id)
+--=========================================
+--=========================================
+--=========================================
+--=========================================
+
+CREATE TABLE CustomerPointsHistory (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+
+    CustomerId INT NOT NULL,                           -- العميل المرتبط
+    PharmacyId INT NOT NULL,                           -- تابعة لأي صيدلية
+
+    Points INT NOT NULL,                               -- عدد النقاط (سالب إذا تم خصمها)
+    Reason NVARCHAR(200) NOT NULL,                     -- سبب الإضافة/الخصم (مثلاً: "طلب #123", "عرض ترويجي")
+
+    SourceType NVARCHAR(50) NOT NULL,                  -- مصدر النقاط (Purchase, Promo, AdminAdjustment)
+    SourceReferenceId INT NULL,                        -- معرف العملية المرجعية (مثلاً: SalesHeaderId)
+
+    ExpiryDate DATETIME NULL,                          -- تاريخ انتهاء صلاحية هذه الدفعة من النقاط
+
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    CreatedBy NVARCHAR(100) NOT NULL,                  -- اسم أو معرف المسؤول أو النظام
+
+    CONSTRAINT FK_CustomerPointsHistory_Customers FOREIGN KEY (CustomerId) REFERENCES Customers(Id),
+    CONSTRAINT FK_CustomerPointsHistory_Pharmacies FOREIGN KEY (PharmacyId) REFERENCES Pharmacies(Id)
 );
+
+
+
+
+
+
+
+
+
+
+
+
 
 CREATE TABLE Reviews (
     Id INT PRIMARY KEY IDENTITY(1,1),
@@ -275,6 +343,7 @@ CREATE TABLE Reviews (
         FOREIGN KEY (ProductId) 
         REFERENCES Products(Id)
 );
+
 CREATE TABLE Chats (
     Id INT PRIMARY KEY IDENTITY(1,1),
     CustomerId INT NOT NULL,
