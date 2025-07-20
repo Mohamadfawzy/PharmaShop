@@ -63,7 +63,7 @@ CREATE TABLE Admins (
     PharmacyId INT NOT NULL, -- تشير إلى الصيدلية المالكة (مستقبلاً عند التوسع)
     FullName NVARCHAR(200) NOT NULL,
     Email NVARCHAR(200) NOT NULL,
-    PasswordHash NVARCHAR(500) NOT NULL,
+
     Role NVARCHAR(100) NOT NULL, -- Admin, Support, Viewer
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
 );
@@ -182,7 +182,7 @@ CREATE TABLE Products (
     Barcode VARCHAR(50) NOT NULL, -- الباركود الخاص بالصيدلية
     InternationalCode VARCHAR(50) NULL,  -- الكود الدولي إن وجد
     StockProductCode VARCHAR(50) NULL, -- الكود في نظام stock
-    Price DECIMAL(18,2) NOT NULL,
+    Price DECIMAL(18,2) NOT NULL, -- 200 EGP
     OldPrice DECIMAL(18,2) NULL,
     IsAvailable BIT NOT NULL DEFAULT 1, -- InStock
     IsIntegrated BIT NOT NULL DEFAULT 0,
@@ -193,9 +193,22 @@ CREATE TABLE Products (
     CreatedBy NVARCHAR(100) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
 
+	-- +
+	Points DECIMAL(18,2) NULL,-- 5% == 10 EPG = 50 points
+	PromoDisc DECIMAL(18,2) NULL, -- عرض خصم بيع مباشر
+	PromoEndDate DATETIME NULL, 
+
+	IsGroupOffer bit, -- هل عليه عرض؟
+
+
 	CONSTRAINT FK_Products_CategoryId FOREIGN KEY (SubCategoryId)
 		REFERENCES Sub2Categories(Id)
 );
+
+
+-- factor= 5
+-- user Points= 1000 points = 1000/factor= 200 EGP
+
 
 GO
 
@@ -309,7 +322,6 @@ CREATE TABLE SalesHeader (
 );
 
 GO
-
 
 CREATE TABLE SalesDetails (
     Id INT PRIMARY KEY IDENTITY(1,1),
