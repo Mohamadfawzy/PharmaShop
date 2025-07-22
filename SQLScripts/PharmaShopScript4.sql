@@ -198,7 +198,7 @@ CREATE TABLE Products (
 	PromoDisc DECIMAL(18,2) NULL, -- عرض خصم بيع مباشر
 	PromoEndDate DATETIME NULL, 
 
-	IsGroupOffer bit, -- هل عليه عرض؟
+	IsGroupOffer BIT NOT NULL DEFAULT 0, -- هل عليه عرض؟
 
 
 	CONSTRAINT FK_Products_CategoryId FOREIGN KEY (SubCategoryId)
