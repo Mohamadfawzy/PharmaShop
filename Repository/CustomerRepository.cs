@@ -1,8 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Repository;
 
-public class CustomerRepository
+public class CustomerRepository : ICustomerRepository
 {
     private readonly RepositoryContext context;
 
@@ -11,12 +12,14 @@ public class CustomerRepository
         this.context = context;
     }
 
-    public async Task<Object> GetAll()
+    public async Task<object> GetAll()
     {
-        var customers = await context.Customers.Select((x) => x)
+        var customers = await context.Customers
+            
             .ToListAsync();
 
         //var result = PagedResult<CustomerDTO>.Create(customers);
         return customers;
     }
 }
+
