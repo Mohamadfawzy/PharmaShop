@@ -9,6 +9,8 @@ public partial class Pharmacy
 
     public string Name { get; set; } = null!;
 
+    public string NameEn { get; set; } = null!;
+
     public string? OwnerName { get; set; }
 
     public string? LicenseNumber { get; set; }

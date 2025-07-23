@@ -11,6 +11,8 @@ public partial class Admin
 
     public string FullName { get; set; } = null!;
 
+    public string FullNameEn { get; set; } = null!;
+
     public string Email { get; set; } = null!;
 
     public string Role { get; set; } = null!;

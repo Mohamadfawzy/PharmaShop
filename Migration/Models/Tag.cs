@@ -9,6 +9,8 @@ public partial class Tag
 
     public string Name { get; set; } = null!;
 
+    public string NameEn { get; set; } = null!;
+
     public DateTime CreatedAt { get; set; }
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();

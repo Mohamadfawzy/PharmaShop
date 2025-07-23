@@ -11,7 +11,11 @@ public partial class Product
 
     public string Name { get; set; } = null!;
 
+    public string NameEn { get; set; } = null!;
+
     public string? Description { get; set; }
+
+    public string? DescriptionEn { get; set; }
 
     public string Barcode { get; set; } = null!;
 

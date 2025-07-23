@@ -13,6 +13,10 @@ public partial class Promotion
 
     public string? Description { get; set; }
 
+    public string TitleEn { get; set; } = null!;
+
+    public string? DescriptionEn { get; set; }
+
     public string PromoType { get; set; } = null!;
 
     public decimal? DiscountValue { get; set; }

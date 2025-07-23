@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace Migration.Models;
 
@@ -81,19 +79,20 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Admin>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Admins__3214EC0727E0ACD6");
+            entity.HasKey(e => e.Id).HasName("PK__Admins__3214EC07E1F84886");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.Email).HasMaxLength(200);
             entity.Property(e => e.FullName).HasMaxLength(200);
+            entity.Property(e => e.FullNameEn).HasMaxLength(200);
             entity.Property(e => e.Role).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Categori__3214EC07E9C41343");
+            entity.HasKey(e => e.Id).HasName("PK__Categori__3214EC07CC11BB90");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -101,14 +100,15 @@ public partial class PharmaShopeDbContext : DbContext
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.NameEn).HasMaxLength(200);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
         });
 
         modelBuilder.Entity<Customer>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC0790D4C8A7");
+            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC07E193979F");
 
-            entity.HasIndex(e => e.UserId, "UQ__Customer__1788CC4DC76336CB").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Customer__1788CC4D72C79C00").IsUnique();
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -118,6 +118,7 @@ public partial class PharmaShopeDbContext : DbContext
                 .HasDefaultValue("Regular");
             entity.Property(e => e.Email).HasMaxLength(150);
             entity.Property(e => e.FullName).HasMaxLength(200);
+            entity.Property(e => e.FullNameEn).HasMaxLength(200);
             entity.Property(e => e.Gender).HasMaxLength(10);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.NationalId).HasMaxLength(20);
@@ -128,7 +129,6 @@ public partial class PharmaShopeDbContext : DbContext
 
             entity.HasOne(d => d.Pharmacy).WithMany(p => p.Customers)
                 .HasForeignKey(d => d.PharmacyId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Customers_Pharmacies");
 
             entity.HasOne(d => d.User).WithOne(p => p.Customer)
@@ -138,7 +138,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<CustomerAddress>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC070A0C7CD3");
+            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC07123F6CF8");
 
             entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.CreatedAt)
@@ -156,7 +156,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<CustomerPointsHistory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC07A7360D1C");
+            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC07B604E456");
 
             entity.ToTable("CustomerPointsHistory");
 
@@ -181,11 +181,12 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Pharmacist>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC072B0B90BA");
+            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC07403F89A5");
 
-            entity.HasIndex(e => e.UserId, "UQ__Pharmaci__1788CC4DA87000F4").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Pharmaci__1788CC4D4F98E1E7").IsUnique();
 
             entity.Property(e => e.FullName).HasMaxLength(100);
+            entity.Property(e => e.FullNameEn).HasMaxLength(200);
             entity.Property(e => e.Specialty).HasMaxLength(100);
 
             entity.HasOne(d => d.User).WithOne(p => p.Pharmacist)
@@ -195,7 +196,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Pharmacy>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC07191482E3");
+            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC072A9CDB39");
 
             entity.Property(e => e.Address).HasMaxLength(300);
             entity.Property(e => e.CreatedAt)
@@ -205,13 +206,14 @@ public partial class PharmaShopeDbContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.LicenseNumber).HasMaxLength(100);
             entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.NameEn).HasMaxLength(200);
             entity.Property(e => e.OwnerName).HasMaxLength(150);
             entity.Property(e => e.PhoneNumber).HasMaxLength(20);
         });
 
         modelBuilder.Entity<Prescription>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Prescrip__3214EC07D9517A0F");
+            entity.HasKey(e => e.Id).HasName("PK__Prescrip__3214EC073DC67469");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -239,7 +241,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<PrescriptionImage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Prescrip__3214EC0770FB3776");
+            entity.HasKey(e => e.Id).HasName("PK__Prescrip__3214EC07796AEE98");
 
             entity.Property(e => e.FileUrl).HasMaxLength(500);
             entity.Property(e => e.UploadedAt)
@@ -254,7 +256,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<PrescriptionItem>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Prescrip__3214EC07ED50B98A");
+            entity.HasKey(e => e.Id).HasName("PK__Prescrip__3214EC076D19F20D");
 
             entity.HasOne(d => d.Prescription).WithMany(p => p.PrescriptionItems)
                 .HasForeignKey(d => d.PrescriptionId)
@@ -269,7 +271,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Products__3214EC07CF7F4CA0");
+            entity.HasKey(e => e.Id).HasName("PK__Products__3214EC0705C7C70E");
 
             entity.Property(e => e.Barcode)
                 .HasMaxLength(50)
@@ -285,6 +287,7 @@ public partial class PharmaShopeDbContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.IsAvailable).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(250);
+            entity.Property(e => e.NameEn).HasMaxLength(250);
             entity.Property(e => e.OldPrice).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Points).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
@@ -313,14 +316,14 @@ public partial class PharmaShopeDbContext : DbContext
                         .HasConstraintName("FK__ProductTa__Produ__787EE5A0"),
                     j =>
                     {
-                        j.HasKey("ProductId", "TagId").HasName("PK__ProductT__625B0957E9FF69CB");
+                        j.HasKey("ProductId", "TagId").HasName("PK__ProductT__625B0957CBB1290F");
                         j.ToTable("ProductTags");
                     });
         });
 
         modelBuilder.Entity<ProductImage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ProductI__3214EC077ECFA14B");
+            entity.HasKey(e => e.Id).HasName("PK__ProductI__3214EC07EA62E4AF");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -334,15 +337,16 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<PromoCode>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__PromoCod__3214EC07F93261D3");
+            entity.HasKey(e => e.Id).HasName("PK__PromoCod__3214EC07929DFAC2");
 
-            entity.HasIndex(e => e.Code, "UQ__PromoCod__A25C5AA78E94C0F9").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__PromoCod__A25C5AA74575CD7A").IsUnique();
 
             entity.Property(e => e.Code).HasMaxLength(50);
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.DescriptionEn).HasMaxLength(500);
             entity.Property(e => e.DiscountType).HasMaxLength(20);
             entity.Property(e => e.DiscountValue).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.EndDate).HasColumnType("datetime");
@@ -365,7 +369,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<PromoCodeUsage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__PromoCod__3214EC079400462D");
+            entity.HasKey(e => e.Id).HasName("PK__PromoCod__3214EC0782F916B8");
 
             entity.Property(e => e.UsedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -384,7 +388,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Promotion>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Promotio__3214EC0718C4392A");
+            entity.HasKey(e => e.Id).HasName("PK__Promotio__3214EC0720743A62");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -396,6 +400,7 @@ public partial class PharmaShopeDbContext : DbContext
             entity.Property(e => e.PromoType).HasMaxLength(50);
             entity.Property(e => e.StartsAt).HasColumnType("datetime");
             entity.Property(e => e.Title).HasMaxLength(200);
+            entity.Property(e => e.TitleEn).HasMaxLength(200);
 
             entity.HasOne(d => d.Pharmacy).WithMany(p => p.Promotions)
                 .HasForeignKey(d => d.PharmacyId)
@@ -405,7 +410,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<PromotionCategory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Promotio__3214EC078AE42995");
+            entity.HasKey(e => e.Id).HasName("PK__Promotio__3214EC0750CE77C0");
 
             entity.HasOne(d => d.Category).WithMany(p => p.PromotionCategories)
                 .HasForeignKey(d => d.CategoryId)
@@ -420,7 +425,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<PromotionProduct>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Promotio__3214EC07BEBA4DA9");
+            entity.HasKey(e => e.Id).HasName("PK__Promotio__3214EC073D731E3C");
 
             entity.HasOne(d => d.Product).WithMany(p => p.PromotionProducts)
                 .HasForeignKey(d => d.ProductId)
@@ -435,7 +440,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<PromotionUsage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Promotio__3214EC07DAB07810");
+            entity.HasKey(e => e.Id).HasName("PK__Promotio__3214EC07041EE0CC");
 
             entity.ToTable("PromotionUsage");
 
@@ -456,17 +461,18 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Roles__3214EC07B5F8139B");
+            entity.HasKey(e => e.Id).HasName("PK__Roles__3214EC0710AF5767");
 
-            entity.HasIndex(e => e.Name, "UQ__Roles__737584F6D89BDF88").IsUnique();
+            entity.HasIndex(e => e.Name, "UQ__Roles__737584F6BA3ED2A8").IsUnique();
 
             entity.Property(e => e.Description).HasMaxLength(200);
             entity.Property(e => e.Name).HasMaxLength(50);
+            entity.Property(e => e.NameEn).HasMaxLength(200);
         });
 
         modelBuilder.Entity<SalesDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__SalesDet__3214EC07B38D1571");
+            entity.HasKey(e => e.Id).HasName("PK__SalesDet__3214EC07241BF91A");
 
             entity.Property(e => e.Discount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TotalPrice)
@@ -486,7 +492,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<SalesDetailsReturn>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__SalesDet__3214EC07A4ECA763");
+            entity.HasKey(e => e.Id).HasName("PK__SalesDet__3214EC079F104DFD");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -511,7 +517,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<SalesHeader>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__SalesHea__3214EC07A0FD85A5");
+            entity.HasKey(e => e.Id).HasName("PK__SalesHea__3214EC0751798DAA");
 
             entity.ToTable("SalesHeader");
 
@@ -543,7 +549,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<SalesHeaderReturn>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__SalesHea__3214EC0793FF5199");
+            entity.HasKey(e => e.Id).HasName("PK__SalesHea__3214EC07041CCBF1");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -573,7 +579,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Sub1Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Sub1Cate__3214EC07C02A6504");
+            entity.HasKey(e => e.Id).HasName("PK__Sub1Cate__3214EC07CD83FB5E");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -581,6 +587,7 @@ public partial class PharmaShopeDbContext : DbContext
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.NameEn).HasMaxLength(200);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Sub1Categories)
@@ -591,7 +598,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Sub2Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Sub2Cate__3214EC07D64662A7");
+            entity.HasKey(e => e.Id).HasName("PK__Sub2Cate__3214EC079D628ABF");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -599,6 +606,7 @@ public partial class PharmaShopeDbContext : DbContext
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.NameEn).HasMaxLength(200);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Sub2Categories)
@@ -609,19 +617,20 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<Tag>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Tags__3214EC07A2077081");
+            entity.HasKey(e => e.Id).HasName("PK__Tags__3214EC07DF4476EE");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.NameEn).HasMaxLength(100);
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Users__3214EC073AB17A9D");
+            entity.HasKey(e => e.Id).HasName("PK__Users__3214EC07DB376F24");
 
-            entity.HasIndex(e => e.Username, "UQ__Users__536C85E454C209B5").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__Users__536C85E4B4A0D80B").IsUnique();
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -636,7 +645,7 @@ public partial class PharmaShopeDbContext : DbContext
 
         modelBuilder.Entity<UserRole>(entity =>
         {
-            entity.HasKey(e => new { e.UserId, e.RoleId }).HasName("PK__UserRole__AF2760AD17C1A87F");
+            entity.HasKey(e => new { e.UserId, e.RoleId }).HasName("PK__UserRole__AF2760AD06652328");
 
             entity.HasOne(d => d.Role).WithMany(p => p.UserRoles)
                 .HasForeignKey(d => d.RoleId)

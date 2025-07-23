@@ -10,7 +10,8 @@ USE pharma_shope_db;
 Go
 CREATE TABLE Pharmacies (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(200) NOT NULL,                
+    Name NVARCHAR(200) NOT NULL,
+	NameEn NVARCHAR(200) NOT NULL,
     OwnerName NVARCHAR(150) NULL,               
     LicenseNumber NVARCHAR(100) NULL,           
     PhoneNumber NVARCHAR(20) NULL,              
@@ -41,6 +42,7 @@ GO
 CREATE TABLE Roles (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(50) NOT NULL UNIQUE, -- أمثلة: Customer, Admin, Doctor, DeliveryRep
+	NameEn NVARCHAR(200) NOT NULL,
     Description NVARCHAR(200) NULL
 );
 
@@ -62,6 +64,7 @@ CREATE TABLE Admins (
     Id INT PRIMARY KEY IDENTITY(1,1),
     PharmacyId INT NOT NULL, -- تشير إلى الصيدلية المالكة (مستقبلاً عند التوسع)
     FullName NVARCHAR(200) NOT NULL,
+	FullNameEn NVARCHAR(200) NOT NULL,
     Email NVARCHAR(200) NOT NULL,
 
     Role NVARCHAR(100) NOT NULL, -- Admin, Support, Viewer
@@ -73,8 +76,9 @@ GO
 CREATE TABLE Customers (
     Id INT IDENTITY(1,1) PRIMARY KEY,
 	UserId INT UNIQUE NULL, 
-    PharmacyId INT NOT NULL,                    -- العميل ينتمي لأي صيدلية
-    FullName NVARCHAR(200) NOT NULL,            
+    PharmacyId INT NULL,                    -- العميل ينتمي لأي صيدلية
+    FullName NVARCHAR(200) NOT NULL,  
+    FullNameEn NVARCHAR(200) NOT NULL,
     PhoneNumber NVARCHAR(20) NULL,             
     Gender NVARCHAR(10) NULL,                
     DateOfBirth DATE NULL,
@@ -120,6 +124,7 @@ GO
 CREATE TABLE Pharmacists (
     Id INT PRIMARY KEY IDENTITY,
     FullName NVARCHAR(100),
+    FullNameEn NVARCHAR(200) NOT NULL,
     Specialty NVARCHAR(100),
     UserId INT UNIQUE NULL,
     FOREIGN KEY (UserId) REFERENCES Users(Id)
@@ -136,7 +141,8 @@ GO
 CREATE TABLE Categories (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(200) NOT NULL,
-    Description NVARCHAR(MAX) NULL,
+	NameEn NVARCHAR(200) NOT NULL,
+	DescriptionEn NVARCHAR(MAX) NULL,
     ImageUrl NVARCHAR(500) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
@@ -150,6 +156,8 @@ CREATE TABLE Sub1Categories (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(200) NOT NULL,
     Description NVARCHAR(MAX) NULL,
+	NameEn NVARCHAR(200) NOT NULL,
+	DescriptionEn NVARCHAR(MAX) NULL,
     CategoryId INT NOT NULL,
     ImageUrl NVARCHAR(500) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
@@ -164,6 +172,8 @@ CREATE TABLE Sub2Categories (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(200) NOT NULL,
     Description NVARCHAR(MAX) NULL,
+	NameEn NVARCHAR(200) NOT NULL,
+	DescriptionEn NVARCHAR(MAX) NULL,
     CategoryId INT NOT NULL,
     ImageUrl NVARCHAR(500) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
@@ -178,7 +188,9 @@ CREATE TABLE Products (
     Id INT IDENTITY(1,1) PRIMARY KEY,
 	SubCategoryId INT NOT NULL,
     Name NVARCHAR(250) NOT NULL,
+	NameEn NVARCHAR(250) NOT NULL,
     Description NVARCHAR(MAX) NULL,
+	DescriptionEn NVARCHAR(MAX) NULL,
     Barcode VARCHAR(50) NOT NULL, -- الباركود الخاص بالصيدلية
     InternationalCode VARCHAR(50) NULL,  -- الكود الدولي إن وجد
     StockProductCode VARCHAR(50) NULL, -- الكود في نظام stock
@@ -229,6 +241,7 @@ GO
 CREATE TABLE Tags (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(100) NOT NULL,
+	NameEn NVARCHAR(100) NOT NULL,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
 );
 
@@ -426,6 +439,8 @@ CREATE TABLE Promotions (
 
     Title NVARCHAR(200) NOT NULL,                   -- عنوان العرض الظاهر للمستخدم
     Description NVARCHAR(MAX) NULL,                 -- تفاصيل العرض
+	TitleEn NVARCHAR(200) NOT NULL,
+	DescriptionEn NVARCHAR(MAX) NULL,
     
     PromoType NVARCHAR(50) NOT NULL CHECK (PromoType IN ('PercentDiscount','FixedDiscount','FreeShipping', 'ExtraPoints', 'BuyXGetY', 'FreeItem')),
         
@@ -494,6 +509,7 @@ CREATE TABLE PromoCodes (
     Code NVARCHAR(50) NOT NULL UNIQUE,         -- كود الخصم نفسه
 
     Description NVARCHAR(500) NULL,
+	DescriptionEn NVARCHAR(500) NULL,
 
     PromoType NVARCHAR(50) NOT NULL CHECK (PromoType IN ('Discount', 'ExtraPoints', 'FreeShipping', 'GiftProduct')),
 

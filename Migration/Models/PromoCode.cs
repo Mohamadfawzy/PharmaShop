@@ -11,6 +11,8 @@ public partial class PromoCode
 
     public string? Description { get; set; }
 
+    public string? DescriptionEn { get; set; }
+
     public string PromoType { get; set; } = null!;
 
     public string? DiscountType { get; set; }

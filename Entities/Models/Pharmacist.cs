@@ -9,6 +9,8 @@ public partial class Pharmacist
 
     public string? FullName { get; set; }
 
+    public string FullNameEn { get; set; } = null!;
+
     public string? Specialty { get; set; }
 
     public int? UserId { get; set; }

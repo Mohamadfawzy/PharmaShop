@@ -11,6 +11,10 @@ public partial class Sub2Category
 
     public string? Description { get; set; }
 
+    public string NameEn { get; set; } = null!;
+
+    public string? DescriptionEn { get; set; }
+
     public int CategoryId { get; set; }
 
     public string? ImageUrl { get; set; }

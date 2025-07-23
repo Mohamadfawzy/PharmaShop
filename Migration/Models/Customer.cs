@@ -9,9 +9,11 @@ public partial class Customer
 
     public int? UserId { get; set; }
 
-    public int PharmacyId { get; set; }
+    public int? PharmacyId { get; set; }
 
     public string FullName { get; set; } = null!;
+
+    public string FullNameEn { get; set; } = null!;
 
     public string? PhoneNumber { get; set; }
 
@@ -41,7 +43,7 @@ public partial class Customer
 
     public virtual ICollection<CustomerPointsHistory> CustomerPointsHistories { get; set; } = new List<CustomerPointsHistory>();
 
-    public virtual Pharmacy Pharmacy { get; set; } = null!;
+    public virtual Pharmacy? Pharmacy { get; set; }
 
     public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
 
