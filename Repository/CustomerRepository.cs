@@ -1,5 +1,6 @@
 ﻿using Contracts;
 using Microsoft.EntityFrameworkCore;
+using Shared.Responses;
 
 namespace Repository;
 
@@ -20,6 +21,19 @@ public class CustomerRepository : ICustomerRepository
 
         //var result = PagedResult<CustomerDTO>.Create(customers);
         return customers;
+    }
+
+
+    public async Task<AppResponse> GetAll2()
+    {
+        var customers = await context.Customers
+
+            .ToListAsync();
+
+        var ddd = AppResponse.Success();
+
+
+        return AppResponse.Success();
     }
 }
 

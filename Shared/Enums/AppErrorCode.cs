@@ -6,12 +6,14 @@ public enum AppErrorCode
 
     // 1xx - Validation & Input
     ValidationFailed = 100,
+    ValidationError = 1000,
     RequiredFieldMissing = 101,
     InvalidFormat = 102,
     ExceedsMaxLength = 103,
     BelowMinLength = 104,
     InvalidRange = 105,
     InvalidEnumValue = 106,
+    BusinessRuleViolation = 2000,
 
     // 2xx - Authentication & Authorization
     Unauthorized = 200,
