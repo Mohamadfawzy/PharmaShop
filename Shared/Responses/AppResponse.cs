@@ -16,6 +16,10 @@ public class AppResponse : AppResponseBase
 
     // ===== SUCCESS FACTORY METHODS =====
 
+    /// <summary>
+    /// Creates a successful response with an optional title and detail message.
+    /// </summary>
+
     public static AppResponse Success(string? title = null, string? detail = null)
     {
         return new AppResponse

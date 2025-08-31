@@ -2,5 +2,5 @@
 
 public class PagedAppResponse<T> : AppResponse<T>
 {
-    public required PaginationInfo Pagination { get; set; }
+    //public required PaginationInfo Pagination { get; set; }
 }

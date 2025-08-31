@@ -1,3 +1,6 @@
+using Contracts;
+using Entities.Models;
+using Repository;
 using WebAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,9 +10,13 @@ builder.Services.AddOpenApi();
 
 // add regester servers her
 builder.Services.AddDbContextServices(builder.Configuration);
-builder.Services.ConfigureJWT();
 builder.Services.AddDependencyInjectionServices();
+builder.Services.ConfigureJWT();
 builder.Services.AddSwaggerDocumentation();
+
+
+
+
 
 var app = builder.Build();
 app.UseSwaggerDocumentation(app.Environment);

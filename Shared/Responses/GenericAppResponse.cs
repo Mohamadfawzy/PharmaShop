@@ -7,11 +7,24 @@ namespace Shared.Responses;
 public class AppResponse<T> : AppResponseBase
 {
     public T? Data { get; set; }
+    public PaginationInfo? Pagination { get; set; }
     public AppResponse() { }
 
     // ===== SUCCESS FACTORY METHODS =====
 
     public static AppResponse<T> Success(T data, string? title = null, string? detail = null)
+    {
+        return new AppResponse<T>
+        {
+            IsSuccess = true,
+            Data = data,
+            StatusCode = ResponseDefaults.SuccessStatusCode,
+            Title = title ?? ResponseDefaults.DefaultSuccessTitle,
+            Detail = detail
+        };
+    }
+    
+    public static AppResponse<T> Success(T data, PaginationInfo paginationInfo, string? title = null, string? detail = null)
     {
         return new AppResponse<T>
         {

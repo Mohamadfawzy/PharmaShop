@@ -17,9 +17,9 @@ public class PaginationInfo
 
     private PaginationInfo(int currentPage, int pageSize, int totalCount)
     {
-        CurrentPage = currentPage;
-        PageSize = pageSize;
         TotalCount = totalCount;
+        PageSize = pageSize;
+        CurrentPage = currentPage;
         TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         StartRecord = totalCount == 0 ? 0 : (currentPage - 1) * pageSize + 1;
         EndRecord = Math.Min(currentPage * pageSize, totalCount);
