@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Entities.Models;
+﻿namespace Entities.Models;
 
 public partial class Product
 {
     public int Id { get; set; }
 
-    public int SubCategoryId { get; set; }
+    public int? SubCategoryId { get; set; }
 
     public string Name { get; set; } = null!;
 

@@ -24,9 +24,11 @@ public class ImageService : IImageService
     }
 
     /// <summary>
-    /// Save a new image in different sizes and return its unique ID
+    /// Implementation of SaveImageAsync: 
+    /// creates small, medium, and original copies, 
+    /// and stores them on disk under the given root path.
     /// </summary>
-    public async Task<string> SaveImageAsync(Stream imageData, string fileNameWithoutExt, string rootPath, CancellationToken ct = default)
+    public async Task<string> SaveImageAsync(Stream imageData, string rootPath, CancellationToken ct = default)
     {
         try
         {
@@ -60,7 +62,7 @@ public class ImageService : IImageService
     /// Save a batch of images (each saved in 3 sizes) and return their generated IDs.
     /// If any image fails, previously saved images in this batch are rolled back (deleted).
     /// </summary>
-    public async Task<List<string>> SaveImagesAsync(IEnumerable<Stream> imagesData, string rootPath, CancellationToken ct = default)
+    public async Task<List<string>> SaveMultipleImagesAsync(IEnumerable<Stream> imagesData, string rootPath, CancellationToken ct = default)
     {
         if (imagesData == null)
             throw new ArgumentNullException(nameof(imagesData));
@@ -87,7 +89,7 @@ public class ImageService : IImageService
                 _logger.LogInformation("Saving image {Current}/{TotalOrUnknown}", index + 1, "?");
 
                 // Reuse the single-image pipeline (validations + 3-size save + logging)
-                var imageId = await SaveImageAsync(imageStream, fileNameWithoutExt: string.Empty, rootPath: rootPath, ct: ct);
+                var imageId = await SaveImageAsync(imageStream, rootPath: rootPath, ct: ct);
 
                 savedIds.Add(imageId);
                 _logger.LogInformation("Image {Index} saved successfully with ID: {ImageId}", index, imageId);
@@ -107,7 +109,7 @@ public class ImageService : IImageService
             {
                 try
                 {
-                    RemoveImage(id, rootPath);
+                    RemoveImageAsync(id, rootPath);
                     _logger.LogWarning("Rolled back image with ID: {ImageId}", id);
                 }
                 catch (Exception rollbackEx)
@@ -124,13 +126,13 @@ public class ImageService : IImageService
     /// <summary>
     /// Update an existing image by replacing it with a new one
     /// </summary>
-    public async Task<string> UpdateImageAsync(Stream imageData, string imageId, string rootPath, CancellationToken ct = default)
+    public async Task<string> ReplaceImageAsync(Stream imageData, string imageId, string rootPath, CancellationToken ct = default)
     {
         try
         {
             _logger.LogInformation("Start updating image: {ImageId}", imageId);
-            RemoveImage(imageId, rootPath);
-            return await SaveImageAsync(imageData, "", rootPath, ct); // empty string since filename is not used
+            RemoveImageAsync(imageId, rootPath);
+            return await SaveImageAsync(imageData, rootPath, ct); // empty string since filename is not used
         }
         catch (Exception ex)
         {
@@ -138,23 +140,28 @@ public class ImageService : IImageService
             throw;
         }
     }
-    
+
     /// <summary>
     /// Remove an image (all sizes) by its ID
     /// </summary>
-    public void RemoveImage(string imageId, string rootPath)
+    public Task RemoveImageAsync(string imageId, string rootPath)
     {
         try
         {
             var fileName = imageId + ".jpg";
             _logger.LogInformation("Start deleting image: {ImageId}", imageId);
 
-            var deletedCount = 0;
-            deletedCount += DeleteIfExists(Path.Combine(rootPath, Original, fileName)) ? 1 : 0;
-            deletedCount += DeleteIfExists(Path.Combine(rootPath, Medium, fileName)) ? 1 : 0;
-            deletedCount += DeleteIfExists(Path.Combine(rootPath, Small, fileName)) ? 1 : 0;
+            var results = new[]
+            {
+                DeleteIfExists(Path.Combine(rootPath, Original, fileName)),
+                DeleteIfExists(Path.Combine(rootPath, Medium, fileName)),
+                DeleteIfExists(Path.Combine(rootPath, Small, fileName))
+            };
 
+            var deletedCount = results.Count(r => r);
             _logger.LogInformation("Deleted {Count} files for image: {ImageId}", deletedCount, imageId);
+
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -162,7 +169,7 @@ public class ImageService : IImageService
             throw;
         }
     }
-    
+
     /// <summary>
     /// Validate input stream and root path
     /// </summary>
@@ -181,7 +188,7 @@ public class ImageService : IImageService
     /// <summary>
     /// Load and validate image dimensions and format
     /// </summary>
-    private async Task<Image> LoadAndValidateImageAsync(Stream imageData, CancellationToken ct)
+    private static async Task<Image> LoadAndValidateImageAsync(Stream imageData, CancellationToken ct)
     {
         try
         {
@@ -209,7 +216,7 @@ public class ImageService : IImageService
     /// <summary>
     /// Save a resized copy of the image to disk
     /// </summary>
-    private async Task SaveResizedCopyAsync(Image original,string fileNameJpg,string folderPath,int targetWidth,int jpegQuality,CancellationToken ct)
+    private async Task SaveResizedCopyAsync(Image original, string fileNameJpg, string folderPath, int targetWidth, int jpegQuality, CancellationToken ct)
     {
         try
         {

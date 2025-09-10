@@ -16,12 +16,13 @@ public static class ServiceExtensions
     {
         //services.AddTransient(typeof(IGenericRepository<Customer>), typeof(GenericRepository<Customer>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<ImageService>();
+        services.AddScoped<IImageService, ImageService>();
 
         //services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
         //services.AddTransient<ICustomerRepository, CustomerRepository>();
         services.AddTransient<ICustomerService, CustomerService>();
+        services.AddTransient<IProductService, ProductService>();
 
     }
 

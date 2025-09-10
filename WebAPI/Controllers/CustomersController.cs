@@ -42,7 +42,7 @@ public class CustomersController : ControllerBase
             // استخدم اسم الملف بدون الامتداد
             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file.FileName);
 
-            var savedFileName = await _imageService.SaveImageAsync(stream, fileNameWithoutExt, rootPath, ct);
+            var savedFileName = await _imageService.SaveImageAsync(stream, rootPath, ct);
 
             var result = new
             {
@@ -82,7 +82,7 @@ public class CustomersController : ControllerBase
                     streams.Add(file.OpenReadStream());
             }
 
-            var savedIds = await _imageService.SaveImagesAsync(streams, rootPath, ct);
+            var savedIds = await _imageService.SaveMultipleImagesAsync(streams, rootPath, ct);
 
             return Ok(new
             {
@@ -96,7 +96,6 @@ public class CustomersController : ControllerBase
             return StatusCode(500, "Failed to save images. Please try again."+ ex.Message);
         }
     }
-
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
