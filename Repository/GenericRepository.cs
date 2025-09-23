@@ -56,7 +56,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression) =>
         await _dbSet.Where(expression).ToListAsync();
 
-    public async Task AddAsync(T entity) =>
+    public async Task AddAsync(T entity, CancellationToken ct = default) =>
         await _dbSet.AddAsync(entity);
 
     public void Update(T entity) =>

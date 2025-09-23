@@ -3,8 +3,7 @@
 public partial class Product
 {
     public int Id { get; set; }
-
-    public int? SubCategoryId { get; set; }
+    public int CategoryId { get; set; }
 
     public string Name { get; set; } = null!;
 
@@ -29,8 +28,6 @@ public partial class Product
     public bool IsIntegrated { get; set; }
 
     public DateTime? IntegratedAt { get; set; }
-
-    public int? CategoryId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -60,7 +57,8 @@ public partial class Product
 
     public virtual ICollection<SalesDetailsReturn> SalesDetailsReturns { get; set; } = new List<SalesDetailsReturn>();
 
-    public virtual Sub2Category SubCategory { get; set; } = null!;
+    public virtual Category Category { get; set; } = null!;
+    
 
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 }

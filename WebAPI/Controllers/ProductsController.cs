@@ -1,7 +1,6 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
-using Service;
-using Shared.Models.Dtos.Product;
+using Shared.Models.RequestFeatures;
 using WebAPI.SpecificDtos;
 
 namespace WebAPI.Controllers;
@@ -21,9 +20,16 @@ public class ProductsController : ControllerBase
 
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] ProductParameters parameters)
     {
-        var res = await productService.ReadAllProducts();
+        var res = await productService.GetProductsAsync(parameters);
+        return Ok(res);
+    }
+
+    [HttpGet("test")]
+    public async Task<IActionResult> Test()
+    {
+        var res = new ProductParameters();
         return Ok(res);
     }
 
@@ -32,11 +38,18 @@ public class ProductsController : ControllerBase
     {
         var rootPath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads");
 
-        using var stream = dto.Image?.OpenReadStream();
+        if (dto.Images == null || dto.Images.Count == 0)
+            return BadRequest(new { Message = "At least one image is required." });
 
-        var productId = await productService.CreateProductWithImagesAsync(dto, stream, rootPath);
+        // نحول الصور إلى Streams
+        var streams = dto.Images.Select(img => img.OpenReadStream());
 
-        return Ok(new { ProductId = productId, Message = "Product created successfully." });
+        var response = await productService.CreateProductWithImagesAsync(dto, streams, rootPath, ct);
+
+        if (!response.IsSuccess)
+            return StatusCode((int)response.StatusCode, response);
+
+        return Ok(response);
     }
 
 
@@ -64,8 +77,5 @@ public class ProductsController : ControllerBase
     //        return StatusCode(500, $"حدث خطأ أثناء رفع الصورة: {ex.Message} {ex.InnerException?.Message}");
     //    }
     //}
-
-
-
 
 }

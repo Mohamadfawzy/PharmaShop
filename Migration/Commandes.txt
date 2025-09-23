@@ -1,1 +1,0 @@
-﻿dotnet ef dbcontext scaffold "Data Source=.;Initial Catalog=pharma_shope_db; Trusted_Connection=True; TrustServerCertificate=True;" Microsoft.EntityFrameworkCore.SqlServer -o Models -f --project Migration

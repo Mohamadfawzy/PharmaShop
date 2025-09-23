@@ -1,7 +1,8 @@
 ﻿using Contracts;
 using Entities.Models;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
-using Service.Mappings;
+using Shared.Models.Dtos.Product;
 
 namespace Repository;
 
@@ -14,10 +15,22 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         this.context = context;
     }
 
-    public async Task<object> GetAll()
+    public async Task<List<ProductUpdateDto>> GetAll()
     {
-        var products = await context.Products.Select(x=>x.ToSubDetailsDto())
+        var products = await context.Products
+            .ProjectToType<ProductUpdateDto>()
             .ToListAsync();
         return products;
     }
+
+    public IQueryable<ProductSubDetailsDto> GetAllQueryable()
+    {
+        return context.Products.ProjectToType<ProductSubDetailsDto>();
+    }
+
+    public IQueryable<Product> Query()
+    {
+        return context.Products.AsQueryable();
+    }
+
 }

@@ -19,9 +19,7 @@ public static class ProductMappingExtensions
             Price = dto.Price,
             OldPrice = dto.OldPrice,
             CategoryId = dto.CategoryId,
-            SubCategoryId = dto.SubCategoryId,
             IsAvailable = dto.IsAvailable,
-
             // It's best to set the domain/DB-related fields in the service (CreatedAt/IsActive).
             // But if you want to set them here:
             CreatedAt = DateTime.UtcNow,
@@ -40,12 +38,12 @@ public static class ProductMappingExtensions
             NameEn = dto.NameEn,
             Description = dto.Description,
             DescriptionEn = dto.DescriptionEn,
-            Barcode = dto.Barcode,
-            Price = dto.Price,
-            OldPrice = dto.OldPrice,
-            CategoryId = dto.CategoryId,
-            SubCategoryId = dto.SubCategoryId,
-            IsAvailable = dto.IsAvailable,
+            //Barcode = dto.Barcode,
+            //Price = dto.Price,
+            //OldPrice = dto.OldPrice,
+            //CategoryId = dto.CategoryId,
+            //SubCategoryId = dto.SubCategoryId,
+            //IsAvailable = dto.IsAvailable,
             IsActive = true
         };
     }

@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Repository", "Repository\Re
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service", "Service\Service.csproj", "{E97520FF-F005-41E0-B0AA-EBCBED8B6574}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migration", "Migration\Migration.csproj", "{1DDF2BD5-EC42-4145-AB6F-9077508EE11D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Contracts", "Contracts\Contracts.csproj", "{92C7EFC5-D49A-4DE8-A57F-26A0F83B8AA4}"
 EndProject
 Global
@@ -43,10 +41,6 @@ Global
 		{E97520FF-F005-41E0-B0AA-EBCBED8B6574}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E97520FF-F005-41E0-B0AA-EBCBED8B6574}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E97520FF-F005-41E0-B0AA-EBCBED8B6574}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1DDF2BD5-EC42-4145-AB6F-9077508EE11D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1DDF2BD5-EC42-4145-AB6F-9077508EE11D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1DDF2BD5-EC42-4145-AB6F-9077508EE11D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1DDF2BD5-EC42-4145-AB6F-9077508EE11D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{92C7EFC5-D49A-4DE8-A57F-26A0F83B8AA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{92C7EFC5-D49A-4DE8-A57F-26A0F83B8AA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92C7EFC5-D49A-4DE8-A57F-26A0F83B8AA4}.Release|Any CPU.ActiveCfg = Release|Any CPU

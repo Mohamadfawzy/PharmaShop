@@ -4,6 +4,6 @@ public interface IUnitOfWork : IDisposable
 {
     ICustomerRepository Customers { get; }
     IProductRepository Products { get; }
-    Task<int> CompleteAsync();
 
+    Task<int> CompleteAsync(CancellationToken ct = default);
 }

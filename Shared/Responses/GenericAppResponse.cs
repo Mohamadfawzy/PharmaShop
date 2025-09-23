@@ -6,8 +6,8 @@ namespace Shared.Responses;
 
 public class AppResponse<T> : AppResponseBase
 {
-    public T? Data { get; set; }
     public PaginationInfo? Pagination { get; set; }
+    public T? Data { get; set; }
     public AppResponse() { }
 
     // ===== SUCCESS FACTORY METHODS =====
@@ -88,6 +88,20 @@ public class AppResponse<T> : AppResponseBase
             Errors = errorList
         };
     }
+    
+    public static AppResponse<T> Fail(List<string>? errors, AppErrorCode errorCode = AppErrorCode.None, int? statusCode = null)
+    {
+        var errorList = errors?.Where(e => !string.IsNullOrWhiteSpace(e)).ToList() ?? new List<string>();
+        return new AppResponse<T>
+        {
+            IsSuccess = false,
+            StatusCode = statusCode ?? ResponseDefaults.GetDefaultStatusCode(errorCode),
+            ErrorCode = errorCode,
+            Title = ResponseDefaults.GetDefaultTitle(errorCode),
+            Detail = errorList.Count == 1 ? errorList.First() : $"{errorList.Count} errors occurred",
+            Errors = errorList
+        };
+    }
 
     public static AppResponse<T> NotFound(string? message = null)
     {
@@ -148,6 +162,14 @@ public class AppResponse<T> : AppResponseBase
             ResponseDefaults.InternalServerErrorStatusCode
         );
     }
+
+    public static AppResponse<T> FromError<U>(AppResponse<U> source) =>
+    new AppResponse<T>
+    {
+        IsSuccess = false,
+        Title = source.Title,
+        ErrorCode = source.ErrorCode
+    };
 
     // ===== CONVERSION METHODS =====
 

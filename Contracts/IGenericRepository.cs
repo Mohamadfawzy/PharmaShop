@@ -11,7 +11,7 @@ public interface IGenericRepository<T> where T : class
            int? skip = null,
            int? take = null);
     Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression);
-    Task AddAsync(T entity);
+    Task AddAsync(T entity, CancellationToken ct = default);
     void Update(T entity);
     void Remove(T entity);
 }
