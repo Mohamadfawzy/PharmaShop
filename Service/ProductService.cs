@@ -25,10 +25,10 @@ public class ProductService : IProductService
         this.logger = logger;
     }
 
-    //public Task<List<ProductUpdateDto>> ReadAllProducts()
-    //{
-    //    return unitOfWork.Products.GetAll();
-    //}
+    // public Task<List<ProductUpdateDto>> ReadAllProducts()
+    // {
+    //     return unitOfWork.Products.GetAll();
+    // }
 
     public async Task<AppResponse<List<ProductSubDetailsDto>>> GetProductsAsync(ProductParameters parameters)
     {
@@ -66,8 +66,7 @@ public class ProductService : IProductService
 
     }
 
-    //==========================================================================================================================================================
-
+    // ==========================================================================================================================================================
 
     #region CreateProductWithImagesAsync
     public async Task<AppResponse<ProductSubDetailsDto>> CreateProductWithImagesAsync(ProductCreateDto dto, IEnumerable<Stream> imageStreams, string rootPath, CancellationToken ct = default)
@@ -224,5 +223,4 @@ public class ProductService : IProductService
         }
     }
     #endregion
-
 }

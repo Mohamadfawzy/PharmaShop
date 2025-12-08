@@ -5,7 +5,7 @@ using WebAPI.SpecificDtos;
 
 namespace WebAPI.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/Products")]
 [ApiController]
 public class ProductsController : ControllerBase
 {
@@ -39,7 +39,7 @@ public class ProductsController : ControllerBase
         var rootPath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads");
 
         if (dto.Images == null || dto.Images.Count == 0)
-            return BadRequest(new { Message = "At least one image is required." });
+            return BadRequest(new { Message = "At least 1 image is required." });
 
         // نحول الصور إلى Streams
         var streams = dto.Images.Select(img => img.OpenReadStream());

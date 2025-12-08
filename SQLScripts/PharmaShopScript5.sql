@@ -130,7 +130,6 @@ CREATE TABLE Pharmacists (
     FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
 
-
 GO
 
 --=======================================
