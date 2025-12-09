@@ -9,5 +9,5 @@ public interface IProductService
 {
     Task<AppResponse<ProductSubDetailsDto>> CreateProductWithImagesAsync(ProductCreateDto dto, IEnumerable<Stream> imageStreams, string rootPath , CancellationToken ct = default);
     Task<AppResponse<List<ProductSubDetailsDto>>> GetProductsAsync(ProductParameters parameters);
-    Task<AppResponse<List<ProductSubDetailsDto>>> ReadAllProducts(int pageNumber, int pageSize);
+    //Task<AppResponse<List<ProductSubDetailsDto>>> ReadAllProducts(int pageNumber, int pageSize);
 }

@@ -37,33 +37,13 @@ public class ProductService : IProductService
                 .ApplySort(parameters);// Sorting
 
         var totalCount = await query.CountAsync();
-
         var items = await query
             .ApplyPagination(parameters)  // Pagination
             .ProjectToType<ProductSubDetailsDto>()
             .ToListAsync();
-
         var result = AppResponse<List<ProductSubDetailsDto>>.Success(items);
         result.Pagination = PaginationInfo.Create(parameters.PageNumber, parameters.PageSize, totalCount);
-
         return result;
-    }
-
-    public async Task<AppResponse<List<ProductSubDetailsDto>>> ReadAllProducts(int pageNumber, int pageSize)
-    {
-        var query = unitOfWork.Products.GetAllQueryable();
-
-        var totalCount = await query.CountAsync();
-        var products = await query
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        var result = AppResponse<List<ProductSubDetailsDto>>.Success(products);
-        result.Pagination = PaginationInfo.Create(pageNumber, pageSize, totalCount);
-
-        return result;
-
     }
 
     // ==========================================================================================================================================================
@@ -98,7 +78,7 @@ public class ProductService : IProductService
             // -----------------------------
             // STEP 3: Save Product in DB
             // -----------------------------
-            await SaveProductToDbAsync(product, ct);
+            await SaveProductInfoToDbAsync(product, ct);
 
             // -----------------------------
             // STEP 4: Map back to DTO
@@ -125,6 +105,7 @@ public class ProductService : IProductService
             return AppResponse<ProductSubDetailsDto>.InternalError("Failed to create product" + dto.Name + ex.Message + ex.InnerException?.Message);
         }
     }
+    
     private async Task<List<string>> SaveProductImagesAsync(IEnumerable<Stream> imageStreams, string productName, string rootPath, CancellationToken ct)
     {
         var imageIds = new List<string>();
@@ -170,6 +151,7 @@ public class ProductService : IProductService
 
         return imageIds;
     }
+    
     private Product MapToProduct(ProductCreateDto dto, List<string>? imageIds = null)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -190,7 +172,8 @@ public class ProductService : IProductService
         }
         return product;
     }
-    private async Task SaveProductToDbAsync(Product product, CancellationToken ct)
+
+    private async Task SaveProductInfoToDbAsync(Product product, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(product);
 
@@ -203,6 +186,7 @@ public class ProductService : IProductService
 
         logger.LogInformation("Product saved successfully. ProductId={ProductId}", product.Id);
     }
+
     private async Task CleanupImagesAsync(IEnumerable<string> imageIds, string rootPath)
     {
         if (imageIds == null || !imageIds.Any())
@@ -224,3 +208,51 @@ public class ProductService : IProductService
     }
     #endregion
 }
+
+
+
+
+/*
+
+Add new product
+
+Update product details
+
+Delete product
+
+View product details
+
+Get all products
+
+Search products
+
+Upload product image
+
+Update product image
+
+Delete product image
+
+Manage product price
+
+Manage product discount
+
+Add product barcode
+
+Update product barcode
+
+Prevent barcode duplication
+
+Update product stock
+
+Link product to category
+
+Update product status (active/inactive)
+
+Validate input data
+
+Check duplicate product name
+
+Validate product expiration (if applicable)
+
+
+ */
