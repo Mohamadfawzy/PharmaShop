@@ -48,6 +48,12 @@ public class ProductService : IProductService
 
     // ==========================================================================================================================================================
 
+    public async Task<bool> AddImage(IEnumerable<Stream> imageStreams, string productName, string rootPath, CancellationToken ct)
+    {
+       var  imageIds = await SaveProductImagesAsync(imageStreams, dto.Name, rootPath, ct);
+
+    }
+
     #region CreateProductWithImagesAsync
     public async Task<AppResponse<ProductSubDetailsDto>> CreateProductWithImagesAsync(ProductCreateDto dto, IEnumerable<Stream> imageStreams, string rootPath, CancellationToken ct = default)
     {

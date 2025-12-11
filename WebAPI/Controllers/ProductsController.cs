@@ -1,6 +1,7 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Models.RequestFeatures;
+using SixLabors.ImageSharp;
 using WebAPI.SpecificDtos;
 
 namespace WebAPI.Controllers;
@@ -51,6 +52,27 @@ public class ProductsController : ControllerBase
 
         return Ok(response);
     }
+
+    public async Task<IActionResult> AddImage([FromForm] IFormFile image, int productId)
+    {
+        var rootPath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads");
+
+        if (image == null)
+            return BadRequest(new { Message = "At least 1 image is required." });
+
+        // نحول الصور إلى Streams
+        var streams = image.OpenReadStream();
+
+        var response = await productService.CreateProductWithImagesAsync(dto, streams, rootPath, ct);
+
+        if (!response.IsSuccess)
+            return StatusCode((int)response.StatusCode, response);
+
+        return Ok(response);
+    }
+
+
+
 
 
     //[HttpPost("upload")]
