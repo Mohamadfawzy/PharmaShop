@@ -25,11 +25,6 @@ public class ProductService : IProductService
         this.logger = logger;
     }
 
-    // public Task<List<ProductUpdateDto>> ReadAllProducts()
-    // {
-    //     return unitOfWork.Products.GetAll();
-    // }
-
     public async Task<AppResponse<List<ProductSubDetailsDto>>> GetProductsAsync(ProductParameters parameters)
     {
         var query = unitOfWork.Products.Query()
@@ -47,12 +42,118 @@ public class ProductService : IProductService
     }
 
     // ==========================================================================================================================================================
-
-    public async Task<bool> AddImage(IEnumerable<Stream> imageStreams, string productName, string rootPath, CancellationToken ct)
+    public async Task<int> CreateProductAsync(ProductCreateDto productDto, CancellationToken ct)
     {
-       var  imageIds = await SaveProductImagesAsync(imageStreams, dto.Name, rootPath, ct);
+        if (productDto == null)
+            throw new ArgumentNullException(nameof(productDto));
 
+        // Example: prevent duplicate barcode
+        var exists = await unitOfWork.Products.ExistsByBarcodeAsync(productDto.Barcode, ct);
+        if (exists)
+            throw new InvalidOperationException("Product with the same barcode already exists.");
+
+        var product = productDto.Adapt<Product>();
+        product.CreatedAt = DateTime.UtcNow;
+        product.IsActive = true;
+
+        await unitOfWork.Products.AddAsync(product, ct);
+        await unitOfWork.CompleteAsync(ct);
+        return product.Id;
     }
+
+    public async Task<bool> AddProductImagesAsync(IEnumerable<Stream> imageStreams, int productId, string rootPath, CancellationToken ct)
+    {
+        // Validate input images
+        if (imageStreams == null || !imageStreams.Any())
+            return false;
+
+        // 1️ Ensure the product exists
+        var product = await unitOfWork.Products.GetByIdAsync(productId);
+        if (product == null)
+            throw new Exception("Product not found");
+
+        var productImages = new List<ProductImage>();
+        var savedImageNames = new List<string>();
+
+        // Begin database transaction
+        await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
+
+        try
+        {
+            int sortOrder = 1;
+
+            foreach (var stream in imageStreams)
+            {
+                // 2️ Save image files to the file system
+                var fileName = await imageService.SaveImageAsync(stream,rootPath,ct);
+
+                savedImageNames.Add(fileName);
+
+                // 3️ Prepare database entity
+                productImages.Add(new ProductImage
+                {
+                    ProductId = productId,
+                    ImageUrl = fileName,
+                    IsMain = sortOrder == 1, // First image is the main image
+                    SortOrder = sortOrder,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                sortOrder++;
+            }
+
+            // throw new InvalidOperationException("Rollback test");
+
+            // 4️ Add image records to the database
+            await unitOfWork.Products.AddProductImagesAsync(productImages);
+
+            // 5️ Persist changes
+            await unitOfWork.CompleteAsync(ct);
+
+            // 6️ Commit the transaction
+            await transaction.CommitAsync(ct);
+
+            return true;
+        }
+        catch
+        {
+            // 7️ Roll back database changes
+            await transaction.RollbackAsync(ct);
+
+            // 8️ Remove any images saved to the file system
+            await CleanupImagesAsync(savedImageNames, rootPath);
+            throw;
+        }
+    }
+
+    public async Task DeleteProductImageAsync(int productId,int imageId, string rootPath,CancellationToken ct)
+    {
+        var image = await unitOfWork.Products.GetProductImageByIdAsync(productId, imageId, ct);
+        if (image == null)
+            throw new Exception("Image not found.");
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
+
+        try
+        {
+            // Remove database record
+            unitOfWork.Products.RemoveProductImage(image);
+            await unitOfWork.CompleteAsync(ct);
+
+            // Remove files from disk
+            await imageService.RemoveImageAsync(image.ImageUrl, rootPath);
+
+            await transaction.CommitAsync(ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            await CleanupImagesAsync(new List<string> { image.ImageUrl }, rootPath);
+            throw;
+        }
+    }
+
+
 
     #region CreateProductWithImagesAsync
     public async Task<AppResponse<ProductSubDetailsDto>> CreateProductWithImagesAsync(ProductCreateDto dto, IEnumerable<Stream> imageStreams, string rootPath, CancellationToken ct = default)
@@ -111,7 +212,7 @@ public class ProductService : IProductService
             return AppResponse<ProductSubDetailsDto>.InternalError("Failed to create product" + dto.Name + ex.Message + ex.InnerException?.Message);
         }
     }
-    
+
     private async Task<List<string>> SaveProductImagesAsync(IEnumerable<Stream> imageStreams, string productName, string rootPath, CancellationToken ct)
     {
         var imageIds = new List<string>();
@@ -157,12 +258,12 @@ public class ProductService : IProductService
 
         return imageIds;
     }
-    
+
     private Product MapToProduct(ProductCreateDto dto, List<string>? imageIds = null)
     {
         ArgumentNullException.ThrowIfNull(dto);
 
-        var product = dto.Adapt<Product>(); // using Mapster (أو AutoMapper لو حابب)
+        var product = dto.Adapt<Product>(); // using Mapster 
         product.CreatedAt = DateTime.UtcNow;
 
         // Attach images if provided
@@ -214,51 +315,3 @@ public class ProductService : IProductService
     }
     #endregion
 }
-
-
-
-
-/*
-
-Add new product
-
-Update product details
-
-Delete product
-
-View product details
-
-Get all products
-
-Search products
-
-Upload product image
-
-Update product image
-
-Delete product image
-
-Manage product price
-
-Manage product discount
-
-Add product barcode
-
-Update product barcode
-
-Prevent barcode duplication
-
-Update product stock
-
-Link product to category
-
-Update product status (active/inactive)
-
-Validate input data
-
-Check duplicate product name
-
-Validate product expiration (if applicable)
-
-
- */

@@ -33,4 +33,10 @@ public class UnitOfWork : IUnitOfWork
         return await _context.Database.BeginTransactionAsync();
     }
 
+
+    public async Task<ITransaction> BeginTransactionAsync(CancellationToken ct = default)
+    {
+        var dbTransaction = await _context.Database.BeginTransactionAsync(ct);
+        return new EfTransaction(dbTransaction);
+    }
 }

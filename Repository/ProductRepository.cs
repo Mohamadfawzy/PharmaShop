@@ -23,6 +23,42 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         return products;
     }
 
+    public async Task AddProductImagesAsync(IEnumerable<ProductImage> productImages)
+    {
+        if (productImages == null)
+            throw new ArgumentNullException(nameof(productImages));
+
+        var images = productImages.ToList();
+        if (!images.Any())
+            return;
+
+        await context.ProductImages.AddRangeAsync(images);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task<ProductImage?> GetProductImageByIdAsync(int productId, int imageId, CancellationToken ct)
+    {
+        return await context.ProductImages
+            .FirstOrDefaultAsync(x => x.Id == imageId && x.ProductId == productId, ct);
+    }
+
+    public async Task<bool> ExistsByBarcodeAsync(string barcode, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(barcode))
+            return false;
+
+        return await context.Products
+            .AsNoTracking()
+            .AnyAsync(p => p.Barcode == barcode, ct);
+    }
+
+
+    public void RemoveProductImage(ProductImage image)
+    {
+        context.ProductImages.Remove(image);
+    }
+
+
     public IQueryable<ProductSubDetailsDto> GetAllQueryable()
     {
         return context.Products.ProjectToType<ProductSubDetailsDto>();
@@ -32,5 +68,8 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
     {
         return context.Products.AsQueryable();
     }
+
+
+
 
 }

@@ -1,6 +1,9 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Enums;
+using Shared.Models.Dtos.Product;
 using Shared.Models.RequestFeatures;
+using Shared.Responses;
 using SixLabors.ImageSharp;
 using WebAPI.SpecificDtos;
 
@@ -12,11 +15,25 @@ public class ProductsController : ControllerBase
 {
     private readonly IProductService productService;
     private readonly IWebHostEnvironment env;
+    private readonly string rootPath;
 
     public ProductsController(IProductService productService, IWebHostEnvironment env)
     {
         this.productService = productService;
         this.env = env;
+        rootPath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads");
+    }
+
+    // ===================================================================================
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] ProductCreateDto productDto, CancellationToken ct)
+    {
+        var productId = await productService.CreateProductAsync(productDto, ct);
+        if (productId > 0)
+            return Ok(AppResponse<int>.Success(productId));
+
+        return BadRequest(AppResponse.Fail("error"));
     }
 
 
@@ -27,18 +44,9 @@ public class ProductsController : ControllerBase
         return Ok(res);
     }
 
-    [HttpGet("test")]
-    public async Task<IActionResult> Test()
-    {
-        var res = new ProductParameters();
-        return Ok(res);
-    }
-
     [HttpPost("create-with-images")]
     public async Task<IActionResult> CreateWithImages([FromForm] ProductCreateWithImageDto dto, CancellationToken ct)
     {
-        var rootPath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads");
-
         if (dto.Images == null || dto.Images.Count == 0)
             return BadRequest(new { Message = "At least 1 image is required." });
 
@@ -53,51 +61,56 @@ public class ProductsController : ControllerBase
         return Ok(response);
     }
 
-    public async Task<IActionResult> AddImage([FromForm] IFormFile image, int productId)
+    [HttpPost("{productId}/images")]
+    public async Task<IActionResult> AddImages([FromForm] List<IFormFile>? images, int productId, CancellationToken ct)
     {
-        var rootPath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads");
+        try
+        {
 
-        if (image == null)
+            if (images == null || images.Count == 0)
+                return BadRequest(new { Message = "At least 1 image is required." });
+
+            // نحول الصور إلى Streams
+            var streams = images.Select(img => img.OpenReadStream());
+
+            var response = await productService.AddProductImagesAsync(streams, productId, rootPath, ct);
+
+            return Ok(AppResponse.Success());
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(AppResponse.Fail(ex.Message + ex.InnerException?.Message));
+        }
+    }
+
+    [HttpPost("add-images")]
+    public async Task<IActionResult> AddImages(int productId, List<IFormFile> images, CancellationToken ct)
+    {
+
+        if (images == null || images.Count == 0)
             return BadRequest(new { Message = "At least 1 image is required." });
 
         // نحول الصور إلى Streams
-        var streams = image.OpenReadStream();
+        var streams = images.Select(img => img.OpenReadStream());
 
-        var response = await productService.CreateProductWithImagesAsync(dto, streams, rootPath, ct);
-
-        if (!response.IsSuccess)
-            return StatusCode((int)response.StatusCode, response);
+        var response = await productService.AddProductImagesAsync(streams, productId, rootPath, ct);
 
         return Ok(response);
+
     }
 
-
-
-
-
-    //[HttpPost("upload")]
-    //public async Task<IActionResult> Upload([FromForm] IFormFile file, CancellationToken ct)
-    //{
-    //    if (file == null || file.Length == 0)
-    //        return BadRequest("لم يتم رفع أي صورة.");
-
-    //    var rootPath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads");
-
-    //    try
-    //    {
-    //        await using var stream = file.OpenReadStream();
-
-    //        // استخدم اسم الملف بدون الامتداد
-    //        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file.FileName);
-
-    //        var result = await productService.CreateProductWithImagesAsync(stream, rootPath);
-
-    //        return Ok(result);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return StatusCode(500, $"حدث خطأ أثناء رفع الصورة: {ex.Message} {ex.InnerException?.Message}");
-    //    }
-    //}
-
+    [HttpDelete("{productId:int}/images/{imageId:int}")]
+    public async Task<IActionResult> DeleteProductImage(int productId, int imageId, CancellationToken ct)
+    {
+        try
+        {
+            await productService.DeleteProductImageAsync(productId, imageId, rootPath, ct);
+            return Ok(AppResponse.Success("Image deleted successfully."));
+        }
+        catch (Exception ex)
+        {
+            // يمكن تخصيص الرسالة أو استخدام ErrorCode حسب نوع الخطأ
+            return BadRequest(AppResponse.Fail(ex.Message));
+        }
+    }
 }
