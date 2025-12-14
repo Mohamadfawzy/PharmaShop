@@ -12,4 +12,7 @@ public interface IProductService
     Task<AppResponse<ProductSubDetailsDto>> CreateProductWithImagesAsync(ProductCreateDto dto, IEnumerable<Stream> imageStreams, string rootPath , CancellationToken ct = default);
     Task DeleteProductImageAsync(int productId, int imageId, string rootPath, CancellationToken ct);
     Task<AppResponse<List<ProductSubDetailsDto>>> GetProductsAsync(ProductParameters parameters);
+    Task<AppResponse> SoftDeleteProductAsync(int productId, CancellationToken ct);
+    Task<AppResponse> UpdateProductAsync(int productId, ProductUpdateDto dto, CancellationToken ct);
+    Task<AppResponse> UpdateProductIsActiveAsync(int productId, bool isActive, CancellationToken ct);
 }

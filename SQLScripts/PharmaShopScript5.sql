@@ -180,6 +180,7 @@ CREATE TABLE Products (
     UpdatedAt DATETIME NULL,
     CreatedBy NVARCHAR(100) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
+    IsDeleted BIT NOT NULL DEFAULT 1,
 
 	-- +
 	Points DECIMAL(18,2) NULL,-- 5% == 10 EPG = 50 points

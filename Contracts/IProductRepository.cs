@@ -12,4 +12,7 @@ public interface IProductRepository : IGenericRepository<Product>
     Task<ProductImage?> GetProductImageByIdAsync(int productId, int imageId, CancellationToken ct);
     IQueryable<Product> Query();
     void RemoveProductImage(ProductImage image);
+    Task<bool> SoftDeleteAsync(int productId, CancellationToken ct);
+    Task<bool> UpdateIsActiveAsync(int productId, bool isActive, CancellationToken ct);
+    void UpdateProduct(Product product);
 }

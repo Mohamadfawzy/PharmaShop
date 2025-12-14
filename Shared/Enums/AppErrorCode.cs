@@ -25,7 +25,8 @@ public enum AppErrorCode
     AccessDenied = 206,
 
     // 3xx - Not Found / Existence
-    NotFound = 300,
+    NotFound = 404,
+    BadRequest = 400,
     EntityNotFound = 301,
     ResourceNotFound = 302,
     UserNotFound = 303,

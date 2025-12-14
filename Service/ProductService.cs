@@ -10,6 +10,7 @@ using Shared.Enums;
 using Shared.Models.Dtos.Product;
 using Shared.Models.RequestFeatures;
 using Shared.Responses;
+using System.Net;
 namespace Service;
 
 public class ProductService : IProductService
@@ -85,7 +86,7 @@ public class ProductService : IProductService
             foreach (var stream in imageStreams)
             {
                 // 2️ Save image files to the file system
-                var fileName = await imageService.SaveImageAsync(stream,rootPath,ct);
+                var fileName = await imageService.SaveImageAsync(stream, rootPath, ct);
 
                 savedImageNames.Add(fileName);
 
@@ -126,7 +127,7 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task DeleteProductImageAsync(int productId,int imageId, string rootPath,CancellationToken ct)
+    public async Task DeleteProductImageAsync(int productId, int imageId, string rootPath, CancellationToken ct)
     {
         var image = await unitOfWork.Products.GetProductImageByIdAsync(productId, imageId, ct);
         if (image == null)
@@ -153,6 +154,82 @@ public class ProductService : IProductService
         }
     }
 
+    public async Task<AppResponse> UpdateProductAsync(int productId, ProductUpdateDto dto, CancellationToken ct)
+    {
+        if (dto == null)
+            return AppResponse.ValidationError("Invalid product data.");
+
+        var product = await unitOfWork.Products.GetByIdAsync(productId);
+        if (product == null)
+            return AppResponse.NotFound("Product not found.");
+
+        // Optional: prevent duplicate barcode
+        if (!string.Equals(product.Barcode, dto.Barcode, StringComparison.OrdinalIgnoreCase))
+        {
+            var barcodeExists = await unitOfWork.Products
+                .ExistsByBarcodeAsync(dto.Barcode, ct);
+
+            if (barcodeExists)
+                return AppResponse.Conflict("Barcode already exists.");
+        }
+
+        // Map updated fields
+        product.Name = dto.Name;
+        product.NameEn = dto.NameEn;
+        product.Description = dto.Description;
+        product.DescriptionEn = dto.DescriptionEn;
+        product.Barcode = dto.Barcode;
+        product.Price = dto.Price;
+        product.OldPrice = dto.OldPrice;
+        product.IsAvailable = dto.IsAvailable;
+        product.IsActive = dto.IsActive;
+        product.Points = dto.Points;
+        product.PromoDisc = dto.PromoDisc;
+        product.UpdatedAt = DateTime.UtcNow;
+
+        unitOfWork.Products.Update(product);
+        await unitOfWork.CompleteAsync(ct);
+
+        return AppResponse.Success(
+            title: "Product Updated",
+            detail: "Product data updated successfully."
+        );
+    }
+
+    public async Task<AppResponse> SoftDeleteProductAsync(int productId, CancellationToken ct)
+    {
+        // 1️ Validate input
+        if (productId <= 0)
+            return AppResponse.Fail("Invalid product id");
+
+        // 2️ Execute soft delete
+        var deleted = await unitOfWork.Products.SoftDeleteAsync(productId, ct);
+
+        if (!deleted)
+            return AppResponse.Fail("Product not found or already deleted",AppErrorCode.NotFound);
+
+        // 3️ Commit (in case UnitOfWork manages SaveChanges or other operations)
+        await unitOfWork.CompleteAsync(ct);
+
+        // 4️ Success response
+        return AppResponse.Success("Product soft deleted successfully");
+    }
+
+    public async Task<AppResponse> UpdateProductIsActiveAsync(int productId, bool isActive,CancellationToken ct)
+    {
+        if (productId <= 0)
+            return AppResponse.Fail("Invalid product id",AppErrorCode.BadRequest);
+
+        var updated = await unitOfWork.Products
+            .UpdateIsActiveAsync(productId, isActive, ct);
+
+        if (!updated)
+            return AppResponse.Fail("Product not found or Marked as Deleted or already in the requested state",AppErrorCode.NotFound);
+
+        await unitOfWork.CompleteAsync(ct);
+
+        return AppResponse.Success("Product status updated successfully");
+    }
 
 
     #region CreateProductWithImagesAsync

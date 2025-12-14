@@ -42,6 +42,11 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
             .FirstOrDefaultAsync(x => x.Id == imageId && x.ProductId == productId, ct);
     }
 
+    public void UpdateProduct(Product product)
+    {
+        context.Products.Update(product);
+    }
+
     public async Task<bool> ExistsByBarcodeAsync(string barcode, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(barcode))
@@ -58,7 +63,6 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         context.ProductImages.Remove(image);
     }
 
-
     public IQueryable<ProductSubDetailsDto> GetAllQueryable()
     {
         return context.Products.ProjectToType<ProductSubDetailsDto>();
@@ -69,7 +73,30 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         return context.Products.AsQueryable();
     }
 
+    public async Task<bool> SoftDeleteAsync(int productId, CancellationToken ct)
+    {
+        var affectedRows = await context.Products
+            .Where(p => p.Id == productId && !p.IsDeleted)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(p => p.IsDeleted, true)
+                    .SetProperty(p => p.UpdatedAt, DateTime.UtcNow),
+                ct);
 
+        return affectedRows > 0;
+    }
+
+    public async Task<bool> UpdateIsActiveAsync(int productId,bool isActive, CancellationToken ct)
+    {
+        var affectedRows = await context.Products
+            .Where(p => p.Id == productId && !p.IsDeleted)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(p => p.IsActive, isActive),
+                ct);
+
+        return affectedRows > 0;
+    }
 
 
 }

@@ -1,6 +1,5 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Enums;
 using Shared.Models.Dtos.Product;
 using Shared.Models.RequestFeatures;
 using Shared.Responses;
@@ -113,4 +112,27 @@ public class ProductsController : ControllerBase
             return BadRequest(AppResponse.Fail(ex.Message));
         }
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductUpdateDto dto, CancellationToken ct)
+    {
+        var response = await productService.UpdateProductAsync(id, dto, ct);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpDelete("{id:int}/soft-delete")]
+    public async Task<IActionResult> SoftDelete(int id, CancellationToken ct)
+    {
+        var response = await productService.SoftDeleteProductAsync(id, ct);
+        return StatusCode(response.StatusCode, response);
+    }
+
+    [HttpPut("{productId:int}/active")]
+    public async Task<IActionResult> UpdateIsActive(int productId,[FromQuery] bool isActive,CancellationToken ct)
+    {
+        var response = await productService.UpdateProductIsActiveAsync(productId,isActive,ct);
+
+        return StatusCode((int)response.StatusCode, response);
+    }
+
 }

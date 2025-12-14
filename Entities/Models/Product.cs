@@ -3,6 +3,7 @@
 public partial class Product
 {
     public int Id { get; set; }
+
     public int CategoryId { get; set; }
 
     public string Name { get; set; } = null!;
@@ -23,9 +24,15 @@ public partial class Product
 
     public decimal? OldPrice { get; set; }
 
+    public bool IsActive { get; set; }
+
     public bool IsAvailable { get; set; }
 
     public bool IsIntegrated { get; set; }
+
+    public bool IsGroupOffer { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     public DateTime? IntegratedAt { get; set; }
 
@@ -35,15 +42,12 @@ public partial class Product
 
     public string? CreatedBy { get; set; }
 
-    public bool IsActive { get; set; }
-
     public decimal? Points { get; set; }
 
     public decimal? PromoDisc { get; set; }
 
     public DateTime? PromoEndDate { get; set; }
 
-    public bool IsGroupOffer { get; set; }
 
     public virtual ICollection<PrescriptionItem> PrescriptionItems { get; set; } = new List<PrescriptionItem>();
 
@@ -58,7 +62,6 @@ public partial class Product
     public virtual ICollection<SalesDetailsReturn> SalesDetailsReturns { get; set; } = new List<SalesDetailsReturn>();
 
     public virtual Category Category { get; set; } = null!;
-    
 
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 }
