@@ -1,0 +1,65 @@
+Category – Create & Update
+
+Create Category — POST
+
+Update Category — PUT
+
+Change Category Parent — PUT
+
+Update Category Image — PUT
+
+🟦 Category – Read (Admin)
+
+Get All Categories — GET
+
+Get Category By Id — GET
+
+Get Root Categories — GET
+
+Get Categories With Children — GET
+
+Get Category Tree — GET
+
+Get Categories With Product Count — GET
+
+🟦 Category – Read (Public / Store)
+
+Get Active Categories — GET
+
+Get Active Root Categories — GET
+
+Get Active Category Tree — GET
+
+🟦 Category – Activation & Status
+
+Activate Category — PATCH
+
+Deactivate Category — PATCH
+
+🟦 Category – Delete
+
+Soft Delete Category — DELETE
+
+🟦 Category – Products Relation
+
+Get Products By Category — GET
+
+Get Products By Category Including Children — GET
+
+Get Category Product Count — GET
+
+🟦 Category – Validation & Helpers
+
+Check Category Exists — GET
+
+Check Category Has Products — GET
+
+🟦 Category – Ordering (Optional)
+
+Update Category Sort Order — PATCH
+
+🟦 (Optional – Advanced)
+
+Get Category Breadcrumb — GET
+
+Move Category With Children — PUT

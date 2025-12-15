@@ -144,6 +144,7 @@ CREATE TABLE Categories (
 	DescriptionEn NVARCHAR(MAX) NULL,
     ImageUrl NVARCHAR(500) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
+	IsDeleted BIT NOT NULL DEFAULT 1,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
 	ParentCategoryId INT NULL, -- ++
