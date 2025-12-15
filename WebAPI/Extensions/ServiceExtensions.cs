@@ -23,6 +23,7 @@ public static class ServiceExtensions
         //services.AddTransient<ICustomerRepository, CustomerRepository>();
         services.AddTransient<ICustomerService, CustomerService>();
         services.AddTransient<IProductService, ProductService>();
+        services.AddTransient<ICategoryService, CategoryService>();
 
     }
 

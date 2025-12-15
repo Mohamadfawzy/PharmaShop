@@ -64,4 +64,19 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 
     public void Remove(T entity) =>
         _dbSet.Remove(entity);
+
+    public Task UpdateAsync(T entity, CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task DeleteAsync(T entity, CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<T?> GetByIdAsync(int id, CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
 }

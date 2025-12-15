@@ -12,11 +12,14 @@ public class UnitOfWork : IUnitOfWork
         _context = context;
         Customers = new CustomerRepository(_context);
         Products = new ProductRepository(_context);
+        Categories = new CategoryRepository(_context);
     }
 
     public ICustomerRepository Customers { get; private set; }
     public IProductRepository Products { get; private set; }
-    
+    public ICategoryRepository Categories { get; private set; }
+
+
     // METHODS
     public async Task<int> CompleteAsync(CancellationToken ct = default)
     {

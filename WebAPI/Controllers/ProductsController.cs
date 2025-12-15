@@ -127,7 +127,7 @@ public class ProductsController : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
 
-    [HttpPut("{productId:int}/active")]
+    [HttpPatch("{productId:int}/active")]
     public async Task<IActionResult> UpdateIsActive(int productId,[FromQuery] bool isActive,CancellationToken ct)
     {
         var response = await productService.UpdateProductIsActiveAsync(productId,isActive,ct);
