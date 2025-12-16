@@ -20,18 +20,27 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
             .AnyAsync(c => c.Id == categoryId && c.IsActive, ct);
     }
 
-    public async Task<Category?> GetByIdAsync(int categoryId, CancellationToken ct)
+    public async Task<bool> UpdateImageUrlAsync(int id, string imageUrl, CancellationToken ct)
+    {
+        var affectedRows = await context.Categories
+            .Where(p => p.Id == id && !p.IsDeleted)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(p => p.ImageUrl, imageUrl),
+                ct);
+
+        return affectedRows > 0;
+    }
+
+    public async Task<IEnumerable<Category>> GetRootCategoriesAsync(CancellationToken ct)
     {
         return await context.Categories
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == categoryId && !c.IsDeleted, ct);
+            .Where(c => c.ParentCategoryId == null && !c.IsDeleted)
+            .OrderBy(c => c.Name)
+            .ToListAsync(ct);
     }
 
-
-    //public async Task AddAsync(Category category, CancellationToken ct)
-    //{
-    //    await context.Categories.AddAsync(category, ct);
-    //}
 
 
 }

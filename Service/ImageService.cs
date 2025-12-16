@@ -28,28 +28,29 @@ public class ImageService : IImageService
     /// creates small, medium, and original copies, 
     /// and stores them on disk under the given root path.
     /// </summary>
-    public async Task<string> SaveImageAsync(Stream imageData, string rootPath, CancellationToken ct = default)
+    public async Task<string> SaveImageAsync(Stream imageData, string rootPath, string prefix = "", CancellationToken ct = default)
     {
         try
         {
             ValidateInputs(imageData, rootPath);
 
             // Generate a unique GUID for the image
-            var imageId = Guid.NewGuid().ToString("N");
-            var fileName = imageId + ".jpg";
-            _logger.LogInformation("Start saving image with ID: {ImageId}", imageId);
+            var guid = Guid.NewGuid().ToString("N");
+            var fileName = $"{prefix}-{guid}";
+            var fileNameWithExtention = fileName + ".jpg";
+            _logger.LogInformation("Start saving image with ID: {ImageId}", fileName);
 
             // Validate and load the image
             imageData.Position = 0;
             using var image = await LoadAndValidateImageAsync(imageData, ct);
 
             // Save multiple versions with the same ID
-            await SaveResizedCopyAsync(image, fileName, Path.Combine(rootPath, Original), image.Width, 85, ct);
-            await SaveResizedCopyAsync(image, fileName, Path.Combine(rootPath, Medium), MediumSize, 75, ct);
-            await SaveResizedCopyAsync(image, fileName, Path.Combine(rootPath, Small), SmallSize, 70, ct);
+            await SaveResizedCopyAsync(image, fileNameWithExtention, Path.Combine(rootPath, Original), image.Width, 85, ct);
+            await SaveResizedCopyAsync(image, fileNameWithExtention, Path.Combine(rootPath, Medium), MediumSize, 75, ct);
+            await SaveResizedCopyAsync(image, fileNameWithExtention, Path.Combine(rootPath, Small), SmallSize, 70, ct);
 
-            _logger.LogInformation("Image saved successfully with ID: {ImageId}", imageId);
-            return imageId; // Return only the ID without extension
+            _logger.LogInformation("Image saved successfully with ID: {ImageId}", fileName);
+            return fileName; // Return only the ID without extension
         }
         catch (Exception ex)
         {
@@ -132,7 +133,7 @@ public class ImageService : IImageService
         {
             _logger.LogInformation("Start updating image: {ImageId}", imageId);
             RemoveImageAsync(imageId, rootPath);
-            return await SaveImageAsync(imageData, rootPath, ct); // empty string since filename is not used
+            return await SaveImageAsync(imageData, rootPath, ct: ct); // empty string since filename is not used
         }
         catch (Exception ex)
         {

@@ -42,7 +42,7 @@ public class CustomersController : ControllerBase
             // استخدم اسم الملف بدون الامتداد
             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file.FileName);
 
-            var savedFileName = await _imageService.SaveImageAsync(stream, rootPath, ct);
+            var savedFileName = await _imageService.SaveImageAsync(stream, rootPath, ct: ct);
 
             var result = new
             {

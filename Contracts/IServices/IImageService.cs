@@ -14,7 +14,7 @@ public interface IImageService
     /// <summary>
     /// Save a new image in different sizes and return its unique ID
     /// </summary>
-    Task<string> SaveImageAsync(Stream imageData, string rootPath, CancellationToken ct = default);
+    Task<string> SaveImageAsync(Stream imageData, string rootPath, string prefix = "", CancellationToken ct = default);
 
     /// <summary>
     /// Replace an existing image with a new one

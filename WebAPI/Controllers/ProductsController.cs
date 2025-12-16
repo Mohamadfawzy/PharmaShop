@@ -82,22 +82,6 @@ public class ProductsController : ControllerBase
         }
     }
 
-    [HttpPost("add-images")]
-    public async Task<IActionResult> AddImages(int productId, List<IFormFile> images, CancellationToken ct)
-    {
-
-        if (images == null || images.Count == 0)
-            return BadRequest(new { Message = "At least 1 image is required." });
-
-        // نحول الصور إلى Streams
-        var streams = images.Select(img => img.OpenReadStream());
-
-        var response = await productService.AddProductImagesAsync(streams, productId, rootPath, ct);
-
-        return Ok(response);
-
-    }
-
     [HttpDelete("{productId:int}/images/{imageId:int}")]
     public async Task<IActionResult> DeleteProductImage(int productId, int imageId, CancellationToken ct)
     {

@@ -30,6 +30,7 @@ public class AppResponse<T> : AppResponseBase
         {
             IsSuccess = true,
             Data = data,
+            Pagination = paginationInfo,
             StatusCode = ResponseDefaults.SuccessStatusCode,
             Title = title ?? ResponseDefaults.DefaultSuccessTitle,
             Detail = detail

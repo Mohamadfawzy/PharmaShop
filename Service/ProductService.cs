@@ -86,7 +86,7 @@ public class ProductService : IProductService
             foreach (var stream in imageStreams)
             {
                 // 2️ Save image files to the file system
-                var fileName = await imageService.SaveImageAsync(stream, rootPath, ct);
+                var fileName = await imageService.SaveImageAsync(stream, rootPath, ct: ct);
 
                 savedImageNames.Add(fileName);
 
@@ -310,7 +310,7 @@ public class ProductService : IProductService
             if (stream.CanSeek)
                 stream.Position = 0;
 
-            var imageId = await imageService.SaveImageAsync(stream, rootPath, ct);
+            var imageId = await imageService.SaveImageAsync(stream, rootPath, ct: ct);
 
             if (string.IsNullOrWhiteSpace(imageId))
             {

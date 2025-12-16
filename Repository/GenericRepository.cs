@@ -1,6 +1,9 @@
-﻿using System.Linq.Expressions;
-using Contracts;
+﻿using Contracts;
+using Entities.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace Repository;
 
@@ -15,8 +18,15 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         _dbSet = context.Set<T>();
     }
 
-    public async Task<T?> GetByIdAsync(int id) =>
+    public async Task<T?> GetByIdAsync(int id,CancellationToken ct= default) =>
         await _dbSet.FindAsync(id);
+
+    public async Task<T?> GetByIdNoTrackingAsync(int id, CancellationToken ct = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id, ct);
+    }
 
     public async Task<IEnumerable<T>> GetAllAsync(
             Expression<Func<T, bool>>? criteria = null,
@@ -65,18 +75,32 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     public void Remove(T entity) =>
         _dbSet.Remove(entity);
 
-    public Task UpdateAsync(T entity, CancellationToken ct)
+    public Task UpdateAsync(T entity, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
+        _dbSet.Update(entity);
+        return Task.CompletedTask;
     }
+
+    public async Task<int> CountAsync(Expression<Func<T, bool>>? filter = null,CancellationToken ct = default)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (filter != null)
+            query = query.Where(filter);
+
+        return await query.CountAsync(ct);
+    }
+
 
     public Task DeleteAsync(T entity, CancellationToken ct)
     {
         throw new NotImplementedException();
     }
 
-    public Task<T?> GetByIdAsync(int id, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-    }
+
+
+
 }
