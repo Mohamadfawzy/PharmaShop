@@ -144,7 +144,7 @@ CREATE TABLE Categories (
 	DescriptionEn NVARCHAR(MAX) NULL,
     ImageUrl NVARCHAR(500) NULL,
     IsActive BIT NOT NULL DEFAULT 1,
-	IsDeleted BIT NOT NULL DEFAULT 1,
+	IsDeleted BIT NOT NULL DEFAULT 0,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME NULL,
 	ParentCategoryId INT NULL, -- ++
@@ -154,8 +154,8 @@ CREATE TABLE Categories (
 );
 
 GO
-INSERT INTO Categories (Name, NameEn)
-VALUES (N'أدوية عامة', 'General Medicines');
+--INSERT INTO Categories (Name, NameEn)
+--VALUES (N'أدوية عامة', 'General Medicines');
 
 
 CREATE TABLE Products (

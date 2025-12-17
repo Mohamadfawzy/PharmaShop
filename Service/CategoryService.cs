@@ -2,10 +2,8 @@
 using Contracts.IServices;
 using Entities.Models;
 using Microsoft.Extensions.Logging;
-using Repository;
 using Shared.Models.Dtos.Category;
 using Shared.Responses;
-using System.Net;
 
 namespace Service;
 
@@ -302,6 +300,49 @@ public class CategoryService : ICategoryService
 
         return AppResponse<IEnumerable<CategoryDto>>.Success(result);
     }
+
+
+    public async Task<AppResponse<IEnumerable<CategoryTreeDto>>> GetCategoryTreeAsync(CancellationToken ct)
+    {
+        var categories = await unitOfWork.Categories.GetAllForTreeAsync(ct);
+
+        if (!categories.Any())
+            return AppResponse<IEnumerable<CategoryTreeDto>>
+                .Success(Enumerable.Empty<CategoryTreeDto>());
+
+        // Convert to dictionary for fast lookup
+        var categoryDict = categories.ToDictionary(
+            c => c.Id,
+            c => new CategoryTreeDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                NameEn = c.NameEn,
+                ImageUrl = c.ImageUrl,
+                IsActive = c.IsActive
+            });
+
+        // Build tree
+        var rootCategories = new List<CategoryTreeDto>();
+
+        foreach (var category in categories)
+        {
+            if (category.ParentCategoryId == null)
+            {
+                rootCategories.Add(categoryDict[category.Id]);
+            }
+            else if (categoryDict.ContainsKey(category.ParentCategoryId.Value))
+            {
+                categoryDict[category.ParentCategoryId.Value]
+                    .Children
+                    .Add(categoryDict[category.Id]);
+            }
+        }
+
+        return AppResponse<IEnumerable<CategoryTreeDto>>
+            .Success(rootCategories);
+    }
+
 
 
 

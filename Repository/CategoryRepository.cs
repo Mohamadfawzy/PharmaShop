@@ -6,7 +6,7 @@ namespace Repository;
 
 public class CategoryRepository : GenericRepository<Category>, ICategoryRepository
 {
-
+     
     private readonly RepositoryContext context;
 
     public CategoryRepository(RepositoryContext context) : base(context)
@@ -41,6 +41,12 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
             .ToListAsync(ct);
     }
 
-
-
+    public async Task<List<Category>> GetAllForTreeAsync(CancellationToken ct)
+    {
+        return await context.Categories
+            .AsNoTracking()
+            .Where(c => !c.IsDeleted)
+            .OrderBy(c => c.Name)
+            .ToListAsync(ct);
+    }
 }

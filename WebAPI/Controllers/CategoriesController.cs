@@ -115,6 +115,27 @@ public class CategoriesController : ControllerBase
     }
 
 
+    [HttpGet("tree")]
+    public async Task<IActionResult> GetCategoryTree(CancellationToken ct)
+    {
+        var response = await categoryService.GetCategoryTreeAsync(ct);
+
+        if (!response.IsSuccess)
+            return StatusCode((int)response.StatusCode, response);
+
+        return Ok(response);
+    }
+
+    /*
+A
+-> a -->
+    ---> c1
+        q2
+q3
+B
+C
+     */
+
 
 
 
