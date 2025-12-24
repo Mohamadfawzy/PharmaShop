@@ -1,12 +1,17 @@
-﻿using System.Security.Claims;
-using System.Text;
-using Contracts;
+﻿using Contracts;
 using Contracts.IServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Repository;
+using Repository.Identity;
 using Service;
+using Service.Auth;
+using System.Security.Claims;
+using System.Text;
+using WebAPI.Notifications;
+using WebAPI.Services.Security;
 
 namespace WebAPI.Extensions;
 
@@ -17,6 +22,7 @@ public static class ServiceExtensions
         //services.AddTransient(typeof(IGenericRepository<Customer>), typeof(GenericRepository<Customer>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IImageService, ImageService>();
+        services.AddScoped<JwtTokenService>();
 
         //services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
@@ -25,33 +31,96 @@ public static class ServiceExtensions
         services.AddTransient<IProductService, ProductService>();
         services.AddTransient<ICategoryService, CategoryService>();
 
+
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<Contracts.Notifications.IEmailSender, LoggingEmailSender>();
+
     }
 
     public static void AddDbContextServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<RepositoryContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
-    }
+        var conn = configuration.GetConnectionString("DefaultConnection");
 
-    public static void ConfigureJWT(this IServiceCollection services)
-    {
-        services.AddAuthentication(opt =>
+        // Domain DB context (reverse engineered)
+        services.AddDbContext<RepositoryContext>(options =>
+            options.UseSqlServer(conn));
+
+        // Identity DB context migrations
+        services.AddDbContext<IdentityDbContext>(options =>
+            options.UseSqlServer(conn));
+
+        // ---------------------------------------------
+        // Identity
+        // ---------------------------------------------
+        services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
         {
-            opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        }).AddJwtBearer(options =>
+            // Password policy
+            options.Password.RequiredLength = 8;
+            options.Password.RequireDigit = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+
+            // Lockout
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+            options.Lockout.AllowedForNewUsers = true;
+
+            // User & SignIn
+            options.User.RequireUniqueEmail = true;
+            options.SignIn.RequireConfirmedEmail = true;
+        })
+        .AddEntityFrameworkStores<IdentityDbContext>()
+        .AddDefaultTokenProviders(); // EmailConfirm + ResetPassword
+        }
+
+    public static void ConfigureJWT(this IServiceCollection services, IConfiguration configuration)
+    {
+        var jwt = configuration.GetSection("Jwt");
+        var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuerSigningKey = true,
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateLifetime = true,
-                RoleClaimType = ClaimTypes.Role,
-                ValidIssuer = "PharmaInventoryMobileApp",
-                ValidAudience = "Pharmacist",
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("sz8eI7OdHBrjrIo8j9nTW/rQyO1OvY0pAQ2wDKQZw/0="))
+                ValidateIssuerSigningKey = true,
+
+                ValidIssuer = jwt["Issuer"],
+                ValidAudience = jwt["Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+
+                ClockSkew = TimeSpan.FromSeconds(30)
             };
         });
+        services.AddAuthorization();
+
+
+
+        //services.AddAuthentication(opt =>
+        //{
+        //    opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        //    opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        //}).AddJwtBearer(options =>
+        //{
+        //    options.TokenValidationParameters = new TokenValidationParameters
+        //    {
+        //        ValidateIssuerSigningKey = true,
+        //        ValidateIssuer = true,
+        //        ValidateAudience = true,
+        //        ValidateLifetime = true,
+        //        RoleClaimType = ClaimTypes.Role,
+        //        ValidIssuer = "PharmaInventoryMobileApp",
+        //        ValidAudience = "Pharmacist",
+        //        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("sz8eI7OdHBrjrIo8j9nTW/rQyO1OvY0pAQ2wDKQZw/0="))
+        //    };
+        //});
     }
 }

@@ -58,7 +58,7 @@ builder.Services.AddOpenApi();
 // add regester servers her
 builder.Services.AddDbContextServices(builder.Configuration);
 builder.Services.AddDependencyInjectionServices();
-builder.Services.ConfigureJWT();
+builder.Services.ConfigureJWT(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 
 builder.Services.AddHttpContextAccessor();

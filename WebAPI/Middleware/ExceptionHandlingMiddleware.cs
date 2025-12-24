@@ -39,7 +39,7 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
     private async Task HandleExceptionAsync(HttpContext context, Exception ex)
     {
         var traceId = context.TraceIdentifier;
-
+        
         // Log with TraceId and key info
         _logger.LogError(
             ex,

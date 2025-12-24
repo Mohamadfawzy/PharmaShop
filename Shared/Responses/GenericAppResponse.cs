@@ -128,6 +128,9 @@ public sealed class AppResponse<T> : AppResponseBase
             fieldErrors: fieldErrors
         );
     }
+   
+    
+
 
     public static AppResponse<T> BusinessRuleViolation(string message)
     {
