@@ -1,16 +1,13 @@
 ﻿using Contracts;
-using Entities.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Repository;
 
 public class GenericRepository<T> : IGenericRepository<T> where T : class
 {
-    private readonly RepositoryContext _context;
-    private readonly DbSet<T> _dbSet;
+    protected readonly RepositoryContext _context;
+    protected readonly DbSet<T> _dbSet;
 
     public GenericRepository(RepositoryContext context)
     {
@@ -18,89 +15,191 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         _dbSet = context.Set<T>();
     }
 
-    public async Task<T?> GetByIdAsync(int id,CancellationToken ct= default) =>
-        await _dbSet.FindAsync(id);
-
-    public async Task<T?> GetByIdNoTrackingAsync(int id, CancellationToken ct = default)
+    // -----------------------------
+    // Helpers
+    // -----------------------------
+    protected IQueryable<T> ApplyCriteria(
+        IQueryable<T> query,
+        Expression<Func<T, bool>>? criteria,
+        Func<IQueryable<T>, IQueryable<T>>? include,
+        bool asNoTracking)
     {
-        return await _dbSet
-            .AsNoTracking()
+        if (asNoTracking)
+            query = query.AsNoTracking();
+
+        if (include is not null)
+            query = include(query);
+
+        if (criteria is not null)
+            query = query.Where(criteria);
+
+        return query;
+    }
+
+    // -----------------------------
+    // Basic CRUD
+    // -----------------------------
+    public virtual async Task<T?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        // FindAsync supports tracking by default (good for updates)
+        return await _dbSet.FindAsync(new object?[] { id }, ct);
+    }
+
+    public virtual async Task<T?> GetByIdNoTrackingAsync(int id, CancellationToken ct = default)
+    {
+        // Works for any entity with "Id" property
+        return await _dbSet.AsNoTracking()
             .FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id, ct);
     }
 
-    public async Task<IEnumerable<T>> GetAllAsync(
-            Expression<Func<T, bool>>? criteria = null,
-            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
-            int? skip = null,
-            int? take = null)
+    public virtual async Task AddAsync(T entity, CancellationToken ct = default)
+        => await _dbSet.AddAsync(entity, ct);
+
+    public virtual Task AddRangeAsync(IEnumerable<T> entities, CancellationToken ct = default)
     {
-        IQueryable<T> query = _dbSet;
-
-        // Apply Filter
-        if (criteria != null)
-        {
-            query = query.Where(criteria);
-        }
-
-        // Apply OrderBy
-        if (orderBy != null)
-        {
-            query = orderBy(query);
-        }
-
-        // Apply Skip
-        if (skip.HasValue)
-        {
-            query = query.Skip(skip.Value);
-        }
-
-        // Apply Take
-        if (take.HasValue)
-        {
-            query = query.Take(take.Value);
-        }
-
-        return await query.ToListAsync();
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+        return _dbSet.AddRangeAsync(entities, ct);
     }
 
-    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression) =>
-        await _dbSet.Where(expression).ToListAsync();
-
-    public async Task AddAsync(T entity, CancellationToken ct = default) =>
-        await _dbSet.AddAsync(entity);
-
-    public void Update(T entity) =>
-        _dbSet.Update(entity);
-
-    public void Remove(T entity) =>
-        _dbSet.Remove(entity);
-
-    public Task UpdateAsync(T entity, CancellationToken ct = default)
+    public virtual void Update(T entity)
     {
-        if (entity == null)
-            throw new ArgumentNullException(nameof(entity));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+        _dbSet.Update(entity);
+    }
 
+    public virtual Task UpdateAsync(T entity, CancellationToken ct = default)
+    {
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
         _dbSet.Update(entity);
         return Task.CompletedTask;
     }
 
-    public async Task<int> CountAsync(Expression<Func<T, bool>>? filter = null,CancellationToken ct = default)
+    public virtual void Remove(T entity)
     {
-        IQueryable<T> query = _dbSet;
-
-        if (filter != null)
-            query = query.Where(filter);
-
-        return await query.CountAsync(ct);
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+        _dbSet.Remove(entity);
     }
 
-
-    public Task DeleteAsync(T entity, CancellationToken ct)
+    public virtual Task DeleteAsync(T entity, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+        _dbSet.Remove(entity);
+        return Task.CompletedTask;
     }
 
+    public virtual Task DeleteRangeAsync(IEnumerable<T> entities, CancellationToken ct = default)
+    {
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+        _dbSet.RemoveRange(entities);
+        return Task.CompletedTask;
+    }
 
+    // -----------------------------
+    // Query helpers
+    // -----------------------------
+    public virtual async Task<bool> AnyAsync(
+        Expression<Func<T, bool>>? criteria = null,
+        CancellationToken ct = default)
+    {
+        return criteria is null
+            ? await _dbSet.AnyAsync(ct)
+            : await _dbSet.AnyAsync(criteria, ct);
+    }
 
+    public virtual async Task<int> CountAsync(
+        Expression<Func<T, bool>>? criteria = null,
+        CancellationToken ct = default)
+    {
+        return criteria is null
+            ? await _dbSet.CountAsync(ct)
+            : await _dbSet.CountAsync(criteria, ct);
+    }
 
+    public virtual async Task<T?> FirstOrDefaultAsync(
+        Expression<Func<T, bool>> criteria,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool asNoTracking = true,
+        CancellationToken ct = default)
+    {
+        if (criteria is null) throw new ArgumentNullException(nameof(criteria));
+
+        IQueryable<T> query = ApplyCriteria(_dbSet, criteria, include, asNoTracking);
+        return await query.FirstOrDefaultAsync(ct);
+    }
+
+    public virtual async Task<T?> SingleOrDefaultAsync(
+        Expression<Func<T, bool>> criteria,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool asNoTracking = true,
+        CancellationToken ct = default)
+    {
+        if (criteria is null) throw new ArgumentNullException(nameof(criteria));
+
+        IQueryable<T> query = ApplyCriteria(_dbSet, criteria, include, asNoTracking);
+        return await query.SingleOrDefaultAsync(ct);
+    }
+
+    public virtual async Task<List<T>> GetAllAsync(
+        Expression<Func<T, bool>>? criteria = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+        int? skip = null,
+        int? take = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool asNoTracking = true,
+        CancellationToken ct = default)
+    {
+        IQueryable<T> query = ApplyCriteria(_dbSet, criteria, include, asNoTracking);
+
+        if (orderBy is not null)
+            query = orderBy(query);
+
+        if (skip.HasValue)
+            query = query.Skip(skip.Value);
+
+        if (take.HasValue)
+            query = query.Take(take.Value);
+
+        return await query.ToListAsync(ct);
+    }
+
+    public virtual async Task<List<T>> FindAsync(
+        Expression<Func<T, bool>> criteria,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool asNoTracking = true,
+        CancellationToken ct = default)
+    {
+        if (criteria is null) throw new ArgumentNullException(nameof(criteria));
+
+        IQueryable<T> query = ApplyCriteria(_dbSet, criteria, include, asNoTracking);
+        return await query.ToListAsync(ct);
+    }
+
+    // -----------------------------
+    // Projection (DTO) optional
+    // -----------------------------
+    public virtual async Task<List<TResult>> GetAllAsync<TResult>(
+        Expression<Func<T, TResult>> selector,
+        Expression<Func<T, bool>>? criteria = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+        int? skip = null,
+        int? take = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        bool asNoTracking = true,
+        CancellationToken ct = default)
+    {
+        if (selector is null) throw new ArgumentNullException(nameof(selector));
+
+        IQueryable<T> query = ApplyCriteria(_dbSet, criteria, include, asNoTracking);
+
+        if (orderBy is not null)
+            query = orderBy(query);
+
+        if (skip.HasValue)
+            query = query.Skip(skip.Value);
+
+        if (take.HasValue)
+            query = query.Take(take.Value);
+
+        return await query.Select(selector).ToListAsync(ct);
+    }
 }

@@ -30,7 +30,7 @@ public class ProductsController : ControllerBase
     {
         var productId = await productService.CreateProductAsync(productDto, ct);
         if (productId > 0)
-            return Ok(AppResponse<int>.Success(productId));
+            return Ok(AppResponse<int>.Ok(productId));
 
         return BadRequest(AppResponse.Fail("error"));
     }
@@ -74,7 +74,7 @@ public class ProductsController : ControllerBase
 
             var response = await productService.AddProductImagesAsync(streams, productId, rootPath, ct);
 
-            return Ok(AppResponse.Success());
+            return Ok(AppResponse.Ok());
         }
         catch (Exception ex)
         {
@@ -88,7 +88,7 @@ public class ProductsController : ControllerBase
         try
         {
             await productService.DeleteProductImageAsync(productId, imageId, rootPath, ct);
-            return Ok(AppResponse.Success("Image deleted successfully."));
+            return Ok(AppResponse.Ok("Image deleted successfully."));
         }
         catch (Exception ex)
         {

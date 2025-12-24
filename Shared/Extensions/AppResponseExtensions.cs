@@ -4,59 +4,92 @@ using Shared.Responses;
 namespace Shared.Extensions;
 public static class AppResponseExtensions
 {
-    public static AppResponse<T> Ensure<T>(this AppResponse<T> response, Func<T, bool> predicate, string errorMessage)
+    public static AppResponse<T> FromError<T>(this AppResponseBase source)
     {
-        if (!response.IsSuccess)
-            return response;
+        // Copy all error metadata to a typed response
+        var fieldErrors = source.FieldErrors is null
+            ? null
+            : new Dictionary<string, string[]>(source.FieldErrors);
 
-        if (response.Data == null || !predicate(response.Data))
+        var r = AppResponse<T>.Fail(
+            errors: source.Errors,
+            errorCode: source.ErrorCode,
+            statusCode: source.StatusCode,
+            title: source.Title,
+            detail: source.Detail,
+            type: source.Type,
+            instance: source.Instance,
+            fieldErrors: fieldErrors
+        );
+
+        r.TraceId = source.TraceId;
+        return r;
+    }
+
+    public static AppResponse ToNonGeneric(this AppResponseBase source)
+    {
+        if (source.IsSuccess)
         {
-            return AppResponse<T>.Fail(errorMessage, AppErrorCode.BusinessRuleViolation);
+            var ok = AppResponse.Ok(source.Title, source.Detail);
+            ok.TraceId = source.TraceId;
+            return ok;
         }
 
-        return response;
+        var fieldErrors = source.FieldErrors is null
+            ? null
+            : new Dictionary<string, string[]>(source.FieldErrors);
+
+        var fail = AppResponse.Fail(
+            errors: source.Errors,
+            errorCode: source.ErrorCode,
+            statusCode: source.StatusCode,
+            title: source.Title,
+            detail: source.Detail,
+            type: source.Type,
+            instance: source.Instance,
+            fieldErrors: fieldErrors
+        );
+
+        fail.TraceId = source.TraceId;
+        return fail;
     }
 
-    public static async Task<AppResponse<TResult>> Bind<T, TResult>(this AppResponse<T> response, Func<T, Task<AppResponse<TResult>>> func)
+
+    public static AppResponse<TResult> Map<T, TResult>(
+        this AppResponse<T> source,
+        Func<T, TResult> mapper,
+        string? successTitle = null,
+        string? successDetail = null)
     {
-        if (!response.IsSuccess)
+        if (!source.IsSuccess)
+            return source.FromError<TResult>();
+
+        if (source.Data is null)
+            return AppResponse<TResult>.InternalError("Mapping failed: Data is null");
+
+        try
         {
-            return AppResponse<TResult>.Fail(response.Errors, response.ErrorCode, response.StatusCode);
+            var mapped = mapper(source.Data);
+            var r = AppResponse<TResult>.Ok(mapped, successTitle ?? source.Title, successDetail ?? source.Detail);
+            r.TraceId = source.TraceId;
+            return r;
         }
-
-        return await func(response.Data!);
-    }
-
-    public static AppResponse<TResult> Bind<T, TResult>(this AppResponse<T> response, Func<T, AppResponse<TResult>> func)
-    {
-        if (!response.IsSuccess)
+        catch (Exception ex)
         {
-            return AppResponse<TResult>.Fail(response.Errors, response.ErrorCode, response.StatusCode);
+            return AppResponse<TResult>.InternalError($"Mapping failed: {ex.Message}");
         }
-
-        return func(response.Data!);
     }
 
-    public static AppResponse<T> OnSuccess<T>(this AppResponse<T> response, Action<T> action)
+    public static AppResponse<List<T>> WithPagination<T>(
+        this AppResponse<List<T>> response,
+        PaginationInfo pagination)
     {
-        if (response.IsSuccess && response.Data != null)
-        {
-            action(response.Data);
-        }
-        return response;
+        // لو response فاشلة، ما نعدلهاش
+        if (!response.IsSuccess) return response;
+
+        // بما أن Pagination private set، نحتاج طريقة "داخلية" لضبطها
+        // الحل: إما تجعل setter internal، أو تضيف method داخلي داخل AppResponse<T>
+        throw new NotSupportedException("Enable internal setter for Pagination or add internal method on AppResponse<T>.");
     }
 
-    public static AppResponse<T> OnFailure<T>(this AppResponse<T> response, Action<AppResponse<T>> action)
-    {
-        if (!response.IsSuccess)
-        {
-            action(response);
-        }
-        return response;
-    }
-
-    public static TResult Match<T, TResult>(this AppResponse<T> response, Func<T, TResult> onSuccess, Func<AppResponse<T>, TResult> onFailure)
-    {
-        return response.IsSuccess ? onSuccess(response.Data!) : onFailure(response);
-    }
 }

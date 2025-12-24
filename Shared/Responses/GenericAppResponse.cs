@@ -4,213 +4,145 @@ using Shared.Enums;
 namespace Shared.Responses;
 
 
-public class AppResponse<T> : AppResponseBase
+public sealed class AppResponse<T> : AppResponseBase
 {
-    public PaginationInfo? Pagination { get; set; }
-    public T? Data { get; set; }
-    public AppResponse() { }
+    private AppResponse() { }
 
-    // ===== SUCCESS FACTORY METHODS =====
+    public T? Data { get; private set; }
+    public PaginationInfo? Pagination { get; internal set; }
 
-    public static AppResponse<T> Success(T data, string? title = null, string? detail = null)
+    /// <summary>
+    /// Resource location (for Created responses). Not RFC7807 Instance.
+    /// </summary>
+   
+
+    // ---------- Success ----------
+    public static AppResponse<T> Ok(T data, string? title = null, string? detail = null)
     {
-        return new AppResponse<T>
+        var r = new AppResponse<T>();
+        r.SetSuccess(ResponseDefaults.SuccessStatusCode, title ?? ResponseDefaults.DefaultSuccessTitle, detail);
+        r.Data = data;
+        return r;
+    }
+
+    public static AppResponse<T> Ok(T data, PaginationInfo pagination, string? title = null, string? detail = null)
+    {
+        var r = Ok(data, title, detail);
+        r.Pagination = pagination;
+        return r;
+    }
+
+    public static AppResponse<T> Created(T data, string? location = null, string? title = null, string? detail = null)
+    {
+        var r = new AppResponse<T>();
+        r.SetSuccess(ResponseDefaults.CreatedStatusCode, title ?? "Resource Created Successfully", detail);
+        r.Data = data;
+        r.Location = location;
+        return r;
+    }
+
+    // ---------- Failure ----------
+    public static AppResponse<T> Fail(
+        IEnumerable<string> errors,
+        AppErrorCode errorCode = AppErrorCode.None,
+        int? statusCode = null,
+        string? title = null,
+        string? detail = null,
+        string? type = null,
+        string? instance = null,
+        IReadOnlyDictionary<string, string[]>? fieldErrors = null)
+    {
+        var errorList = (errors ?? Array.Empty<string>())
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .ToList();
+
+        var code = statusCode ?? ResponseDefaults.GetDefaultStatusCode(errorCode);
+        var resolvedTitle = title ?? ResponseDefaults.GetDefaultTitle(errorCode);
+
+        var resolvedDetail = detail;
+        if (string.IsNullOrWhiteSpace(resolvedDetail))
         {
-            IsSuccess = true,
-            Data = data,
-            StatusCode = ResponseDefaults.SuccessStatusCode,
-            Title = title ?? ResponseDefaults.DefaultSuccessTitle,
-            Detail = detail
-        };
-    }
-    
-    public static AppResponse<T> Success(T data, PaginationInfo paginationInfo, string? title = null, string? detail = null)
-    {
-        return new AppResponse<T>
-        {
-            IsSuccess = true,
-            Data = data,
-            Pagination = paginationInfo,
-            StatusCode = ResponseDefaults.SuccessStatusCode,
-            Title = title ?? ResponseDefaults.DefaultSuccessTitle,
-            Detail = detail
-        };
-    }
-
-    public static AppResponse<T> Success(T data, int statusCode, string? title = null, string? detail = null)
-    {
-        return new AppResponse<T>
-        {
-            IsSuccess = true,
-            Data = data,
-            StatusCode = statusCode,
-            Title = title ?? ResponseDefaults.DefaultSuccessTitle,
-            Detail = detail
-        };
-    }
-
-    public static AppResponse<T> Created(T data, string? location = null)
-    {
-        return new AppResponse<T>
-        {
-            IsSuccess = true,
-            Data = data,
-            StatusCode = ResponseDefaults.CreatedStatusCode,
-            Title = "Resource Created Successfully",
-            Instance = location
-        };
-    }
-
-    // ===== FAILURE FACTORY METHODS =====
-
-    public static AppResponse<T> Fail(string error, AppErrorCode errorCode = AppErrorCode.None, int? statusCode = null)
-    {
-        return new AppResponse<T>
-        {
-            IsSuccess = false,
-            StatusCode = statusCode ?? ResponseDefaults.GetDefaultStatusCode(errorCode),
-            ErrorCode = errorCode,
-            Title = ResponseDefaults.GetDefaultTitle(errorCode),
-            Detail = error,
-            Errors = new List<string> { error }
-        };
-    }
-
-    public static AppResponse<T> Fail(IEnumerable<string> errors, AppErrorCode errorCode = AppErrorCode.None, int? statusCode = null)
-    {
-        var errorList = errors?.Where(e => !string.IsNullOrWhiteSpace(e)).ToList() ?? new List<string>();
-        return new AppResponse<T>
-        {
-            IsSuccess = false,
-            StatusCode = statusCode ?? ResponseDefaults.GetDefaultStatusCode(errorCode),
-            ErrorCode = errorCode,
-            Title = ResponseDefaults.GetDefaultTitle(errorCode),
-            Detail = errorList.Count == 1 ? errorList.First() : $"{errorList.Count} errors occurred",
-            Errors = errorList
-        };
-    }
-    
-    public static AppResponse<T> Fail(List<string>? errors, AppErrorCode errorCode = AppErrorCode.None, int? statusCode = null)
-    {
-        var errorList = errors?.Where(e => !string.IsNullOrWhiteSpace(e)).ToList() ?? new List<string>();
-        return new AppResponse<T>
-        {
-            IsSuccess = false,
-            StatusCode = statusCode ?? ResponseDefaults.GetDefaultStatusCode(errorCode),
-            ErrorCode = errorCode,
-            Title = ResponseDefaults.GetDefaultTitle(errorCode),
-            Detail = errorList.Count == 1 ? errorList.First() : $"{errorList.Count} errors occurred",
-            Errors = errorList
-        };
-    }
-
-    public static AppResponse<T> NotFound(string? message = null)
-    {
-        return Fail(
-            message ?? "Resource not found",
-            AppErrorCode.NotFound,
-            ResponseDefaults.NotFoundStatusCode
-        );
-    }
-
-    public static AppResponse<T> Unauthorized(string? message = null)
-    {
-        return Fail(
-            message ?? "Access denied",
-            AppErrorCode.Unauthorized,
-            ResponseDefaults.UnauthorizedStatusCode
-        );
-    }
-
-    public static AppResponse<T> Forbidden(string? message = null)
-    {
-        return Fail(
-            message ?? "Access forbidden",
-            AppErrorCode.Forbidden,
-            ResponseDefaults.ForbiddenStatusCode
-        );
-    }
-
-    public static AppResponse<T> ValidationError(string error)
-    {
-        return Fail(error, AppErrorCode.ValidationError, ResponseDefaults.BadRequestStatusCode);
-    }
-
-    public static AppResponse<T> ValidationErrors(IEnumerable<string> errors)
-    {
-        return Fail(errors, AppErrorCode.ValidationError, ResponseDefaults.BadRequestStatusCode);
-    }
-
-    public static AppResponse<T> BusinessRuleViolation(string error)
-    {
-        return Fail(error, AppErrorCode.BusinessRuleViolation, ResponseDefaults.BadRequestStatusCode);
-    }
-
-    public static AppResponse<T> Conflict(string? message = null)
-    {
-        return Fail(
-            message ?? "Resource conflict detected",
-            AppErrorCode.Conflict,
-            ResponseDefaults.ConflictStatusCode
-        );
-    }
-
-    public static AppResponse<T> InternalError(string? message = null)
-    {
-        return Fail(
-            message ?? "An internal error occurred",
-            AppErrorCode.InternalServerError,
-            ResponseDefaults.InternalServerErrorStatusCode
-        );
-    }
-
-    public static AppResponse<T> FromError<U>(AppResponse<U> source) =>
-    new AppResponse<T>
-    {
-        IsSuccess = false,
-        Title = source.Title,
-        ErrorCode = source.ErrorCode
-    };
-
-    // ===== CONVERSION METHODS =====
-
-    public AppResponse<TResult> Map<TResult>(Func<T, TResult> mapper)
-    {
-        if (!IsSuccess)
-        {
-            return new AppResponse<TResult>
+            resolvedDetail = errorList.Count switch
             {
-                IsSuccess = false,
-                StatusCode = StatusCode,
-                ErrorCode = ErrorCode,
-                Title = Title,
-                Detail = Detail,
-                Type = Type,
-                Instance = Instance,
-                TraceId = TraceId,
-                Errors = new List<string>(Errors)
+                0 => "An error occurred",
+                1 => errorList[0],
+                _ => $"{errorList.Count} errors occurred"
             };
         }
 
-        try
-        {
-            return AppResponse<TResult>.Success(mapper(Data!), Title, Detail);
-        }
-        catch (Exception ex)
-        {
-            return AppResponse<TResult>.InternalError($"Mapping failed: {ex.Message}");
-        }
+        var r = new AppResponse<T>();
+        r.SetFailure(
+            statusCode: code,
+            errorCode: errorCode,
+            title: resolvedTitle,
+            detail: resolvedDetail,
+            errors: errorList,
+            type: type,
+            instance: instance,
+            fieldErrors: fieldErrors
+        );
+
+        return r;
     }
 
-    public AppResponse ToNonGeneric()
-    {
-        if (IsSuccess)
-        {
-            return AppResponse.Success(Title, Detail);
-        }
+    public static AppResponse<T> Fail(
+        string error,
+        AppErrorCode errorCode = AppErrorCode.None,
+        int? statusCode = null,
+        string? title = null,
+        string? detail = null)
+        => Fail(new[] { error }, errorCode, statusCode, title, detail);
 
-        return AppResponse.Fail(Errors, ErrorCode, StatusCode, Title, Detail);
+    // ---------- Common failures ----------
+    public static AppResponse<T> NotFound(string? message = null) =>
+        Fail(message ?? "Resource not found", AppErrorCode.NotFound, ResponseDefaults.NotFoundStatusCode);
+
+    public static AppResponse<T> Unauthorized(string? message = null) =>
+        Fail(message ?? "Access denied", AppErrorCode.Unauthorized, ResponseDefaults.UnauthorizedStatusCode);
+
+    public static AppResponse<T> Forbidden(string? message = null) =>
+        Fail(message ?? "Access forbidden", AppErrorCode.Forbidden, ResponseDefaults.ForbiddenStatusCode);
+
+    public static AppResponse<T> Conflict(string? message = null) =>
+        Fail(message ?? "Resource conflict detected", AppErrorCode.Conflict, ResponseDefaults.ConflictStatusCode);
+
+    public static AppResponse<T> InternalError(string? message = null) =>
+        Fail(message ?? "An internal error occurred", AppErrorCode.InternalServerError, ResponseDefaults.InternalServerErrorStatusCode);
+
+    // ---------- Validation ----------
+    public static AppResponse<T> ValidationError(string message) =>
+    Fail(message, AppErrorCode.ValidationError, ResponseDefaults.BadRequestStatusCode);
+
+    public static AppResponse<T> ValidationErrors(Dictionary<string, string[]> fieldErrors, string? detail = null)
+    {
+        var flat = fieldErrors
+            .SelectMany(kvp => kvp.Value.Select(v => $"{kvp.Key}: {v}"))
+            .ToList();
+
+        return Fail(
+            errors: flat,
+            errorCode: AppErrorCode.ValidationError,
+            statusCode: ResponseDefaults.BadRequestStatusCode,
+            title: ResponseDefaults.GetDefaultTitle(AppErrorCode.ValidationError),
+            detail: detail ?? "Validation failed",
+            fieldErrors: fieldErrors
+        );
+    }
+
+    public static AppResponse<T> BusinessRuleViolation(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            message = "Business rule violation";
+
+        return new AppResponse<T>
+        {
+            IsSuccess = false,
+            StatusCode = ResponseDefaults.BadRequestStatusCode,
+            ErrorCode = AppErrorCode.BusinessRuleViolation,
+            Title = ResponseDefaults.GetDefaultTitle(AppErrorCode.BusinessRuleViolation),
+            Detail = message,
+            //Errors = new List<string> { message }
+        };
     }
 
 }
-

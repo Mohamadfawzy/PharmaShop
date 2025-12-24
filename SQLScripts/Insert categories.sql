@@ -1,4 +1,5 @@
-﻿BEGIN TRY
+﻿use pharma_shope_db
+BEGIN TRY
     BEGIN TRANSACTION;
 
     DECLARE 

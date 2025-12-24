@@ -97,28 +97,28 @@ public class CustomersController : ControllerBase
         }
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var user = new UserDto();
+    //[HttpGet]
+    //public async Task<IActionResult> GetAll()
+    //{
+    //    var user = new UserDto();
 
-        var response = AppResponse<UserDto>.Success(user)
-            .Ensure(u => u.IsActive, "User account is not active");
+    //    var response = AppResponse<UserDto>.Ok(user)
+    //        .Ensure(u => u.IsActive, "User account is not active");
 
-        if (!response.IsSuccess)
-        {
-            Console.WriteLine(response.Detail); // "User account is not active"
-        }
+    //    if (!response.IsSuccess)
+    //    {
+    //        Console.WriteLine(response.Detail); // "User account is not active"
+    //    }
 
-        var res = new AppResponse<UserDto>();
+    //    var res = new AppResponse<UserDto>();
 
-        res.OnFailure(r => Console.WriteLine($"Error: {r.Detail}"));
+    //    res.OnFailure(r => Console.WriteLine($"Error: {r.Detail}"));
 
 
-        //return Ok(await repo.GetAll());
-        //return Ok(await unitOfWork.Customers.GetAllCustomers());
-        return Ok(await customerService.ReadAllCustomers());
-    }
+    //    //return Ok(await repo.GetAll());
+    //    //return Ok(await unitOfWork.Customers.GetAllCustomers());
+    //    return Ok(await customerService.ReadAllCustomers());
+    //}
     
     //[HttpPost]
     //public IActionResult CreateUser([FromBody] CreateUserDto dto)

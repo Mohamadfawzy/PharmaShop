@@ -32,6 +32,16 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
         return affectedRows > 0;
     }
 
+    public async Task AddCategoryAuditLogsRangeAsync(List<CategoryAuditLog> logs)
+    {
+        if (logs == null || logs.Count == 0)
+            return;
+
+        await context.CategoryAuditLogs.AddRangeAsync(logs);
+    }
+
+
+
     public async Task<IEnumerable<Category>> GetRootCategoriesAsync(CancellationToken ct)
     {
         return await context.Categories
@@ -49,4 +59,22 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
             .OrderBy(c => c.Name)
             .ToListAsync(ct);
     }
+
+    public async Task<bool> SetActiveStatusAsync(int categoryId, bool isActive, CancellationToken ct)
+    {
+        var affectedRows = await context.Categories
+            .Where(c => c.Id == categoryId && !c.IsDeleted)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(c => c.IsActive, isActive)
+                .SetProperty(c => c.UpdatedAt, DateTime.UtcNow),
+                ct
+            );
+
+        return affectedRows > 0;
+    }
+
+
+
+
+
 }

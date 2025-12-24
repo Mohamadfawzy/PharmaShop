@@ -1,17 +1,13 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
-using Service;
-using Shared.Enums;
-using Shared.Models.Dtos.Category;
-using Shared.Responses;
-
+using Shared.Models.RequestFeatures;
 namespace WebAPI.Controllers;
 
-[Route("api/Categories")]
+
+[Route("api/categories")]
 [ApiController]
 public class CategoriesController : ControllerBase
 {
-
     private readonly ICategoryService categoryService;
     private readonly IWebHostEnvironment env;
     private readonly string rootPath;
@@ -25,40 +21,16 @@ public class CategoriesController : ControllerBase
 
     // ===================================================================================
 
-    [HttpPost]
-    public async Task<IActionResult> CreateCategory(CategoryCreateDto dto, CancellationToken ct)
-    {
-        var response = await categoryService.CreateCategoryAsync(dto, ct);
 
-        if (!response.IsSuccess)
-            return StatusCode((int)response.StatusCode, response);
+    [HttpGet("boom")]
+    public IActionResult Boom() => throw new Exception("Test exception");
 
-        return Ok(response);
-    }
 
-    [HttpPut("{categoryId:int}")]
-    public async Task<IActionResult> UpdateCategory(int categoryId,[FromBody] CategoryUpdateDto dto,CancellationToken ct)
-    {
-        if (categoryId != dto.Id)
-            return BadRequest(
-                AppResponse.Fail(
-                    "Category ID mismatch",
-                    AppErrorCode.ValidationError
-                )
-            );
-
-        var response = await categoryService.UpdateAsync(categoryId,dto, ct);
-
-        if (!response.IsSuccess)
-            return StatusCode(response.StatusCode, response);
-
-        return Ok(response);
-    }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery]int pageNumber, int pageSize,CancellationToken ct)
+    public async Task<IActionResult> GetAll([FromQuery] PagingParameters paging, CancellationToken ct)
     {
-        var response = await categoryService.GetAllCategoriesAsync(pageNumber,pageSize, ct);
+        var response = await categoryService.GetAllCategoriesAsync(paging.PageNumber, paging.PageSize, ct);
 
         if (!response.IsSuccess)
             return StatusCode(response.StatusCode, response);
@@ -66,36 +38,10 @@ public class CategoriesController : ControllerBase
         return Ok(response);
     }
 
-    [HttpPut("{categoryId}/change-parent")]
-    public async Task<IActionResult> ChangeCategoryParent(int categoryId, [FromQuery] int? newParentCategoryId,CancellationToken ct)
+    [HttpGet("active")]
+    public async Task<IActionResult> GetActiveCategories([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken ct = default)
     {
-        var response = await categoryService
-            .ChangeCategoryParentAsync(categoryId, newParentCategoryId, ct);
-
-        if (!response.IsSuccess)
-            return StatusCode((int)response.StatusCode, response);
-
-        return Ok(response);
-    }
-
-    [HttpPut("{categoryId:int}/image")]
-    public async Task<IActionResult> UpdateCategoryImage(int categoryId,IFormFile image,CancellationToken ct)
-    {
-        using var stream = image.OpenReadStream();
-        var response = await categoryService.UpdateCategoryImageAsync(categoryId, stream, rootPath, ct);
-
-        if (!response.IsSuccess)
-            return StatusCode((int)response.StatusCode, response);
-
-        return Ok(response);
-    }
-
-
-
-    [HttpGet("{categoryId:int}")]
-    public async Task<IActionResult> GetById(int categoryId, CancellationToken ct)
-    {
-        var response = await categoryService.GetCategoryByIdAsync(categoryId, ct);
+        var response = await categoryService.GetAllCategoriesAsync(pageNumber, pageSize, ct);
 
         if (!response.IsSuccess)
             return StatusCode((int)response.StatusCode, response);
@@ -114,7 +60,6 @@ public class CategoriesController : ControllerBase
         return Ok(response);
     }
 
-
     [HttpGet("tree")]
     public async Task<IActionResult> GetCategoryTree(CancellationToken ct)
     {
@@ -125,20 +70,4 @@ public class CategoriesController : ControllerBase
 
         return Ok(response);
     }
-
-    /*
-A
--> a -->
-    ---> c1
-        q2
-q3
-B
-C
-     */
-
-
-
-
-
-
 }

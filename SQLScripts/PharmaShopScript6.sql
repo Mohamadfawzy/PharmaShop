@@ -25,52 +25,110 @@ CREATE TABLE Pharmacies (
 
 GO
 
+-- USERS: 
+
 CREATE TABLE Users (
     Id INT IDENTITY(1,1) PRIMARY KEY,
-    Username NVARCHAR(100) NOT NULL UNIQUE,
+
+    Username NVARCHAR(100) NOT NULL,
     Email NVARCHAR(150) NULL,
     PhoneNumber NVARCHAR(20) NULL,
+
     PasswordHash NVARCHAR(256) NOT NULL,
+
     IsActive BIT NOT NULL DEFAULT 1,
     IsEmailVerified BIT NOT NULL DEFAULT 0,
+
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL
+    UpdatedAt DATETIME NULL,
+
+    CONSTRAINT UQ_Users_Username UNIQUE (Username)
+    -- ,CONSTRAINT UQ_Users_Email UNIQUE (Email)
+    -- ,CONSTRAINT UQ_Users_Phone UNIQUE (PhoneNumber)
 );
 
 GO
+
+--ROLES
 
 CREATE TABLE Roles (
     Id INT IDENTITY(1,1) PRIMARY KEY,
-    Name NVARCHAR(50) NOT NULL UNIQUE, -- Customer, Admin, Doctor, DeliveryRep
-	NameEn NVARCHAR(200) NOT NULL,
-    Description NVARCHAR(200) NULL
+
+    Name NVARCHAR(50) NOT NULL,       -- Admin, Support, Viewer, Customer, Pharmacist
+    NameEn NVARCHAR(200) NOT NULL,
+    Description NVARCHAR(200) NULL,
+
+    CONSTRAINT UQ_Roles_Name UNIQUE (Name)
+);
+GO
+
+/*==========================================================
+  ADMINS: بروفايل الأدمن (ليس حساب دخول)
+  - مربوط بـ Users عبر UserId (Unique)
+  - الصلاحيات لا تُخزن هنا إطلاقاً (لا Role نصّي)
+==========================================================*/
+
+CREATE TABLE Admins (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+
+    UserId INT NOT NULL UNIQUE,
+    PharmacyId INT NOT NULL,          -- الآن صيدلية واحدة (مثلاً 1)، لاحقاً منصة
+
+    FullName NVARCHAR(200) NOT NULL,
+    FullNameEn NVARCHAR(200) NOT NULL,
+
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_Admins_Users_UserId
+        FOREIGN KEY (UserId) REFERENCES dbo.Users(Id),
+
+    CONSTRAINT FK_Admins_Pharmacies_PharmacyId
+        FOREIGN KEY (PharmacyId) REFERENCES dbo.Pharmacies(Id)
 );
 
 GO
+
+/*==========================================================
+  USER ROLES: المصدر الوحيد للصلاحيات
+  EntityId: يربط المستخدم بـ Profile حسب نوع الدور
+    - لو Role = Admin      => EntityId = Admins.Id
+    - لو Role = Customer   => EntityId = Customers.Id
+    - لو Role = Pharmacist => EntityId = Pharmacists.Id
+==========================================================*/
 
 CREATE TABLE UserRoles (
     UserId INT NOT NULL,
     RoleId INT NOT NULL,
-    EntityId INT NULL,  -- مثل CustomerId أو DoctorId إن أردت الربط الصريح
-    PRIMARY KEY (UserId, RoleId),
-    FOREIGN KEY (UserId) REFERENCES Users(Id),
-    FOREIGN KEY (RoleId) REFERENCES Roles(Id)
-    -- ملاحظة: لا يوجد FK مباشر على EntityId لأنه يمكن أن يشير لجداول مختلفة
+    EntityId INT NULL,
+
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT PK_UserRoles PRIMARY KEY (UserId, RoleId),
+
+    CONSTRAINT FK_UserRoles_Users_UserId
+        FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+
+    CONSTRAINT FK_UserRoles_Roles_RoleId
+        FOREIGN KEY (RoleId) REFERENCES Roles(Id)
 );
+GO
+
+
+-- Indexes
+CREATE INDEX IX_UserRoles_RoleId ON UserRoles(RoleId);
+CREATE INDEX IX_UserRoles_EntityId ON UserRoles(EntityId);
 
 GO
 
-CREATE TABLE Admins (
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    PharmacyId INT NOT NULL, -- تشير إلى الصيدلية المالكة (مستقبلاً عند التوسع)
-    FullName NVARCHAR(200) NOT NULL,
-	FullNameEn NVARCHAR(200) NOT NULL,
-    Email NVARCHAR(200) NOT NULL,
+--Seed Roles
 
-    Role NVARCHAR(100) NOT NULL, -- Admin, Support, Viewer
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
-);
-
+INSERT INTO Roles (Name, NameEn, Description)
+VALUES
+ (N'Admin',      N'Admin',      N'Full access'),
+ (N'Support',    N'Support',    N'Support staff'),
+ (N'Viewer',     N'Viewer',     N'Read-only access'),
+ (N'Customer',   N'Customer',   N'Customer account'),
+ (N'Pharmacist', N'Pharmacist', N'Pharmacist account');
 GO
 
 CREATE TABLE Customers (

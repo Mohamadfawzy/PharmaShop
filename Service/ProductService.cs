@@ -37,9 +37,16 @@ public class ProductService : IProductService
             .ApplyPagination(parameters)  // Pagination
             .ProjectToType<ProductSubDetailsDto>()
             .ToListAsync();
-        var result = AppResponse<List<ProductSubDetailsDto>>.Success(items);
-        result.Pagination = PaginationInfo.Create(parameters.PageNumber, parameters.PageSize, totalCount);
-        return result;
+
+
+        var pagination = PaginationInfo.Create(parameters.PageNumber, parameters.PageSize, totalCount);
+
+        return AppResponse<List<ProductSubDetailsDto>>.Ok(items, pagination);
+
+        //var result = AppResponse<List<ProductSubDetailsDto>>.Ok(items);
+        //result.Pagination = PaginationInfo.Create(parameters.PageNumber, parameters.PageSize, totalCount);
+        //return result;
+
     }
 
     // ==========================================================================================================================================================
@@ -190,8 +197,7 @@ public class ProductService : IProductService
         unitOfWork.Products.Update(product);
         await unitOfWork.CompleteAsync(ct);
 
-        return AppResponse.Success(
-            title: "Product Updated",
+        return AppResponse.Ok(title: "Product Updated",
             detail: "Product data updated successfully."
         );
     }
@@ -212,7 +218,7 @@ public class ProductService : IProductService
         await unitOfWork.CompleteAsync(ct);
 
         // 4️ Success response
-        return AppResponse.Success("Product soft deleted successfully");
+        return AppResponse.Ok("Product soft deleted successfully");
     }
 
     public async Task<AppResponse> UpdateProductIsActiveAsync(int productId, bool isActive,CancellationToken ct)
@@ -228,7 +234,7 @@ public class ProductService : IProductService
 
         await unitOfWork.CompleteAsync(ct);
 
-        return AppResponse.Success("Product status updated successfully");
+        return AppResponse.Ok("Product status updated successfully");
     }
 
 
@@ -241,7 +247,7 @@ public class ProductService : IProductService
         ArgumentNullException.ThrowIfNull(dto);
         ArgumentNullException.ThrowIfNull(imageStreams);
         if (string.IsNullOrWhiteSpace(rootPath))
-            return AppResponse<ProductSubDetailsDto>.ValidationError("Root path is required");
+            return AppResponse<ProductSubDetailsDto>.Fail("Root path is required");
 
         ct.ThrowIfCancellationRequested();
 

@@ -26,27 +26,27 @@ public class CustomerRepository : GenericRepository<Customer>, ICustomerReposito
     }
 
 
-    public async Task<AppResponse<List<string>>> GetAll2()
-    {
-        var user = new UserDto();
+    //public async Task<AppResponse<List<string>>> GetAll2()
+    //{
+    //    var user = new UserDto();
 
-        var response = AppResponse<UserDto>.Success(user)
-            .Ensure(u => u.IsActive, "User account is not active");
+    //    var response = AppResponse<UserDto>.Ok(user)
+    //        .Ensure(u => u.IsActive, "User account is not active");
 
-        if (!response.IsSuccess)
-        {
-            Console.WriteLine(response.Detail); // "User account is not active"
-        }
+    //    if (!response.IsSuccess)
+    //    {
+    //        Console.WriteLine(response.Detail); // "User account is not active"
+    //    }
 
-        var list = new List<string>()
-        {
-            "mohamed",
-            "ahmed",
-            "ibrahem"
-        };
+    //    var list = new List<string>()
+    //    {
+    //        "mohamed",
+    //        "ahmed",
+    //        "ibrahem"
+    //    };
 
-        return  AppResponse<List<string>>.Success(list, PaginationInfo.Create(1, 2, 3));
-    }
+    //    return  AppResponse<List<string>>.Ok(list, PaginationInfo.Create(1, 2, 3));
+    //}
 
     public async Task<object> GetAllCustomers()
     {
