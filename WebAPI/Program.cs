@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ----------------------- Services -----------------------
 builder.Services.AddScoped<TraceIdResultFilter>();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddControllers(options =>
 {

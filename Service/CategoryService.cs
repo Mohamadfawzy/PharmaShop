@@ -1,9 +1,10 @@
 ﻿using Contracts;
 using Contracts.IServices;
 using Entities.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Shared.Models.Dtos.Category;
 using Shared.Extensions;
+using Shared.Models.Dtos.Category;
 using Shared.Responses;
 using System.Net;
 
@@ -16,18 +17,24 @@ public class CategoryService : ICategoryService
     private readonly IUnitOfWork unitOfWork;
     private readonly IImageService imageService;
     private readonly ILogger<CategoryService> logger;
-    private readonly ICurrentUserService currentUser; // ✅ (3) إزالة الـ hardcode
+    private readonly ICurrentUserService currentUser;
+    private readonly IMemoryCache cache;
+
+    private const string CategoryTreeCacheKey = "categories:tree:v1";
+    private static readonly TimeSpan CategoryTreeTtl = TimeSpan.FromMinutes(10);
 
     public CategoryService(
         IUnitOfWork unitOfWork,
         IImageService imageService,
         ILogger<CategoryService> logger,
-        ICurrentUserService currentUser)
+        ICurrentUserService currentUser,
+        IMemoryCache cache)
     {
         this.unitOfWork = unitOfWork;
         this.imageService = imageService;
         this.logger = logger;
         this.currentUser = currentUser;
+        this.cache = cache;
     }
 
     // ===================================================================================
@@ -40,7 +47,7 @@ public class CategoryService : ICategoryService
         {
             if (dto.ParentCategoryId.HasValue)
             {
-                // ✅ الأفضل: ExistsByIdAsync يتأكد أيضًا من !IsDeleted داخل الـRepo
+                // الأفضل: ExistsByIdAsync يتأكد أيضًا من !IsDeleted داخل الـRepo
                 var parentExists = await unitOfWork.Categories.ExistsByIdAsync(dto.ParentCategoryId.Value, ct);
                 if (!parentExists)
                     return AppResponse<int>.ValidationErrors(new Dictionary<string, string[]>
@@ -61,6 +68,9 @@ public class CategoryService : ICategoryService
 
             await unitOfWork.Categories.AddAsync(category, ct);
             await unitOfWork.CompleteAsync(ct);
+
+            // بحذف الكاش هنا
+            InvalidateCategoryCaches();
 
             return AppResponse<int>.Ok(category.Id, "Category created successfully");
         }
@@ -87,11 +97,10 @@ public class CategoryService : ICategoryService
             var userId = currentUser.UserId ?? "system";
             var auditLogs = BuildUpdateAuditLogs(category, dto, userId);
 
-            // ✅ (2) لا تبدأ Transaction إن لا تغييرات
             if (auditLogs.Count == 0)
                 return AppResponse<bool>.Ok(true, "No changes detected");
 
-            // Apply changes
+            //  Apply changes
             ApplyUpdate(category, dto);
             category.UpdatedAt = DateTime.UtcNow;
 
@@ -204,6 +213,8 @@ public class CategoryService : ICategoryService
 
             await unitOfWork.Categories.UpdateAsync(category, ct);
             await unitOfWork.CompleteAsync(ct);
+
+            InvalidateCategoryCaches();
 
             return AppResponse<bool>.Ok(true, "Parent updated successfully");
         }
@@ -349,15 +360,30 @@ public class CategoryService : ICategoryService
         }
     }
 
+
     public async Task<AppResponse<List<CategoryTreeDto>>> GetCategoryTreeAsync(CancellationToken ct)
     {
         try
         {
+            // 1 هنجيب من الكاش الاول
+            if (cache.TryGetValue(CategoryTreeCacheKey, out List<CategoryTreeDto>? cachedTree))
+            {
+                return AppResponse<List<CategoryTreeDto>>.Ok(cachedTree!);
+            }
+
+            // 2 لو ماكنش موجود في الكاش هنجبهامن الديتابيز
             var categories = await unitOfWork.Categories.GetAllForTreeAsync(ct);
 
             if (categories.Count == 0)
-                return AppResponse<List<CategoryTreeDto>>.Ok(new List<CategoryTreeDto>());
+            {
+                var empty = new List<CategoryTreeDto>();
 
+                cache.Set(CategoryTreeCacheKey, empty, CategoryTreeTtl);
+
+                return AppResponse<List<CategoryTreeDto>>.Ok(empty);
+            }
+
+            // 3 بناء الشجرة 
             var dict = categories.ToDictionary(
                 c => c.Id,
                 c => new CategoryTreeDto
@@ -383,6 +409,16 @@ public class CategoryService : ICategoryService
                 }
             }
 
+            // 4 خزّن النتيجة في الكاش
+            // MemoryCacheEntryOptions تسمح لك تحدد Expiration + Priority.. إلخ
+            var options = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = CategoryTreeTtl,
+                Priority = CacheItemPriority.High
+            };
+
+            cache.Set(CategoryTreeCacheKey, roots, options);
+
             return AppResponse<List<CategoryTreeDto>>.Ok(roots);
         }
         catch (Exception ex)
@@ -391,6 +427,7 @@ public class CategoryService : ICategoryService
             return AppResponse<List<CategoryTreeDto>>.InternalError("Failed to load categories tree");
         }
     }
+
 
     // ===================================================================================
     // (8) SetActiveStatus: تحقق من affected rows (لا ترجع نجاح دائمًا)
@@ -505,5 +542,13 @@ public class CategoryService : ICategoryService
         }
 
         return false;
+    }
+
+    private void InvalidateCategoryCaches()
+    {
+        cache.Remove(CategoryTreeCacheKey);
+
+        // لو عندك root cache أو غيره:
+        // _cache.Remove("categories:root:v1");
     }
 }

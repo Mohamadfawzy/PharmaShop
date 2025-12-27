@@ -83,3 +83,49 @@
         }, "Login successful");
     }
      */
+
+
+
+         public async Task<AppResponse<List<CategoryTreeDto>>> GetCategoryTreeAsync(CancellationToken ct)
+    {
+        try
+        {
+            var categories = await unitOfWork.Categories.GetAllForTreeAsync(ct);
+
+            if (categories.Count == 0)
+                return AppResponse<List<CategoryTreeDto>>.Ok(new List<CategoryTreeDto>());
+
+            var dict = categories.ToDictionary(
+                c => c.Id,
+                c => new CategoryTreeDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    NameEn = c.NameEn,
+                    ImageUrl = c.ImageUrl,
+                    IsActive = c.IsActive
+                });
+
+            var roots = new List<CategoryTreeDto>();
+
+            foreach (var c in categories)
+            {
+                if (c.ParentCategoryId is null)
+                {
+                    roots.Add(dict[c.Id]);
+                }
+                else if (dict.TryGetValue(c.ParentCategoryId.Value, out var parentNode))
+                {
+                    parentNode.Children.Add(dict[c.Id]);
+                }
+            }
+
+            return AppResponse<List<CategoryTreeDto>>.Ok(roots);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "GetCategoryTreeAsync failed");
+            return AppResponse<List<CategoryTreeDto>>.InternalError("Failed to load categories tree");
+        }
+    }
+
