@@ -8,10 +8,8 @@ using Repository;
 using Repository.Identity;
 using Service;
 using Service.Auth;
-using System.Security.Claims;
 using System.Text;
 using WebAPI.Notifications;
-using WebAPI.Services.Security;
 
 namespace WebAPI.Extensions;
 
@@ -23,6 +21,8 @@ public static class ServiceExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IImageService, ImageService>();
         services.AddScoped<JwtTokenService>();
+        services.AddScoped<ILoginAuditService, LoginAuditService>();
+        services.AddScoped<IUserRoleService, UserRoleService>();
 
         //services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 

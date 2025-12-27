@@ -43,6 +43,12 @@ public static class IdentityResultExtensions
         if (errorCode.Contains("UserName", StringComparison.OrdinalIgnoreCase))
             return "UserName";
 
+        if (errorCode.Contains("Token", StringComparison.OrdinalIgnoreCase))
+            return "Token";
+
+        if (errorCode.Contains("User", StringComparison.OrdinalIgnoreCase))
+            return "UserId";
+
         // Fallback
         return "General";
     }

@@ -97,9 +97,41 @@ CREATE INDEX [EmailIndex] ON [AspNetUsers] ([NormalizedEmail]);
 
 CREATE UNIQUE INDEX [UserNameIndex] ON [AspNetUsers] ([NormalizedUserName]) WHERE [NormalizedUserName] IS NOT NULL;
 
+CREATE UNIQUE INDEX PhoneNumberIndex ON AspNetUsers([PhoneNumber]) WHERE PhoneNumber IS NOT NULL;
+
+
 INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
 VALUES (N'20251224210329_InitIdentity', N'9.0.11');
 
 COMMIT;
 GO
 
+-- ===================================================================
+-- Insert Rolse
+-- ===================================================================
+USE pharma_shope_db;
+GO
+
+SET NOCOUNT ON;
+GO
+
+IF OBJECT_ID(N'dbo.AspNetRoles', N'U') IS NULL
+BEGIN
+    RAISERROR('AspNetRoles table not found. Apply Identity migrations first.', 16, 1);
+    RETURN;
+END
+GO
+
+MERGE dbo.AspNetRoles AS target
+USING (VALUES
+    (N'Admin',      N'ADMIN',      N'Admin',      N'Full access'),
+    (N'Support',    N'SUPPORT',    N'Support',    N'Support staff'),
+    (N'Viewer',     N'VIEWER',     N'Viewer',     N'Read-only access'),
+    (N'Customer',   N'CUSTOMER',   N'Customer',   N'Customer account'),
+    (N'Pharmacist', N'PHARMACIST', N'Pharmacist', N'Pharmacist account')
+) AS source ([Name], [NormalizedName], [NameEn], [Description])
+ON target.NormalizedName = source.NormalizedName
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([Name], [NormalizedName], [ConcurrencyStamp], [NameEn], [Description])
+    VALUES (source.[Name], source.[NormalizedName], NEWID(), source.[NameEn], source.[Description]);
+GO

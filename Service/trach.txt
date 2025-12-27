@@ -1,409 +1,85 @@
-﻿
-    private async Task<AppResponse<List<string>>> SaveProductImagesAsync1(IEnumerable<Stream> imageStreams, string productName, string rootPath, CancellationToken ct)
+﻿    /*
+    public async Task<AppResponse<LoginResponseDto>> LoginAsync(LoginRequestDto dto, CancellationToken ct)
     {
-        var imageIds = new List<string>();
-        try
+        // Normalize
+        var identifier = dto.Identifier?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(identifier))
         {
-
-            logger.LogInformation("Start saving {ImageCount} image(s) for product '{ProductName}'", imageStreams.Count(), productName);
-
-            foreach (var stream in imageStreams)
-            {
-                if (stream == null)
+            return AppResponse<LoginResponseDto>.ValidationErrors(
+                new Dictionary<string, string[]>
                 {
-                    logger.LogWarning("Null image stream detected. Skipping...");
-                    continue;
-                }
-
-                if (stream.CanSeek)
-                    stream.Position = 0;
-
-                var imageId = await imageService.SaveImageAsync(stream, rootPath, ct);
-
-                if (string.IsNullOrWhiteSpace(imageId))
-                {
-                    logger.LogError("Image service returned empty id for product '{ProductName}'", productName);
-
-                    // Cleanup any images already saved
-                    foreach (var savedId in imageIds)
-                        await imageService.RemoveImageAsync(savedId, rootPath);
-
-                    return AppResponse<List<string>>.InternalError("Image service returned an empty identifier");
-                }
-
-                imageIds.Add(imageId);
-                logger.LogInformation("Image saved successfully. ImageId={ImageId} for '{ProductName}'",
-                    imageId, productName);
-            }
-
-            if (imageIds.Count == 0)
-            {
-                return AppResponse<List<string>>.ValidationError("At least one valid image must be provided");
-            }
-
-            return AppResponse<List<string>>.Success(imageIds);
-
-
-
-
+                    ["Identifier"] = new[] { "Identifier is required" }
+                },
+                detail: "Validation failed"
+            );
         }
-        catch (OperationCanceledException)
+
+        // 1) Find user by Email OR Username (بدون user enumeration في الرسالة النهائية)
+        ApplicationUser? user = null;
+
+        if (identifier.Contains('@'))
         {
-            logger.LogWarning("Operation cancelled while saving images for '{ProductName}'", productName);
-
-            // Cleanup already saved images
-            foreach (var savedId in imageIds)
-                await imageService.RemoveImageAsync(savedId, rootPath);
-
-            return AppResponse<List<string>>.Fail("Operation cancelled", AppErrorCode.None);
+            var normalizedEmail = identifier.ToLowerInvariant();
+            user = await _userManager.FindByEmailAsync(normalizedEmail);
         }
-        catch (Exception ex)
+        else
         {
-            logger.LogError(ex, "Failed while saving images for '{ProductName}'", productName);
-
-            // Cleanup already saved images
-            foreach (var savedId in imageIds)
-                await imageService.RemoveImageAsync(savedId, rootPath);
-
-            return AppResponse<List<string>>.InternalError("Failed to save product images");
+            user = await _userManager.FindByNameAsync(identifier);
         }
+
+        // رسالة موحدة لتفادي كشف هل المستخدم موجود أم لا (Security best practice)
+        static AppResponse<LoginResponseDto> InvalidCredentials() =>
+            AppResponse<LoginResponseDto>.Unauthorized("Invalid credentials");
+
+        if (user is null)
+            return InvalidCredentials();
+
+        // 2) Business flags (مثال: IsActive)
+        // IMPORTANT: لو عندك IsActive في ApplicationUser
+        if (user is { IsActive: false })
+            return AppResponse<LoginResponseDto>.Forbidden("User account is disabled");
+
+        // 3) Email confirmation policy
+        // بما أنك فعلت options.SignIn.RequireConfirmedEmail = true
+        // ممكن تعتمد على SignInManager ويفشل تلقائياً، لكن الأفضل رسالة واضحة:
+        if (!user.EmailConfirmed)
+            return AppResponse<LoginResponseDto>.Forbidden("Email is not confirmed");
+
+        // 4) Lockout check (Real-world)
+        if (await _userManager.IsLockedOutAsync(user))
+            return AppResponse<LoginResponseDto>.Forbidden("Account is locked. Try again later.");
+
+        // 5) Verify password (مع دعم lockoutOnFailure)
+        // SignInManager أفضل من CheckPasswordAsync لأنه يطبّق lockout counters.
+        var signInResult = await _signInManager.CheckPasswordSignInAsync(
+            user,
+            dto.Password,
+            lockoutOnFailure: true
+        );
+
+        if (signInResult.IsLockedOut)
+            return AppResponse<LoginResponseDto>.Forbidden("Account is locked. Try again later.");
+
+        if (!signInResult.Succeeded)
+            return InvalidCredentials();
+
+        // 6) (اختياري) Update last login (لو عندك أعمدة أو جدول Audit)
+        // Future: سجل LoginEvent + IP + UserAgent + DeviceId
+
+        // 7) Issue JWT
+        // pharmacy_id: الآن ثابت 1، لاحقاً تُستخرج من Admin/Customer profile أو Tenant middleware
+        var accessToken = await _jwtTokenService.CreateAccessTokenAsync(user, pharmacyId: 1);
+
+        // JWT expiry (نحسبها من config بدل ما نفك JWT)
+        var minutes = int.Parse(configuration.GetSection("Jwt")["AccessTokenMinutes"]!);
+        var expiresAt = DateTime.UtcNow.AddMinutes(minutes);
+
+        // 8) Return
+        return AppResponse<LoginResponseDto>.Ok(new LoginResponseDto
+        {
+            UserId = user.Id,
+            AccessToken = accessToken,
+            ExpiresAtUtc = expiresAt
+        }, "Login successful");
     }
-
-
-    public async Task<AppResponse<ProductSubDetailsDto>> CreateProductWithImagesAsync5(ProductCreateDto dto, Stream imageStream, string rootPath, CancellationToken ct = default)
-    {
-        // Guard clauses
-        ArgumentNullException.ThrowIfNull(dto);
-        ArgumentNullException.ThrowIfNull(imageStream);
-        if (string.IsNullOrWhiteSpace(rootPath))
-            return AppResponse<ProductSubDetailsDto>.ValidationError("Root path is required");
-
-        ct.ThrowIfCancellationRequested();
-
-        string imageId;
-
-        // -----------------------------
-        // STEP 1: Save the image first
-        // -----------------------------
-
-        try
-        {
-            logger.LogInformation("Start saving product image for '{ProductName}'", dto.Name);
-
-            if (imageStream.CanSeek)
-                imageStream.Position = 0;
-
-            imageId = await imageService.SaveImageAsync(imageStream, rootPath, ct);
-
-            if (string.IsNullOrWhiteSpace(imageId))
-            {
-                logger.LogError("Image service returned empty id for product '{ProductName}'", dto.Name);
-                return AppResponse<ProductSubDetailsDto>.InternalError("Image service returned an empty identifier");
-            }
-
-            logger.LogInformation("Image saved successfully. ImageId={ImageId} for '{ProductName}'", imageId, dto.Name);
-        }
-        catch (OperationCanceledException)
-        {
-            logger.LogWarning("Operation cancelled while saving image for '{ProductName}'", dto.Name);
-            return AppResponse<ProductSubDetailsDto>.Fail("Operation cancelled", AppErrorCode.None);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to save image for '{ProductName}'", dto.Name);
-            return AppResponse<ProductSubDetailsDto>.InternalError("Failed to save product image");
-        }
-
-        ct.ThrowIfCancellationRequested();
-
-        // -----------------------------
-        // STEP 2: Map DTO to Entity
-        // -----------------------------
-
-        var product = dto.Adapt<Product>();
-        product.CreatedAt = DateTime.UtcNow;
-        product.ProductImages = new List<ProductImage>
-        {
-            new() { ImageUrl = imageId, IsMain = true }
-        };
-
-        // -----------------------------
-        // STEP 3: Save Product in DB
-        // -----------------------------
-
-        try
-        {
-            logger.LogInformation("Inserting product '{ProductName}' into DB", product.Name);
-
-            await unitOfWork.Products.AddAsync(product, ct);
-            await unitOfWork.CompleteAsync(ct);
-
-            logger.LogInformation("Product saved successfully. ProductId={ProductId}", product.Id);
-
-            // Map back to DTO
-            var resultDto = product.ToSubDetailsDto();
-
-            return AppResponse<ProductSubDetailsDto>.Created(resultDto);
-        }
-        catch (OperationCanceledException)
-        {
-            logger.LogWarning("Operation cancelled while saving product '{ProductName}' to DB. Cleanup image {ImageId}", product.Name, imageId);
-
-            await imageService.RemoveImageAsync(imageId, rootPath);
-            return AppResponse<ProductSubDetailsDto>.Fail("Operation cancelled", AppErrorCode.None);
-        }
-        catch (Exception dbEx)
-        {
-            logger.LogError(dbEx, "Failed to save product '{ProductName}' to DB. Removing image '{ImageId}'", product.Name, imageId);
-
-            await imageService.RemoveImageAsync(imageId, rootPath);
-            return AppResponse<ProductSubDetailsDto>.InternalError("Failed to save product to database" + dbEx.Message + dbEx.InnerException?.Message);
-        }
-    }
-
-    public async Task<object> CreateProductWithImagesAsync4(ProductCreateDto dto, Stream imageStream, string rootPath, CancellationToken ct = default)
-    {
-        // Guard clauses
-        ArgumentNullException.ThrowIfNull(dto);
-        ArgumentNullException.ThrowIfNull(imageStream);
-        if (string.IsNullOrWhiteSpace(rootPath)) throw new ArgumentException("rootPath is required", nameof(rootPath));
-
-        // Respect cancellation early
-        ct.ThrowIfCancellationRequested();
-
-        string imageId;
-
-        // -----------------------------
-        // STEP 1: Save the image first
-        // -----------------------------
-
-        try
-        {
-            // Log start of image saving
-            logger.LogInformation("Start saving product image for product '{ProductName}'", dto.Name);
-
-            // Ensure the incoming stream is at position 0 if it's seekable (common source of bugs)
-            if (imageStream.CanSeek)
-            {
-                imageStream.Position = 0;
-            }
-
-            // Save image (this should return an identifier or filename)
-            imageId = await imageService.SaveImageAsync(imageStream, rootPath, ct).ConfigureAwait(false);
-
-            // Basic validation of returned id
-            if (string.IsNullOrWhiteSpace(imageId))
-            {
-                var ex = new InvalidOperationException("Image service returned an empty image identifier.");
-                logger.LogError(ex, "Image service returned empty id for product '{ProductName}'", dto.Name);
-                throw ex;
-            }
-
-            logger.LogInformation("Image saved successfully. ImageId={ImageId} for product '{ProductName}'", imageId, dto.Name);
-        }
-        catch (OperationCanceledException)
-        {
-            // If cancellation requested while saving the image, bubble up
-            logger.LogWarning("Operation cancelled while saving image for product '{ProductName}'", dto.Name);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            // If image saving failed, we do not touch DB. Log and bubble up.
-            logger.LogError(ex, "Failed to save image for product '{ProductName}'. Aborting creation.", dto.Name);
-            throw;
-        }
-
-        // Respect cancellation after image saved
-        ct.ThrowIfCancellationRequested();
-
-        // -----------------------------
-        // STEP 2: Map DTO to Product entity 
-        // -----------------------------
-
-        var product = dto.Adapt<Product>();
-        product.ProductImages = new List<ProductImage>
-        {
-            new() { ImageUrl = imageId, IsMain = true , }
-        };
-        // set audit fields if needed
-        product.CreatedAt = DateTime.UtcNow;
-
-
-        // -----------------------------
-        // STEP 3: Add to repository and save changes
-        // -----------------------------
-
-        try
-        {
-            logger.LogInformation("Attempting to insert product '{ProductName}' into database (ImageId={ImageId})", product.Name, imageId);
-
-            // Add to repository and save changes (assumes repository supports ct)
-            await unitOfWork.Products.AddAsync(product, ct).ConfigureAwait(false);
-            await unitOfWork.CompleteAsync().ConfigureAwait(false);
-
-            logger.LogInformation("Product saved successfully. ProductId={ProductId}, ImageId={ImageId}", product.Id, imageId);
-
-            // Return minimal success payload
-            return new
-            {
-                ProductId = product.Id,
-                ProductName = product.Name,
-                ProductImageUrl = imageId
-            };
-        }
-        catch (OperationCanceledException)
-        {
-            // If cancelled during DB operations, attempt cleanup of the previously saved image
-            logger.LogWarning("Operation cancelled while saving product '{ProductName}' to DB. Attempting to cleanup image {ImageId}", product.Name, imageId);
-
-            await imageService.RemoveImageAsync(imageId, rootPath).ConfigureAwait(false);
-            throw;
-        }
-        catch (Exception dbEx)
-        {
-            // DB save failed: attempt to delete the image to avoid orphaned files, log both errors
-            logger.LogError(dbEx, "Failed to save product '{ProductName}' to DB. Will attempt to remove saved image '{ImageId}'", product.Name, imageId);
-
-            await imageService.RemoveImageAsync(imageId, rootPath).ConfigureAwait(false);
-
-            // Re-throw the original DB exception so upper layers know the real failure cause
-            throw;
-        }
-    }
-
-
-    public async Task<object> CreateProductWithImagesAsync3(ProductCreateDto dto, Stream imageFile, string rootPath, CancellationToken ct = default)
-    {
-        string? imageId = null;
-        try
-        {
-            // 1. trying to upload the image
-            imageId = await imageService.SaveImageAsync(imageFile, rootPath);
-
-            // 2. create the product
-            var product = dto.ToEntity();
-            product.ProductImages = new List<ProductImage>
-        {
-            new ProductImage { ImageUrl = imageId }
-        };
-
-            await unitOfWork.Products.AddAsync(product);
-            await unitOfWork.CompleteAsync();
-
-            return new { ProductName = product.Name, ProductImageUrl = imageId };
-        }
-        catch
-        {
-            // If DB fails => we delete the saved image
-            if (imageId != null)
-                await imageService.RemoveImageAsync(imageId, rootPath);
-
-            throw;
-        }
-    }
-
-
-    public async Task<object> CreateProductWithImagesAsync2(ProductCreateDto dto, Stream imageStream, string rootPath, CancellationToken ct = default)
-    {
-        // 1. حفظ الصورة أولًا
-        string imageId;
-        try
-        {
-            imageId = await imageService.SaveImageAsync(imageStream, rootPath, ct);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to save image before DB op");
-            throw; // لا ندخل DB إذا فشل حفظ الصورة
-        }
-
-        // 2. قم بإنشاء الـ entity باستخدام المابينغ
-        var product = dto.ToEntity();
-        product.ProductImages = new List<ProductImage>
-        {
-            new ProductImage { ImageUrl = imageId, IsMain = true }
-        };
-
-        // 3. افتح معاملة DB وأضف الكيان
-        // await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
-        try
-        {
-            await unitOfWork.Products.AddAsync(product, ct); // افتراض وجود AddAsync
-            await unitOfWork.CompleteAsync();
-
-            //await transaction.CommitAsync(ct);
-
-            return new { ProductName = product.Name, ProductImageUrl = imageId };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "DB operation failed after image saved. Attempting cleanup.");
-
-            // محاول حذف الصورة التي حفظناها لأن DB فشل (محاولة التعويض)
-            try
-            {
-                await imageService.RemoveImageAsync(imageId, rootPath); // أو DeleteImageAsync إن وُجدت
-            }
-            catch (Exception cleanupEx)
-            {
-                logger.LogError(cleanupEx, "Failed to cleanup image after DB failure for ImageId: {ImageId}", imageId);
-                // هنا قد تسجل سجل للصيانة لأن لدينا صورة بدون مرجع
-            }
-
-            // إرجاع/إعادة رمي الاستثناء للطبقة العليا
-            throw;
-        }
-    }
-
-
-    public async Task<object> CreateProductWithImagesAsyncOld2(ProductCreateDto dto, Stream imageFile, string rootPath)
-    {
-        string imageId = await imageService.SaveImageAsync(imageFile, rootPath);
-
-        var product = dto.ToEntity();
-
-        product.ProductImages = new List<ProductImage>()
-        {
-            new ProductImage {ImageUrl = imageId},
-        };
-
-        await unitOfWork.Products.AddAsync(product);
-        await unitOfWork.CompleteAsync();
-        return new { ProductName = product.Name, ProductImageUrl = imageId };
-    }
-
-    public async Task<object> CreateProductWithImagesAsyncOld(ProductCreateDto dto, Stream imageFile, string rootPath)
-    {
-        string imageId = await imageService.SaveImageAsync(imageFile, rootPath);
-
-        var product = new Product
-        {
-            Name = "Panadol Extra",
-            NameEn = "Panadol Extra",
-            Description = "مسكن للصداع وآلام الجسم",
-            DescriptionEn = "Pain reliever for headache and body aches",
-            Barcode = "1234567890123",
-            InternationalCode = "INT-987654",
-            StockProductCode = "STK-4567",
-            Price = 75.50m,
-            OldPrice = 85.00m,
-            IsAvailable = true,
-            IsIntegrated = false,
-            IntegratedAt = null,
-            CategoryId = 2,
-            CreatedAt = DateTime.Now,
-            UpdatedAt = null,
-            CreatedBy = "Admin",
-            IsActive = true,
-            Points = 15.5m,
-            PromoDisc = 10m,
-            PromoEndDate = DateTime.Now.AddMonths(1),
-            IsGroupOffer = false,
-            ProductImages = [new ProductImage { ImageUrl = imageId, IsMain = true }, new ProductImage { ImageUrl = imageId, IsMain = true }]
-        };
-
-        await unitOfWork.Products.AddAsync(product);
-        await unitOfWork.CompleteAsync();
-        return new { ProductName = product.Name, ProductImageUrl = imageId };
-    }
+     */
