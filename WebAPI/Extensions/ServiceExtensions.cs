@@ -1,4 +1,5 @@
 ﻿using Contracts;
+using Contracts.Images.Abstractions;
 using Contracts.IServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +9,7 @@ using Repository;
 using Repository.Identity;
 using Service;
 using Service.Auth;
+using Service.Images;
 using System.Text;
 using WebAPI.Notifications;
 
@@ -72,7 +74,33 @@ public static class ServiceExtensions
         })
         .AddEntityFrameworkStores<IdentityDbContext>()
         .AddDefaultTokenProviders(); // EmailConfirm + ResetPassword
-        }
+    }
+
+
+    public static IServiceCollection AddImageModule(this IServiceCollection services, Action<ImageServiceOptions> configure)
+    {
+        services.Configure(configure);
+
+        // Processor (ImageSharp) + Local Storage
+        services.AddSingleton<IImageProcessor, ImageSharpProcessor>();
+        services.AddSingleton<IImageStorage, LocalDiskImageStorage>();
+
+        // Orchestrator
+        services.AddSingleton<Contracts.Images.Abstractions.IImageService, Service.Images.ImageService>();
+
+
+        services.AddImageModule(opt =>
+        {
+            opt.MaxUploadBytes = 10 * 1024 * 1024;
+            opt.MediumWidth = 1000;
+            opt.SmallWidth = 300;
+            opt.PreferWebpWhenAlpha = true;
+        });
+
+        return services;
+
+    }
+
 
     public static void ConfigureJWT(this IServiceCollection services, IConfiguration configuration)
     {
