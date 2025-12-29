@@ -28,7 +28,13 @@ public sealed class ImageSharpProcessor : IImageProcessor
         _opt = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
-    public async Task<ProcessedImage> ProcessAsync(Stream input, CancellationToken ct)
+
+
+    //===============  ProcessAsync =================   
+    public async Task<ProcessedImage> ProcessAsync(
+        Stream input, 
+        ImageOutputFormat outputFormat,
+        CancellationToken ct)
     {
         // IMPORTANT: input is assumed to be a safe, size-limited stream (buffered by ImageService).
         input.Position = 0;
@@ -38,7 +44,7 @@ public sealed class ImageSharpProcessor : IImageProcessor
         // Determine if alpha exists (to avoid breaking transparency).
         var hasAlpha = HasAlpha(image);
 
-        var format = ChooseFormat(hasAlpha);
+        var format = ResolveFormat(image, outputFormat); // StoredImageFormat.Jpeg;// ChooseFormat(hasAlpha);
 
         // Produce variants (bytes) with no upscaling and stripped metadata.
         var result = new Dictionary<ImageVariant, byte[]>(3)
@@ -97,15 +103,31 @@ public sealed class ImageSharpProcessor : IImageProcessor
         }
     }
 
-    private StoredImageFormat ChooseFormat(bool hasAlpha)
+    private StoredImageFormat ResolveFormat(Image image, ImageOutputFormat requested)
     {
+        if (requested != ImageOutputFormat.Auto)
+        {
+            return requested switch
+            {
+                ImageOutputFormat.Jpeg => StoredImageFormat.Jpeg,
+                ImageOutputFormat.Png => StoredImageFormat.Png,
+                ImageOutputFormat.Webp => StoredImageFormat.Webp,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+
+        // AUTO MODE (recommended default)
+        var hasAlpha = HasAlpha(image);
+
         if (!hasAlpha)
             return StoredImageFormat.Jpeg;
 
         // With alpha: prefer WebP (smaller) or fallback to PNG (lossless).
-        return _opt.PreferWebpWhenAlpha ? StoredImageFormat.Webp : StoredImageFormat.Png;
+        return _opt.PreferWebpWhenAlpha
+            ? StoredImageFormat.Webp
+            : StoredImageFormat.Png;
     }
-
+    
     private static bool HasAlpha(Image image)
     {
         // NOTE: ImageSharp provides metadata about pixel type.
@@ -169,8 +191,17 @@ public sealed class ImageSharpProcessor : IImageProcessor
                 break;
 
             case StoredImageFormat.Webp:
-                resized.Save(ms, new WebpEncoder());
-                break;
+                resized.Save(ms, new WebpEncoder
+                {
+                    // IMPORTANT: If you don't set FileFormat, it may default to lossless.
+                    FileFormat = WebpFileFormatType.Lossy,
+
+                    // IMPORTANT: Choose a reasonable quality for speed/size.
+                    Quality = 75,
+
+                    // IMPORTANT: Speed/quality trade-off (Fastest is the quickest).
+                    Method = WebpEncodingMethod.Fastest
+                }); break;
 
             default:
                 throw new InvalidOperationException("Unsupported output format.");

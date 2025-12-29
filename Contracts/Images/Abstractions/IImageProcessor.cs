@@ -15,26 +15,9 @@ namespace Contracts.Images.Abstractions;
 /// </summary>
 public interface IImageProcessor
 {
-    Task<ProcessedImage> ProcessAsync(Stream input, CancellationToken ct);
-}
-
-/// <summary>
-/// Responsible for file-system storage + atomic write semantics.
-/// Can be replaced with S3/Azure Blob later.
-/// </summary>
-public interface IImageStorage
-{
-    Task SaveVariantsAtomicallyAsync(
-        string rootPath,
-        string imageId,
-        StoredImageFormat format,
-        IReadOnlyList<ImageFileToSave> files,
+    Task<ProcessedImage> ProcessAsync(
+        Stream input, 
+        ImageOutputFormat outputFormat,
         CancellationToken ct);
-
-    Task DeleteAllAsync(string rootPath, string imageId, StoredImageFormat? formatHint, CancellationToken ct);
-
-    /// <summary>
-    /// Builds a relative path (used by APIs/DB).
-    /// </summary>
-    string BuildRelativePath(string imageId, ImageVariant variant, StoredImageFormat format);
 }
+

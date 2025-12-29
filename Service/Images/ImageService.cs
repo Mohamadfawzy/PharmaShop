@@ -38,6 +38,7 @@ public sealed class ImageService : IImageService
         Stream imageData,
         string rootPath,
         string? prefix = null,
+        ImageOutputFormat outputFormat = ImageOutputFormat.Auto,
         CancellationToken ct = default)
     {
         if (imageData is null) throw new ArgumentNullException(nameof(imageData));
@@ -51,13 +52,14 @@ public sealed class ImageService : IImageService
             ? Guid.NewGuid().ToString("N")
             : $"{safePrefix}-{Guid.NewGuid():N}";
 
-        return await SaveWithIdInternalAsync(imageData, imageId, rootPath, allowOverwrite: false, ct);
+        return await SaveWithIdInternalAsync(imageData, imageId, rootPath, allowOverwrite: false,outputFormat, ct);
     }
 
     public async Task<IReadOnlyList<SavedImageResult>> SaveBatchAsync(
         IEnumerable<Stream> imagesData,
         string rootPath,
         string? prefix = null,
+        ImageOutputFormat outputFormat = ImageOutputFormat.Auto,
         CancellationToken ct = default)
     {
         if (imagesData is null) throw new ArgumentNullException(nameof(imagesData));
@@ -85,7 +87,7 @@ public sealed class ImageService : IImageService
 
                 _logger.LogInformation("Saving batch image {Index}/{Total}", i + 1, total);
 
-                var res = await SaveAsync(list[i], rootPath, prefix, ct);
+                var res = await SaveAsync(list[i], rootPath, prefix, outputFormat, ct);
                 results.Add(res);
             }
 
@@ -117,6 +119,7 @@ public sealed class ImageService : IImageService
         Stream imageData,
         string imageId,
         string rootPath,
+        ImageOutputFormat outputFormat,
         CancellationToken ct = default)
     {
         if (imageData is null) throw new ArgumentNullException(nameof(imageData));
@@ -132,7 +135,7 @@ public sealed class ImageService : IImageService
 
             // Stage & overwrite atomically via storage.
             // We do NOT delete old first. The atomic save will overwrite final files.
-            var result = await SaveWithIdInternalAsync(imageData, imageId, rootPath, allowOverwrite: true, ct);
+            var result = await SaveWithIdInternalAsync(imageData, imageId, rootPath,  allowOverwrite: true, outputFormat, ct);
             return result;
         }
         finally
@@ -170,6 +173,7 @@ public sealed class ImageService : IImageService
         string imageId,
         string rootPath,
         bool allowOverwrite,
+        ImageOutputFormat outputFormat,
         CancellationToken ct)
     {
         // IMPORTANT: Buffer stream safely (supports non-seekable streams)
@@ -184,7 +188,7 @@ public sealed class ImageService : IImageService
         _logger.LogInformation("Processing image {ImageId}", imageId);
 
         // Decode + validate + create variants
-        var processed = await _processor.ProcessAsync(buffered, ct);
+        var processed = await _processor.ProcessAsync(buffered,outputFormat, ct);
 
         // Build storage instructions (relative paths)
         var files = new List<ImageFileToSave>(3);
@@ -205,13 +209,15 @@ public sealed class ImageService : IImageService
 
         _logger.LogInformation("Image {ImageId} saved successfully", imageId);
 
-        return new SavedImageResult(
-            Id: imageId,
-            Format: processed.Format,
-            OriginalWidth: processed.OriginalWidth,
-            OriginalHeight: processed.OriginalHeight,
-            SavedAtUtc: DateTimeOffset.UtcNow,
-            RelativePaths: relativePaths);
+        return new Contracts.Images.Dtos.SavedImageResult
+        {
+            Id = imageId,
+            Format = processed.Format,
+            OriginalWidth = processed.OriginalWidth,
+            OriginalHeight = processed.OriginalHeight,
+            SavedAtUtc = DateTimeOffset.UtcNow,
+            RelativePaths = relativePaths
+        };
     }
 
     // ==========================

@@ -1,4 +1,6 @@
 ﻿using Contracts;
+using Contracts.Images.Abstractions;
+using Contracts.Images.Dtos;
 using Contracts.IServices;
 using Entities.Models;
 using Microsoft.Extensions.Caching.Memory;
@@ -15,7 +17,8 @@ public class CategoryService : ICategoryService
     private const int MaxPageSize = 100;
 
     private readonly IUnitOfWork unitOfWork;
-    private readonly IImageService imageService;
+    private readonly Contracts.IServices.IImageService imageService;
+    private readonly Contracts.Images.Abstractions.IImageService imageService2;
     private readonly ILogger<CategoryService> logger;
     private readonly ICurrentUserService currentUser;
     private readonly IMemoryCache cache;
@@ -25,16 +28,18 @@ public class CategoryService : ICategoryService
 
     public CategoryService(
         IUnitOfWork unitOfWork,
-        IImageService imageService,
+        Contracts.IServices.IImageService imageService,
         ILogger<CategoryService> logger,
         ICurrentUserService currentUser,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        Contracts.Images.Abstractions.IImageService imageService2)
     {
         this.unitOfWork = unitOfWork;
         this.imageService = imageService;
         this.logger = logger;
         this.currentUser = currentUser;
         this.cache = cache;
+        this.imageService2 = imageService2;
     }
 
     // ===================================================================================
@@ -305,6 +310,84 @@ public class CategoryService : ICategoryService
             return AppResponse<string>.InternalError("An error occurred while updating category image");
         }
     }
+
+
+    public async Task<AppResponse<string>> UpdateCategoryImageAsync2(
+     int categoryId,
+     Stream newImageStream,
+     string rootPath,
+     ImageOutputFormat outputFormat = ImageOutputFormat.Auto,
+     CancellationToken ct= default)
+    {
+        // IMPORTANT: Avoid relying on stream.Length (may be non-seekable).
+        if (newImageStream is null || !newImageStream.CanRead)
+            return AppResponse<string>.ValidationError("Invalid image stream");
+
+        if (string.IsNullOrWhiteSpace(rootPath))
+            return AppResponse<string>.ValidationError("Invalid root path");
+
+        await using var tx = await unitOfWork.BeginTransactionAsync(ct);
+
+        try
+        {
+            var category = await unitOfWork.Categories.GetByIdAsync(categoryId, ct);
+            if (category is null || category.IsDeleted)
+                return AppResponse<string>.NotFound("Category not found");
+
+            // IMPORTANT:
+            // Store a stable ImageId in DB (not a full path and not a changing filename).
+            // If currently ImageUrl stores a filename, migrate it to store ImageId.
+            var imageId = category.ImageUrl; // treat as ImageId (stable)
+
+            SavedImageResult saved;
+
+            if (string.IsNullOrWhiteSpace(imageId))
+            {
+                // No image yet => create new one and store its Id.
+                var prefix = $"category-{categoryId}";
+                saved = await imageService2.SaveAsync(newImageStream, rootPath, categoryId.ToString(), outputFormat,  ct);
+
+                var updated = await unitOfWork.Categories.UpdateImageUrlAsync(categoryId, saved.Id, ct);
+                if (!updated)
+                {
+                    // DB update failed => delete newly stored image (best-effort).
+                    await imageService2.DeleteAsync(saved.Id, rootPath, ct);
+                    await tx.RollbackAsync(ct);
+                    return AppResponse<string>.InternalError("Failed to update category image");
+                }
+            }
+            else
+            {
+                // Existing image => replace contents while keeping the same Id.
+                saved = await imageService2.ReplaceAsync(newImageStream, imageId, rootPath, outputFormat, ct);
+
+                // No DB update needed because ImageId stays the same.
+                // If you store extra fields like Format/UpdatedAt, update them here.
+                // e.g. await unitOfWork.Categories.UpdateImageMetaAsync(categoryId, saved.Format, ct);
+            }
+
+            await unitOfWork.CompleteAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return AppResponse<string>.Ok(saved.Id, "Category image updated successfully");
+        }
+        catch (OperationCanceledException)
+        {
+            try { await tx.RollbackAsync(CancellationToken.None); } catch { /* best-effort */ }
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "UpdateCategoryImageAsync failed CategoryId={CategoryId}", categoryId);
+
+            try { await tx.RollbackAsync(ct); }
+            catch (Exception exRb) { logger.LogWarning(exRb, "Rollback failed in UpdateCategoryImageAsync"); }
+
+            return AppResponse<string>.InternalError("An error occurred while updating category image");
+        }
+    }
+
+
 
     // ===================================================================================
 

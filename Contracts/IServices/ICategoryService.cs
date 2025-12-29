@@ -1,4 +1,5 @@
-﻿using Shared.Models.Dtos.Category;
+﻿using Contracts.Images.Abstractions;
+using Shared.Models.Dtos.Category;
 using Shared.Responses;
 
 namespace Contracts.IServices;
@@ -24,4 +25,5 @@ public interface ICategoryService
     Task<AppResponse<List<CategoryDto>>> GetRootCategoriesAsync(CancellationToken ct);
 
     Task<AppResponse<List<CategoryTreeDto>>> GetCategoryTreeAsync(CancellationToken ct);
+    Task<AppResponse<string>> UpdateCategoryImageAsync2(int categoryId, Stream newImageStream, string rootPath, ImageOutputFormat outputFormat, CancellationToken ct);
 }

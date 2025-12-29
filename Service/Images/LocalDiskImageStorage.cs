@@ -67,13 +67,13 @@ public sealed class LocalDiskImageStorage : IImageStorage
 
                 var finalAbsolute = Path.Combine(rootPath, f.RelativePath);
 
-                // Ensure final directory exists
                 Directory.CreateDirectory(Path.GetDirectoryName(finalAbsolute)!);
 
-                // Build temp absolute path per variant
-                var tempAbsolute = Path.Combine(tmpRoot, Path.GetFileName(finalAbsolute) + ".tmp");
+                // IMPORTANT: Use a unique temp filename per variant to avoid collisions.
+                var finalFileName = Path.GetFileName(finalAbsolute);
+                var tempFileName = $"{f.Variant.ToString().ToLowerInvariant()}-{finalFileName}.tmp";
+                var tempAbsolute = Path.Combine(tmpRoot, tempFileName);
 
-                // Write temp
                 await File.WriteAllBytesAsync(tempAbsolute, f.Content, ct);
 
                 tempPaths.Add((tempAbsolute, finalAbsolute));

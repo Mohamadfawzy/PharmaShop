@@ -1,5 +1,6 @@
 ﻿using Contracts;
 using Contracts.Images.Abstractions;
+using Contracts.Images.Dtos;
 using Contracts.IServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -21,7 +22,7 @@ public static class ServiceExtensions
     {
         //services.AddTransient(typeof(IGenericRepository<Customer>), typeof(GenericRepository<Customer>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<IImageService, ImageService>();
+        services.AddScoped<Contracts.IServices.IImageService, Service.ImageService>();
         services.AddScoped<JwtTokenService>();
         services.AddScoped<ILoginAuditService, LoginAuditService>();
         services.AddScoped<IUserRoleService, UserRoleService>();
@@ -77,10 +78,19 @@ public static class ServiceExtensions
     }
 
 
-    public static IServiceCollection AddImageModule(this IServiceCollection services, Action<ImageServiceOptions> configure)
+    public static IServiceCollection AddImageModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure(configure);
+        //services.Configure(configure);
 
+        // Bind options from appsettings.json
+        //services.Configure<ImageServiceOptions>(configure.GetSection("ImageService"));
+        //services.AddImageModule(opt =>
+        //{
+        //    opt.MaxUploadBytes = 10 * 1024 * 1024;
+        //    opt.MediumWidth = 1000;
+        //    opt.SmallWidth = 300;
+        //    opt.PreferWebpWhenAlpha = true;
+        //});
         // Processor (ImageSharp) + Local Storage
         services.AddSingleton<IImageProcessor, ImageSharpProcessor>();
         services.AddSingleton<IImageStorage, LocalDiskImageStorage>();
@@ -89,13 +99,7 @@ public static class ServiceExtensions
         services.AddSingleton<Contracts.Images.Abstractions.IImageService, Service.Images.ImageService>();
 
 
-        services.AddImageModule(opt =>
-        {
-            opt.MaxUploadBytes = 10 * 1024 * 1024;
-            opt.MediumWidth = 1000;
-            opt.SmallWidth = 300;
-            opt.PreferWebpWhenAlpha = true;
-        });
+       
 
         return services;
 

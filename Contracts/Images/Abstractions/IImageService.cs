@@ -17,12 +17,14 @@ public interface IImageService
         Stream imageData,
         string rootPath,
         string? prefix = null,
+        ImageOutputFormat outputFormat = ImageOutputFormat.Auto,
         CancellationToken ct = default);
 
     Task<IReadOnlyList<SavedImageResult>> SaveBatchAsync(
         IEnumerable<Stream> imagesData,
         string rootPath,
         string? prefix = null,
+        ImageOutputFormat outputFormat = ImageOutputFormat.Auto,
         CancellationToken ct = default);
 
     /// <summary>
@@ -33,6 +35,7 @@ public interface IImageService
         Stream imageData,
         string imageId,
         string rootPath,
+        ImageOutputFormat outputFormat = ImageOutputFormat.Auto,
         CancellationToken ct = default);
 
     Task DeleteAsync(string imageId, string rootPath, CancellationToken ct = default);

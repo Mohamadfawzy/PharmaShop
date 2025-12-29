@@ -1,4 +1,5 @@
 using Contracts;
+using Contracts.Images.Dtos;
 using Contracts.IServices;
 using Entities.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,12 @@ var builder = WebApplication.CreateBuilder(args);
 // ----------------------- Services -----------------------
 builder.Services.AddScoped<TraceIdResultFilter>();
 builder.Services.AddMemoryCache();
+
+// Bind options from appsettings.json
+builder.Services.Configure<ImageServiceOptions>(
+    builder.Configuration.GetSection("ImageService"));
+
+builder.Services.AddImageModule(builder.Configuration);
 
 builder.Services.AddControllers(options =>
 {

@@ -1,4 +1,5 @@
-﻿using Contracts.IServices;
+﻿using Contracts.Images.Abstractions;
+using Contracts.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Enums;
@@ -56,6 +57,7 @@ public class AdminCategoriesController : AdminBaseApiController
     public async Task<IActionResult> ChangeParent(int categoryId, [FromQuery] int? newParentCategoryId, CancellationToken ct)
         => FromAppResponse(await _categoryService.ChangeCategoryParentAsync(categoryId, newParentCategoryId, ct));
 
+
     [HttpPut("{categoryId:int}/image")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UpdateImage(int categoryId, [FromForm] IFormFile image, CancellationToken ct)
@@ -72,6 +74,45 @@ public class AdminCategoriesController : AdminBaseApiController
         await using var stream = image.OpenReadStream();
         return FromAppResponse(await _categoryService.UpdateCategoryImageAsync(categoryId, stream, UploadsRootPath, ct));
     }
+
+
+
+    [HttpPut("{categoryId:int}/image2")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpdateImage2(
+        int categoryId,
+        [FromForm] IFormFile image,
+        [FromQuery] ImageOutputFormat format = ImageOutputFormat.Auto,
+        CancellationToken ct = default)
+    {
+        if (image is null || image.Length == 0)
+            return BadRequest(AppResponse<string>.ValidationError("Image is required"));
+
+        if (image.Length > MaxImageBytes)
+            return BadRequest(AppResponse<string>.ValidationError($"Image size must be <= {MaxImageBytes / (1024 * 1024)}MB"));
+
+        if (!AllowedImageContentTypes.Contains(image.ContentType))
+            return BadRequest(AppResponse<string>.ValidationError("Unsupported image type. Allowed: jpg, png, webp"));
+
+        await using var stream = image.OpenReadStream();
+        //ImageOutputFormat outputFormat = ImageOutputFormat.Auto;
+        return FromAppResponse(await _categoryService.UpdateCategoryImageAsync2(categoryId, stream, UploadsRootPath, format, ct));
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     [HttpPatch("{categoryId:int}/activate")]
     public async Task<IActionResult> Activate(int categoryId, CancellationToken ct)
