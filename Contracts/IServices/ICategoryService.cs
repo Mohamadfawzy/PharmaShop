@@ -13,7 +13,7 @@ public interface ICategoryService
 
     Task<AppResponse<bool>> ChangeCategoryParentAsync(int categoryId, int? newParentCategoryId, CancellationToken ct);
 
-    Task<AppResponse<string>> UpdateCategoryImageAsync(int categoryId, Stream newImageStream, string rootPath, CancellationToken ct);
+    Task<AppResponse<string>> MyUpdateCategoryImageAsync(int categoryId, Stream newImageStream, string rootPath, CancellationToken ct);
 
     Task<AppResponse<bool>> SetCategoryActiveStatusAsync(int categoryId, bool isActive, CancellationToken ct);
 
@@ -25,5 +25,5 @@ public interface ICategoryService
     Task<AppResponse<List<CategoryDto>>> GetRootCategoriesAsync(CancellationToken ct);
 
     Task<AppResponse<List<CategoryTreeDto>>> GetCategoryTreeAsync(CancellationToken ct);
-    Task<AppResponse<string>> UpdateCategoryImageAsync2(int categoryId, Stream newImageStream, string rootPath, ImageOutputFormat outputFormat, CancellationToken ct);
+    Task<AppResponse<string>> UpdateCategoryImageAsync(int categoryId, Stream newImageStream, string rootPath, ImageOutputFormat outputFormat, CancellationToken ct);
 }

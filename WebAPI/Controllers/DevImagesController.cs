@@ -1,8 +1,6 @@
 ﻿using Contracts.Images.Abstractions;
 using Contracts.Images.Dtos;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.SqlServer.Server;
 
 namespace WebAPI.Controllers;
 [ApiController]

@@ -1,4 +1,15 @@
-﻿IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+﻿ USE master;
+ IF NOT EXISTS(SELECT name FROM sys.databases WHERE name = 'pharma_shope_db')
+ BEGIN
+     CREATE DATABASE pharma_shope_db COLLATE Arabic_100_CI_AS_KS_WS_SC_UTF8;
+ END
+ GO
+
+USE pharma_shope_db;
+
+Go
+
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
 BEGIN
     CREATE TABLE [__EFMigrationsHistory] (
         [MigrationId] nvarchar(150) NOT NULL,
@@ -30,7 +41,7 @@ CREATE TABLE [AspNetUsers] (
     [PasswordHash] nvarchar(max) NULL,
     [SecurityStamp] nvarchar(max) NULL,
     [ConcurrencyStamp] nvarchar(max) NULL,
-    [PhoneNumber] nvarchar(max) NULL,
+    [PhoneNumber] nvarchar(50) NULL,
     [PhoneNumberConfirmed] bit NOT NULL,
     [TwoFactorEnabled] bit NOT NULL,
     [LockoutEnd] datetimeoffset NULL,
@@ -58,8 +69,8 @@ CREATE TABLE [AspNetUserClaims] (
 );
 
 CREATE TABLE [AspNetUserLogins] (
-    [LoginProvider] nvarchar(450) NOT NULL,
-    [ProviderKey] nvarchar(450) NOT NULL,
+    [LoginProvider] nvarchar(128) NOT NULL,
+    [ProviderKey] nvarchar(128) NOT NULL,
     [ProviderDisplayName] nvarchar(max) NULL,
     [UserId] int NOT NULL,
     CONSTRAINT [PK_AspNetUserLogins] PRIMARY KEY ([LoginProvider], [ProviderKey]),
@@ -76,8 +87,8 @@ CREATE TABLE [AspNetUserRoles] (
 
 CREATE TABLE [AspNetUserTokens] (
     [UserId] int NOT NULL,
-    [LoginProvider] nvarchar(450) NOT NULL,
-    [Name] nvarchar(450) NOT NULL,
+    [LoginProvider] nvarchar(128) NOT NULL,
+    [Name] nvarchar(128) NOT NULL,
     [Value] nvarchar(max) NULL,
     CONSTRAINT [PK_AspNetUserTokens] PRIMARY KEY ([UserId], [LoginProvider], [Name]),
     CONSTRAINT [FK_AspNetUserTokens_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [AspNetUsers] ([Id]) ON DELETE CASCADE

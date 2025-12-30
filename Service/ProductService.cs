@@ -16,10 +16,10 @@ namespace Service;
 public class ProductService : IProductService
 {
     private readonly IUnitOfWork unitOfWork;
-    private readonly IImageService imageService;
+    private readonly IMyImageService imageService;
     private readonly ILogger<ProductService> logger;
 
-    public ProductService(IUnitOfWork unitOfWork, IImageService imageService, ILogger<ProductService> logger)
+    public ProductService(IUnitOfWork unitOfWork, IMyImageService imageService, ILogger<ProductService> logger)
     {
         this.unitOfWork = unitOfWork;
         this.imageService = imageService;

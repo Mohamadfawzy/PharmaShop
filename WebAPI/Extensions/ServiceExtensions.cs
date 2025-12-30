@@ -22,7 +22,7 @@ public static class ServiceExtensions
     {
         //services.AddTransient(typeof(IGenericRepository<Customer>), typeof(GenericRepository<Customer>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<Contracts.IServices.IImageService, Service.ImageService>();
+        services.AddScoped<Contracts.IServices.IMyImageService, Service.MyImageService>();
         services.AddScoped<JwtTokenService>();
         services.AddScoped<ILoginAuditService, LoginAuditService>();
         services.AddScoped<IUserRoleService, UserRoleService>();

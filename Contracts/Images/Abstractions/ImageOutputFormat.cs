@@ -10,7 +10,7 @@ namespace Contracts.Images.Abstractions;
 /// <summary>
 /// Controls how the output image format is selected.
 /// </summary>
-public enum ImageOutputFormat
+public enum ImageOutputFormat :byte
 {
     /// <summary>
     /// Automatically choose the best format based on image content (recommended).

@@ -96,7 +96,7 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.ImageId).HasMaxLength(128);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(200);
             entity.Property(e => e.NameEn).HasMaxLength(200);

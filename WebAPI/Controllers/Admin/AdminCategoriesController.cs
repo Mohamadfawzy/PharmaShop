@@ -1,9 +1,8 @@
 ﻿using Contracts.Images.Abstractions;
 using Contracts.IServices;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Enums;
 using Shared.Models.Dtos.Category;
+using Shared.Models.RequestFeatures;
 using Shared.Responses;
 
 namespace WebAPI.Controllers.Admin;
@@ -31,6 +30,15 @@ public class AdminCategoriesController : AdminBaseApiController
 
     // ========================= Queries =========================
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] PagingParameters paging, CancellationToken ct)
+    {
+        var pageNumber = paging?.PageNumber ?? 1;
+        var pageSize = paging?.PageSize ?? 10;
+
+        return FromAppResponse(await _categoryService.GetAllCategoriesAsync(pageNumber, pageSize, ct));
+    }
+
     [HttpGet("{categoryId:int}")]
     public async Task<IActionResult> GetById(int categoryId, CancellationToken ct)
         => FromAppResponse(await _categoryService.GetCategoryByIdAsync(categoryId, ct));
@@ -39,10 +47,13 @@ public class AdminCategoriesController : AdminBaseApiController
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CategoryCreateDto dto, CancellationToken ct)
-        => FromAppResponse(await _categoryService.CreateCategoryAsync(dto, ct));
+    {
+        return FromAppResponse(await _categoryService.CreateCategoryAsync(dto, ct));
+    }
 
     [HttpPut("{categoryId:int}")]
-    public async Task<IActionResult> Update(int categoryId, [FromBody] CategoryUpdateDto dto, CancellationToken ct)
+    public async Task<IActionResult> Update(
+        int categoryId, [FromBody] CategoryUpdateDto dto, CancellationToken ct)
     {
         if (dto is null)
             return ValidationError("Request body is required");
@@ -54,32 +65,17 @@ public class AdminCategoriesController : AdminBaseApiController
     }
 
     [HttpPut("{categoryId:int}/parent")]
-    public async Task<IActionResult> ChangeParent(int categoryId, [FromQuery] int? newParentCategoryId, CancellationToken ct)
+    public async Task<IActionResult> ChangeParent(
+        int categoryId, [FromQuery] int? newParentCategoryId, CancellationToken ct)
         => FromAppResponse(await _categoryService.ChangeCategoryParentAsync(categoryId, newParentCategoryId, ct));
 
 
+    // --------------------------------------------
+    // UpdateImage
+    // --------------------------------------------
     [HttpPut("{categoryId:int}/image")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UpdateImage(int categoryId, [FromForm] IFormFile image, CancellationToken ct)
-    {
-        if (image is null || image.Length == 0)
-            return BadRequest(AppResponse<string>.ValidationError("Image is required"));
-
-        if (image.Length > MaxImageBytes)
-            return BadRequest(AppResponse<string>.ValidationError($"Image size must be <= {MaxImageBytes / (1024 * 1024)}MB"));
-
-        if (!AllowedImageContentTypes.Contains(image.ContentType))
-            return BadRequest(AppResponse<string>.ValidationError("Unsupported image type. Allowed: jpg, png, webp"));
-
-        await using var stream = image.OpenReadStream();
-        return FromAppResponse(await _categoryService.UpdateCategoryImageAsync(categoryId, stream, UploadsRootPath, ct));
-    }
-
-
-
-    [HttpPut("{categoryId:int}/image2")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UpdateImage2(
+    public async Task<IActionResult> UpdateImage(
         int categoryId,
         [FromForm] IFormFile image,
         [FromQuery] ImageOutputFormat format = ImageOutputFormat.Auto,
@@ -95,23 +91,8 @@ public class AdminCategoriesController : AdminBaseApiController
             return BadRequest(AppResponse<string>.ValidationError("Unsupported image type. Allowed: jpg, png, webp"));
 
         await using var stream = image.OpenReadStream();
-        //ImageOutputFormat outputFormat = ImageOutputFormat.Auto;
-        return FromAppResponse(await _categoryService.UpdateCategoryImageAsync2(categoryId, stream, UploadsRootPath, format, ct));
+        return FromAppResponse(await _categoryService.UpdateCategoryImageAsync(categoryId, stream, UploadsRootPath, format, ct));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     [HttpPatch("{categoryId:int}/activate")]
@@ -121,7 +102,33 @@ public class AdminCategoriesController : AdminBaseApiController
     [HttpPatch("{categoryId:int}/deactivate")]
     public async Task<IActionResult> Deactivate(int categoryId, CancellationToken ct)
         => FromAppResponse(await _categoryService.SetCategoryActiveStatusAsync(categoryId, false, ct));
+
+
+
+
+
+    // ============================================
+    // Trash
+    // ============================================
+
+    [HttpPut("{categoryId:int}/my-image")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> MyUpdateImage(int categoryId, [FromForm] IFormFile image, CancellationToken ct)
+    {
+        if (image is null || image.Length == 0)
+            return BadRequest(AppResponse<string>.ValidationError("Image is required"));
+
+        if (image.Length > MaxImageBytes)
+            return BadRequest(AppResponse<string>.ValidationError($"Image size must be <= {MaxImageBytes / (1024 * 1024)}MB"));
+
+        if (!AllowedImageContentTypes.Contains(image.ContentType))
+            return BadRequest(AppResponse<string>.ValidationError("Unsupported image type. Allowed: jpg, png, webp"));
+
+        await using var stream = image.OpenReadStream();
+        return FromAppResponse(await _categoryService.MyUpdateCategoryImageAsync(categoryId, stream, UploadsRootPath, ct));
+    }
 }
+
 
 /*
 [Route("api/admin/categories")]

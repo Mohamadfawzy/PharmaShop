@@ -26,11 +26,36 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
             .Where(p => p.Id == id && !p.IsDeleted)
             .ExecuteUpdateAsync(
                 setters => setters
-                    .SetProperty(p => p.ImageUrl, imageUrl),
+                    .SetProperty(p => p.ImageId, imageUrl),
                 ct);
 
         return affectedRows > 0;
     }
+
+    public async Task<bool> UpdateImageMetaAsync(
+         int id,
+         string? imageId,
+         byte? imageFormat,
+         CancellationToken ct)
+    {
+        // IMPORTANT:
+        // - imageId can be null to clear image fields (optional behavior).
+        // - version is incremented atomically in the database to avoid race conditions.
+
+        var dateTimeNow = DateTime.Now;
+        var affectedRows = await context.Categories
+            .Where(c => c.Id == id && !c.IsDeleted)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(c => c.ImageId, imageId)
+                .SetProperty(c => c.ImageFormat, imageFormat)
+                .SetProperty(c => c.ImageUpdatedAt, dateTimeNow)
+                .SetProperty(c => c.ImageVersion, c => c.ImageVersion + 1)
+                .SetProperty(c => c.UpdatedAt, dateTimeNow),
+                ct);
+
+        return affectedRows > 0;
+    }
+
 
     public async Task AddCategoryAuditLogsRangeAsync(List<CategoryAuditLog> logs)
     {
@@ -72,9 +97,4 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
 
         return affectedRows > 0;
     }
-
-
-
-
-
 }

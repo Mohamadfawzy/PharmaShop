@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Contracts.Images.Enums;
 
-public enum StoredImageFormat
+public enum StoredImageFormat : byte
 {
-    Jpeg,
-    Png,
-    Webp
+    Jpeg = 1,
+    Png = 2,
+    Webp = 3
 }

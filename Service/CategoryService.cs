@@ -7,6 +7,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Shared.Extensions;
 using Shared.Models.Dtos.Category;
+using Shared.Models.RequestFeatures;
 using Shared.Responses;
 using System.Net;
 
@@ -17,7 +18,7 @@ public class CategoryService : ICategoryService
     private const int MaxPageSize = 100;
 
     private readonly IUnitOfWork unitOfWork;
-    private readonly Contracts.IServices.IImageService imageService;
+    private readonly Contracts.IServices.IMyImageService imageService;
     private readonly Contracts.Images.Abstractions.IImageService imageService2;
     private readonly ILogger<CategoryService> logger;
     private readonly ICurrentUserService currentUser;
@@ -28,7 +29,7 @@ public class CategoryService : ICategoryService
 
     public CategoryService(
         IUnitOfWork unitOfWork,
-        Contracts.IServices.IImageService imageService,
+        Contracts.IServices.IMyImageService imageService,
         ILogger<CategoryService> logger,
         ICurrentUserService currentUser,
         IMemoryCache cache,
@@ -65,7 +66,7 @@ public class CategoryService : ICategoryService
             {
                 Name = dto.Name,
                 NameEn = dto.NameEn,
-                DescriptionEn = dto.DescriptionEn,
+                Description = dto.Description,
                 ParentCategoryId = dto.ParentCategoryId,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -131,11 +132,12 @@ public class CategoryService : ICategoryService
     // (10) رجّع List بدلاً من IEnumerable لتفادي deferred execution
     // ===================================================================================
 
-    public async Task<AppResponse<List<CategoryDto>>> GetAllCategoriesAsync(int pageNumber, int pageSize, CancellationToken ct)
+    public async Task<AppResponse<List<CategoryDetailsDto>>> GetAllCategoriesAsync(
+        PagingParameters paging, CancellationToken ct)
     {
         var pagingValidation = ValidatePaging(pageNumber, pageSize);
         if (!pagingValidation.IsSuccess)
-            return pagingValidation.FromError<List<CategoryDto>>(); // Extension (FromError<T>)
+            return pagingValidation.FromError<List<CategoryDetailsDto>>(); // Extension (FromError<T>)
 
         pageNumber = NormalizePageNumber(pageNumber);
         pageSize = NormalizePageSize(pageSize);
@@ -149,8 +151,8 @@ public class CategoryService : ICategoryService
 
             if (totalCount == 0)
             {
-                return AppResponse<List<CategoryDto>>.Ok(
-                    new List<CategoryDto>(),
+                return AppResponse<List<CategoryDetailsDto>>.Ok(
+                    new List<CategoryDetailsDto>(),
                     PaginationInfo.Create(pageNumber, pageSize, 0)
                 );
             }
@@ -165,24 +167,24 @@ public class CategoryService : ICategoryService
                 ct: ct
             );
 
-            var result = categories.Select(c => new CategoryDto
+            var result = categories.Select(c => new CategoryDetailsDto
             {
                 Id = c.Id,
                 Name = c.Name,
                 NameEn = c.NameEn,
                 ParentCategoryId = c.ParentCategoryId,
-                ImageUrl = c.ImageUrl,
+                ImageId = c.ImageId,
                 IsActive = c.IsActive
             }).ToList();
 
             var pagination = PaginationInfo.Create(pageNumber, pageSize, totalCount);
 
-            return AppResponse<List<CategoryDto>>.Ok(result, pagination);
+            return AppResponse<List<CategoryDetailsDto>>.Ok(result, pagination);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "GetAllCategoriesAsync failed page={PageNumber}, size={PageSize}", pageNumber, pageSize);
-            return AppResponse<List<CategoryDto>>.InternalError("Failed to load categories");
+            return AppResponse<List<CategoryDetailsDto>>.InternalError("Failed to load categories");
         }
     }
 
@@ -237,87 +239,13 @@ public class CategoryService : ICategoryService
     // (4) Logging
     // ===================================================================================
 
-    public async Task<AppResponse<string>> UpdateCategoryImageAsync(int categoryId, Stream newImageStream, string rootPath, CancellationToken ct)
-    {
-        if (newImageStream is null || !newImageStream.CanRead || newImageStream.Length == 0)
-            return AppResponse<string>.ValidationError("Invalid image stream");
-
-        string? newFileName = null;
-        string? oldFileName = null;
-
-        await using var tx = await unitOfWork.BeginTransactionAsync(ct);
-
-        try
-        {
-            var category = await unitOfWork.Categories.GetByIdAsync(categoryId, ct);
-            if (category is null || category.IsDeleted)
-                return AppResponse<string>.NotFound("Category not found");
-
-            oldFileName = category.ImageUrl;
-
-            // Save new image to disk first
-            var prefix = $"category-{categoryId}";
-            newFileName = await imageService.SaveImageAsync(newImageStream, rootPath, prefix, ct);
-
-            // Update DB to point to the new image
-            var updated = await unitOfWork.Categories.UpdateImageUrlAsync(categoryId, newFileName, ct);
-
-            if (!updated)
-            {
-                // DB update failed => remove saved new image
-                await imageService.RemoveImageAsync(newFileName, rootPath);
-                return AppResponse<string>.InternalError("Failed to update category image");
-            }
-
-            await unitOfWork.CompleteAsync(ct);
-            await tx.CommitAsync(ct);
-
-            // ✅ حذف القديم بعد نجاح commit (Best-effort)
-            if (!string.IsNullOrWhiteSpace(oldFileName))
-            {
-                try
-                {
-                    await imageService.RemoveImageAsync(oldFileName, rootPath);
-                }
-                catch (Exception exDel)
-                {
-                    logger.LogWarning(exDel, "Failed to remove old category image {OldImage}", oldFileName);
-                }
-            }
-
-            return AppResponse<string>.Ok(newFileName, "Category image updated successfully");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "UpdateCategoryImageAsync failed CategoryId={CategoryId}", categoryId);
-
-            try
-            {
-                await tx.RollbackAsync(ct);
-            }
-            catch (Exception exRb)
-            {
-                logger.LogWarning(exRb, "Rollback failed in UpdateCategoryImageAsync");
-            }
-
-            // Remove newly saved image if exists
-            if (!string.IsNullOrWhiteSpace(newFileName))
-            {
-                try { await imageService.RemoveImageAsync(newFileName, rootPath); }
-                catch (Exception exDelNew) { logger.LogWarning(exDelNew, "Failed to remove new image {NewImage}", newFileName); }
-            }
-
-            return AppResponse<string>.InternalError("An error occurred while updating category image");
-        }
-    }
-
-
-    public async Task<AppResponse<string>> UpdateCategoryImageAsync2(
-     int categoryId,
-     Stream newImageStream,
-     string rootPath,
-     ImageOutputFormat outputFormat = ImageOutputFormat.Auto,
-     CancellationToken ct= default)
+    
+    public async Task<AppResponse<string>> UpdateCategoryImageAsync(
+         int categoryId,
+         Stream newImageStream,
+         string rootPath,
+         ImageOutputFormat outputFormat = ImageOutputFormat.Auto,
+         CancellationToken ct= default)
     {
         // IMPORTANT: Avoid relying on stream.Length (may be non-seekable).
         if (newImageStream is null || !newImageStream.CanRead)
@@ -337,17 +265,18 @@ public class CategoryService : ICategoryService
             // IMPORTANT:
             // Store a stable ImageId in DB (not a full path and not a changing filename).
             // If currently ImageUrl stores a filename, migrate it to store ImageId.
-            var imageId = category.ImageUrl; // treat as ImageId (stable)
+            var imageId = category.ImageId; // treat as ImageId (stable)
 
             SavedImageResult saved;
 
             if (string.IsNullOrWhiteSpace(imageId))
             {
                 // No image yet => create new one and store its Id.
-                var prefix = $"category-{categoryId}";
-                saved = await imageService2.SaveAsync(newImageStream, rootPath, categoryId.ToString(), outputFormat,  ct);
+                var prefix = $"CAT{category.Id}";
+                saved = await imageService2.SaveAsync(newImageStream, rootPath, prefix, outputFormat,  ct);
 
-                var updated = await unitOfWork.Categories.UpdateImageUrlAsync(categoryId, saved.Id, ct);
+                //var updated = await unitOfWork.Categories.UpdateImageUrlAsync(categoryId, saved.Id, ct);
+                var updated = await unitOfWork.Categories.UpdateImageMetaAsync(categoryId, saved.Id, (byte)saved.Format, ct);
                 if (!updated)
                 {
                     // DB update failed => delete newly stored image (best-effort).
@@ -364,6 +293,7 @@ public class CategoryService : ICategoryService
                 // No DB update needed because ImageId stays the same.
                 // If you store extra fields like Format/UpdatedAt, update them here.
                 // e.g. await unitOfWork.Categories.UpdateImageMetaAsync(categoryId, saved.Format, ct);
+                await unitOfWork.Categories.UpdateImageMetaAsync(categoryId, saved.Id, (byte)saved.Format, ct);
             }
 
             await unitOfWork.CompleteAsync(ct);
@@ -406,7 +336,7 @@ public class CategoryService : ICategoryService
                 Name = category.Name,
                 NameEn = category.NameEn,
                 ParentCategoryId = category.ParentCategoryId,
-                ImageUrl = category.ImageUrl,
+                ImageId = category.ImageId,
                 IsActive = category.IsActive
             };
 
@@ -430,7 +360,7 @@ public class CategoryService : ICategoryService
                 Id = c.Id,
                 Name = c.Name,
                 NameEn = c.NameEn,
-                ImageUrl = c.ImageUrl,
+                ImageId = c.ImageId,
                 IsActive = c.IsActive
             }).ToList();
 
@@ -474,7 +404,7 @@ public class CategoryService : ICategoryService
                     Id = c.Id,
                     Name = c.Name,
                     NameEn = c.NameEn,
-                    ImageUrl = c.ImageUrl,
+                    ImageUrl = c.ImageId,
                     IsActive = c.IsActive
                 });
 
@@ -539,7 +469,6 @@ public class CategoryService : ICategoryService
     }
 
 
-
     // ===================================================================================
     // Helpers
     // ===================================================================================
@@ -548,7 +477,7 @@ public class CategoryService : ICategoryService
     {
         category.Name = dto.Name;
         category.NameEn = dto.NameEn;
-        category.DescriptionEn = dto.DescriptionEn;
+        category.Description = dto.Description;
     }
 
     private static List<CategoryAuditLog> BuildUpdateAuditLogs(Category category, CategoryUpdateDto dto, string userId)
@@ -575,8 +504,8 @@ public class CategoryService : ICategoryService
         if (!string.Equals(category.NameEn, dto.NameEn, StringComparison.Ordinal))
             Add("NameEn", category.NameEn, dto.NameEn);
 
-        if (!string.Equals(category.DescriptionEn, dto.DescriptionEn, StringComparison.Ordinal))
-            Add("DescriptionEn", category.DescriptionEn, dto.DescriptionEn);
+        if (!string.Equals(category.Description, dto.Description, StringComparison.Ordinal))
+            Add("DescriptionEn", category.Description, dto.Description);
 
         return logs;
     }
@@ -633,5 +562,86 @@ public class CategoryService : ICategoryService
 
         // لو عندك root cache أو غيره:
         // _cache.Remove("categories:root:v1");
+    }
+
+
+
+
+
+    // ============================================
+    // Trash
+    // ============================================
+    public async Task<AppResponse<string>> MyUpdateCategoryImageAsync(int categoryId, Stream newImageStream, string rootPath, CancellationToken ct)
+    {
+        if (newImageStream is null || !newImageStream.CanRead || newImageStream.Length == 0)
+            return AppResponse<string>.ValidationError("Invalid image stream");
+
+        string? newFileName = null;
+        string? oldFileName = null;
+
+        await using var tx = await unitOfWork.BeginTransactionAsync(ct);
+
+        try
+        {
+            var category = await unitOfWork.Categories.GetByIdAsync(categoryId, ct);
+            if (category is null || category.IsDeleted)
+                return AppResponse<string>.NotFound("Category not found");
+
+            oldFileName = category.ImageId;
+
+            // Save new image to disk first
+            var prefix = $"category-{categoryId}";
+            newFileName = await imageService.SaveImageAsync(newImageStream, rootPath, prefix, ct);
+
+            // Update DB to point to the new image
+            var updated = await unitOfWork.Categories.UpdateImageUrlAsync(categoryId, newFileName, ct);
+
+            if (!updated)
+            {
+                // DB update failed => remove saved new image
+                await imageService.RemoveImageAsync(newFileName, rootPath);
+                return AppResponse<string>.InternalError("Failed to update category image");
+            }
+
+            await unitOfWork.CompleteAsync(ct);
+            await tx.CommitAsync(ct);
+
+            // ✅ حذف القديم بعد نجاح commit (Best-effort)
+            if (!string.IsNullOrWhiteSpace(oldFileName))
+            {
+                try
+                {
+                    await imageService.RemoveImageAsync(oldFileName, rootPath);
+                }
+                catch (Exception exDel)
+                {
+                    logger.LogWarning(exDel, "Failed to remove old category image {OldImage}", oldFileName);
+                }
+            }
+
+            return AppResponse<string>.Ok(newFileName, "Category image updated successfully");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "UpdateCategoryImageAsync failed CategoryId={CategoryId}", categoryId);
+
+            try
+            {
+                await tx.RollbackAsync(ct);
+            }
+            catch (Exception exRb)
+            {
+                logger.LogWarning(exRb, "Rollback failed in UpdateCategoryImageAsync");
+            }
+
+            // Remove newly saved image if exists
+            if (!string.IsNullOrWhiteSpace(newFileName))
+            {
+                try { await imageService.RemoveImageAsync(newFileName, rootPath); }
+                catch (Exception exDelNew) { logger.LogWarning(exDelNew, "Failed to remove new image {NewImage}", newFileName); }
+            }
+
+            return AppResponse<string>.InternalError("An error occurred while updating category image");
+        }
     }
 }

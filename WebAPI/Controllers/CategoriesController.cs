@@ -1,8 +1,6 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Models.Dtos.Category;
 using Shared.Models.RequestFeatures;
-using Shared.Responses;
 namespace WebAPI.Controllers;
 
 
@@ -17,15 +15,6 @@ public class CategoriesController : BaseApiController
     }
 
     // ========================= Queries =========================
-
-    [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] PagingParameters paging, CancellationToken ct)
-    {
-        var pageNumber = paging?.PageNumber ?? 1;
-        var pageSize = paging?.PageSize ?? 10;
-
-        return FromAppResponse(await _categoryService.GetAllCategoriesAsync(pageNumber, pageSize, ct));
-    }
 
     [HttpGet("root")]
     public async Task<IActionResult> GetRoots(CancellationToken ct)

@@ -16,10 +16,10 @@ public class CustomersController : ControllerBase
     //private readonly IGenericRepository<Customer> genericRepository;
     private readonly IUnitOfWork unitOfWork;
     private readonly ICustomerService customerService;
-    private readonly ImageService _imageService;
+    private readonly MyImageService _imageService;
     private readonly IWebHostEnvironment env;
 
-    public CustomersController(IUnitOfWork unitOfWork, ICustomerService customerService, ImageService imageService, IWebHostEnvironment env)
+    public CustomersController(IUnitOfWork unitOfWork, ICustomerService customerService, MyImageService imageService, IWebHostEnvironment env)
     {
         this.unitOfWork = unitOfWork;
         this.customerService = customerService;
