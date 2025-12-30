@@ -17,8 +17,11 @@ public class RequestParameters
             _pageSize = (value > maxPageSize) ? maxPageSize : value;
         }
     }
+    public bool? IsActive { get; set; } = null;
+    public bool? IsDeleted { get; set; } = null;
 
     // Sorting
     public bool OrderDescending { get; set; } = true;
+
     //public string? Fields { get; set; }
 }

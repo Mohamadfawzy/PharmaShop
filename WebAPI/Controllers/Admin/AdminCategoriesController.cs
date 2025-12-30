@@ -21,8 +21,7 @@ public class AdminCategoriesController : AdminBaseApiController
         "image/webp"
     };
 
-    public AdminCategoriesController(
-        ICategoryService categoryService,
+    public AdminCategoriesController(ICategoryService categoryService,
         IWebHostEnvironment env) : base(env)
     {
         _categoryService = categoryService;
@@ -31,12 +30,12 @@ public class AdminCategoriesController : AdminBaseApiController
     // ========================= Queries =========================
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] PagingParameters paging, CancellationToken ct)
+    public async Task<IActionResult> GetAll([FromQuery] RequestParameters param, CancellationToken ct)
     {
-        var pageNumber = paging?.PageNumber ?? 1;
-        var pageSize = paging?.PageSize ?? 10;
+        //var pageNumber = param?.PageNumber ?? 1;
+        //var pageSize = param?.PageSize ?? 10;
 
-        return FromAppResponse(await _categoryService.GetAllCategoriesAsync(pageNumber, pageSize, ct));
+        return FromAppResponse(await _categoryService.GetAllCategoriesAsync(param, ct));
     }
 
     [HttpGet("{categoryId:int}")]

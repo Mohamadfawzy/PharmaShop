@@ -9,6 +9,7 @@ using Shared.Extensions;
 using Shared.Models.Dtos.Category;
 using Shared.Models.RequestFeatures;
 using Shared.Responses;
+using System.Linq.Expressions;
 using System.Net;
 
 namespace Service;
@@ -47,7 +48,8 @@ public class CategoryService : ICategoryService
     // (1) استخدم ErrorCode/StatusCode الصحيحين بدل Fail عام
     // ===================================================================================
 
-    public async Task<AppResponse<int>> CreateCategoryAsync(CategoryCreateDto dto, CancellationToken ct)
+    public async Task<AppResponse<int>> CreateCategoryAsync(
+        CategoryCreateDto dto, CancellationToken ct)
     {
         try
         {
@@ -133,37 +135,43 @@ public class CategoryService : ICategoryService
     // ===================================================================================
 
     public async Task<AppResponse<List<CategoryDetailsDto>>> GetAllCategoriesAsync(
-        PagingParameters paging, CancellationToken ct)
+        RequestParameters param, CancellationToken ct)
     {
-        var pagingValidation = ValidatePaging(pageNumber, pageSize);
+        var pagingValidation = ValidatePaging(param.PageNumber, param.PageSize);
         if (!pagingValidation.IsSuccess)
             return pagingValidation.FromError<List<CategoryDetailsDto>>(); // Extension (FromError<T>)
 
-        pageNumber = NormalizePageNumber(pageNumber);
-        pageSize = NormalizePageSize(pageSize);
+        param.PageNumber = NormalizePageNumber(param.PageNumber);
+        param.PageSize = NormalizePageSize(param.PageSize);
 
         try
         {
-            var totalCount = await unitOfWork.Categories.CountAsync(
-                c => !c.IsDeleted && c.IsActive,
-                ct
-            );
+
+            Expression<Func<Category, bool>> criteria = c =>
+            (param.IsActive == null || c.IsActive == param.IsActive.Value) &&
+            (param.IsDeleted == null || c.IsDeleted == param.IsDeleted.Value);
+
+            var totalCount = await unitOfWork.Categories.CountAsync(criteria,ct);
 
             if (totalCount == 0)
             {
                 return AppResponse<List<CategoryDetailsDto>>.Ok(
                     new List<CategoryDetailsDto>(),
-                    PaginationInfo.Create(pageNumber, pageSize, 0)
+                    PaginationInfo.Create(param.PageNumber, param.PageSize, 0)
                 );
             }
 
-            var skip = (pageNumber - 1) * pageSize;
+            var skip = (param.PageNumber - 1) * param.PageSize;
+
+            //Expression<Func<Category, bool>> criteria = c =>
+            //    (param.IsActive == null || c.IsActive == param.IsActive.Value) &&
+            //    (param.IsDeleted == null || c.IsDeleted == param.IsDeleted.Value);
 
             var categories = await unitOfWork.Categories.GetAllAsync(
-                criteria: c => c.IsActive && !c.IsDeleted,
+                criteria: criteria,
                 orderBy: q => q.OrderBy(c => c.Name),
                 skip: skip,
-                take: pageSize,
+                take: param.PageSize,
                 ct: ct
             );
 
@@ -177,13 +185,13 @@ public class CategoryService : ICategoryService
                 IsActive = c.IsActive
             }).ToList();
 
-            var pagination = PaginationInfo.Create(pageNumber, pageSize, totalCount);
+            var pagination = PaginationInfo.Create(param.PageNumber, param.PageSize, totalCount);
 
             return AppResponse<List<CategoryDetailsDto>>.Ok(result, pagination);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "GetAllCategoriesAsync failed page={PageNumber}, size={PageSize}", pageNumber, pageSize);
+            logger.LogError(ex, "GetAllCategoriesAsync failed page={PageNumber}, size={PageSize}", param.PageNumber, param.PageSize);
             return AppResponse<List<CategoryDetailsDto>>.InternalError("Failed to load categories");
         }
     }
