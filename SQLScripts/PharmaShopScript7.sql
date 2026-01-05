@@ -143,53 +143,250 @@ CREATE INDEX IX_Categories_ImageId
 
 GO
 
-CREATE TABLE Products (
-    Id INT IDENTITY(1,1),
-	CategoryId INT NOT NULL,
+--========================================================
+-- Products (Production-ready, SQL Server)
+--========================================================
+GO
+CREATE TABLE dbo.Products
+(
+    Id                    INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_Products PRIMARY KEY,                -- رقم تعريفي داخلي
 
-    Name NVARCHAR(250) NOT NULL,
-	NameEn NVARCHAR(250) NOT NULL,
-    Description NVARCHAR(MAX) NULL,
-	DescriptionEn NVARCHAR(MAX) NULL,
+    PharmacyId            INT NOT NULL,                    -- الصيدلية المالكة (Multi-tenant)
+    CategoryId            INT NOT NULL,                    -- التصنيف الرئيسي
+    BrandId               INT NULL,                        -- الشركة/الماركة (اختياري)
 
-    Barcode VARCHAR(50) NOT NULL, -- الباركود الخاص بالصيدلية
-    InternationalCode VARCHAR(50) NULL ,  -- الكود الدولي إن وجد
-    StockProductCode VARCHAR(50) NULL , -- الكود في نظام stock
+    ProductCode           VARCHAR(50) NULL,                -- كود ثابت داخلي للمنتج (للطباعة/الفواتير)
+    SKU                   VARCHAR(50) NULL,                -- Stock Keeping Unit: كود المخزون الداخلي
+    Barcode               VARCHAR(50) NULL,                -- باركود (قد يكون غير موجود لبعض المنتجات)
+    InternationalCode     VARCHAR(50) NULL,                -- كود دولي (GTIN/UPC... إن وجد)
+    StockProductCode      VARCHAR(50) NULL,                -- كود منتج من نظام Stock/ERP خارجي
 
-    Price DECIMAL(18,2) NOT NULL, -- 200 EGP
-    OldPrice DECIMAL(18,2) NULL,
-    IsAvailable BIT NOT NULL DEFAULT 1, -- InStock
-    IsIntegrated BIT NOT NULL DEFAULT 0,
-    IntegratedAt DATETIME NULL,
+    Name                  NVARCHAR(250) NOT NULL,          -- اسم المنتج عربي
+    NameEn                NVARCHAR(250) NOT NULL,          -- اسم المنتج إنجليزي
+    Slug                  NVARCHAR(300) NULL,              -- رابط/Slug صديق للـ SEO (اختياري)
 
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    CreatedBy NVARCHAR(100) NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    IsDeleted BIT NOT NULL DEFAULT 0,
+    Description           NVARCHAR(MAX) NULL,              -- وصف عربي
+    DescriptionEn         NVARCHAR(MAX) NULL,              -- وصف إنجليزي
 
-	-- +
-	Points DECIMAL(18,2) NULL,-- 5% == 10 EPG = 50 points
-	PromoDisc DECIMAL(18,2) NULL, -- عرض خصم بيع مباشر
-	PromoEndDate DATETIME NULL, 
+    -- =========================
+    -- Packaging / Pharmacy specifics (بيانات العبوة)
+    -- =========================
+    DosageForm            NVARCHAR(50) NULL,               -- شكل الجرعة (Tablet, Syrup, Cream...)
+    Strength              NVARCHAR(50) NULL,               -- التركيز (500mg, 1g, 5mg/5ml...)
+    PackSize              NVARCHAR(50) NULL,               -- حجم/محتوى العبوة (20 tabs, 120 ml...)
+    Unit                  NVARCHAR(30) NULL,               -- وحدة البيع (Piece/Box/Strip/Bottle...)
 
-	IsGroupOffer BIT NOT NULL DEFAULT 0, -- هل عليه عرض؟
+    -- =========================
+    -- Pricing (حقائق التسعير الأساسية)
+    -- =========================
+    CurrencyCode          CHAR(3) NOT NULL
+        CONSTRAINT DF_Products_CurrencyCode DEFAULT ('EGP'), -- عملة السعر (ISO 4217)
 
-	CONSTRAINT UQ_Products_Barcode UNIQUE (Barcode),
-    --CONSTRAINT UQ_Products_InternationalCode UNIQUE (InternationalCode),
-    --CONSTRAINT UQ_Products_StockProductCode UNIQUE (StockProductCode),
+    CostPrice             DECIMAL(18,2) NULL,              -- سعر الشراء (للهامش/التقارير)
+    ListPrice             DECIMAL(18,2) NOT NULL,          -- السعر الأساسي قبل العروض
+    PriceUpdatedAt        DATETIME2(0) NULL,               -- آخر وقت تم فيه تعديل السعر
 
+    -- =========================
+    -- Taxes (ضرائب بشكل مرن)
+    -- =========================
+    IsTaxable             BIT NOT NULL
+        CONSTRAINT DF_Products_IsTaxable DEFAULT (1),      -- هل المنتج خاضع للضريبة؟
+    VatRate               DECIMAL(5,2) NOT NULL
+        CONSTRAINT DF_Products_VatRate DEFAULT (0.00),     -- نسبة الضريبة % (لو IsTaxable=1)
+    TaxCategoryCode       NVARCHAR(30) NULL,               -- تصنيف ضريبي (إن احتجت قواعد مختلفة لاحقًا)
 
-    INDEX IX_Products_CategoryId (CategoryId),
-    INDEX IX_Products_CreatedAt (CreatedAt),
-	INDEX IX_Products_Name (Name),
-	INDEX IX_Products_NameEn (NameEn),
+    -- =========================
+    -- Order limits (حدود الطلب)
+    -- =========================
+    MinOrderQty           INT NOT NULL
+        CONSTRAINT DF_Products_MinOrderQty DEFAULT (1),    -- أقل كمية مسموحة في الطلب
+    MaxOrderQty           INT NULL,                         -- أقصى كمية مسموحة في الطلب (اختياري)
+    MaxPerDayQty          INT NULL,                         -- أقصى كمية يوميًا (اختياري لبعض المنتجات)
 
-	CONSTRAINT PK_Products PRIMARY KEY (Id),
+    IsReturnable          BIT NOT NULL
+        CONSTRAINT DF_Products_IsReturnable DEFAULT (1),   -- هل يمكن إرجاع المنتج؟
+    ReturnWindowDays      INT NULL,                         -- عدد أيام السماح بالاسترجاع (اختياري)
 
-    CONSTRAINT FK_Products_Category_CategoryId
-        FOREIGN KEY (CategoryId) REFERENCES Categories(Id)
+    -- =========================
+    -- Shipping / weight (الشحن والوزن)
+    -- =========================
+    WeightGrams           INT NULL,                         -- وزن المنتج بالجرام (للشحن والتسعير)
+    LengthMm              INT NULL,                         -- طول المنتج (مم)
+    WidthMm               INT NULL,                         -- عرض المنتج (مم)
+    HeightMm              INT NULL,                         -- ارتفاع المنتج (مم)
+
+    -- =========================
+    -- Compliance & rules (الامتثال والسياسات)
+    -- =========================
+    RequiresPrescription  BIT NOT NULL
+        CONSTRAINT DF_Products_RequiresPrescription DEFAULT (0), -- يحتاج روشتة؟
+    AgeRestricted         BIT NOT NULL
+        CONSTRAINT DF_Products_AgeRestricted DEFAULT (0),        -- مقيد بعمر؟
+    MinAge                INT NULL,                               -- أقل عمر مسموح (إذا AgeRestricted=1)
+    StorageConditions     NVARCHAR(200) NULL,                     -- شروط التخزين (درجة حرارة/بعيدًا عن الشمس...)
+    RequiresColdChain     BIT NOT NULL
+        CONSTRAINT DF_Products_RequiresColdChain DEFAULT (0),     -- يحتاج تبريد/سلسلة باردة؟
+    ControlledSubstance   BIT NOT NULL
+        CONSTRAINT DF_Products_ControlledSubstance DEFAULT (0),   -- مادة خاضعة للرقابة؟ (اختياري حسب المجال)
+
+    EarnPoints            BIT NOT NULL
+        CONSTRAINT DF_Products_EarnPoints DEFAULT (1),            -- هل يكتسب نقاط ولاء؟
+
+    -- =========================
+    -- Availability / Inventory flags (التوفر)
+    -- =========================
+    TrackInventory        BIT NOT NULL
+        CONSTRAINT DF_Products_TrackInventory DEFAULT (1),        -- هل يتتبع المخزون؟
+    IsAvailable           BIT NOT NULL
+        CONSTRAINT DF_Products_IsAvailable DEFAULT (1),           -- إتاحة يدويًا (حتى لو المخزون 0)
+    IsFeatured            BIT NOT NULL
+        CONSTRAINT DF_Products_IsFeatured DEFAULT (0),            -- منتج مميز (يظهر في الرئيسية)
+
+    -- =========================
+    -- Search helper fields (البحث)
+    -- =========================
+    SearchKeywords        NVARCHAR(500) NULL,                     -- كلمات مفتاحية للبحث (synonyms/arabic variants)
+    NormalizedName        NVARCHAR(250) NULL,                     -- اسم مُطبّع للبحث (اختياري)
+    NormalizedNameEn      NVARCHAR(250) NULL,                     -- اسم مُطبّع إنجليزي (اختياري)
+
+    -- =========================
+    -- Integration flags (تكامل)
+    -- =========================
+    IsIntegrated          BIT NOT NULL
+        CONSTRAINT DF_Products_IsIntegrated DEFAULT (0),          -- هل تم دمجه مع نظام خارجي؟
+    IntegratedAt          DATETIME2(0) NULL,                      -- تاريخ الدمج
+
+    -- =========================
+    -- Auditing / soft delete (التدقيق والحذف المنطقي)
+    -- =========================
+    CreatedAt             DATETIME2(0) NOT NULL
+        CONSTRAINT DF_Products_CreatedAt DEFAULT (SYSUTCDATETIME()), -- تاريخ الإنشاء (UTC)
+    UpdatedAt             DATETIME2(0) NULL,                      -- تاريخ آخر تعديل
+    CreatedBy             NVARCHAR(100) NULL,                     -- أنشأه من؟
+    UpdatedBy             NVARCHAR(100) NULL,                     -- عدله من؟
+
+    IsActive              BIT NOT NULL
+        CONSTRAINT DF_Products_IsActive DEFAULT (1),              -- ظاهر/غير ظاهر (غير محذوف)
+
+    DeletedAt             DATETIME2(0) NULL,                      -- تاريخ الحذف المنطقي (NULL = غير محذوف)
+    DeletedBy             NVARCHAR(100) NULL,                     -- حُذف بواسطة
+
+    RowVersion            ROWVERSION NOT NULL,                    -- لمنع تعارض التحديثات (Concurrency)
+
+    -- =========================
+    -- Constraints (قيود تحقق)
+    -- =========================
+    CONSTRAINT CK_Products_Prices
+        CHECK (ListPrice >= 0 AND (CostPrice IS NULL OR CostPrice >= 0)),
+
+    CONSTRAINT CK_Products_Tax
+        CHECK (VatRate >= 0 AND VatRate <= 100),
+
+    CONSTRAINT CK_Products_OrderLimits
+        CHECK (
+            MinOrderQty > 0
+            AND (MaxOrderQty IS NULL OR MaxOrderQty >= MinOrderQty)
+            AND (MaxPerDayQty IS NULL OR MaxPerDayQty > 0)
+        ),
+
+    CONSTRAINT CK_Products_ReturnWindow
+        CHECK (
+            (IsReturnable = 0 AND ReturnWindowDays IS NULL)
+            OR (IsReturnable = 1 AND (ReturnWindowDays IS NULL OR ReturnWindowDays > 0))
+        ),
+
+    CONSTRAINT CK_Products_Dimensions
+        CHECK (
+            (WeightGrams IS NULL OR WeightGrams >= 0)
+            AND (LengthMm IS NULL OR LengthMm >= 0)
+            AND (WidthMm  IS NULL OR WidthMm  >= 0)
+            AND (HeightMm IS NULL OR HeightMm >= 0)
+        ),
+
+    CONSTRAINT CK_Products_Age
+        CHECK (
+            (AgeRestricted = 0 AND MinAge IS NULL)
+            OR (AgeRestricted = 1 AND MinAge IS NOT NULL AND MinAge >= 0)
+        ),
+
+    -- =========================
+    -- Foreign Keys
+    -- =========================
+    CONSTRAINT FK_Products_Pharmacies
+        FOREIGN KEY (PharmacyId) REFERENCES dbo.Pharmacies(Id),
+
+    CONSTRAINT FK_Products_Categories
+        FOREIGN KEY (CategoryId) REFERENCES dbo.Categories(Id)
+
+    -- إن كان لديك جدول Brands فعّل هذا:
+    -- ,CONSTRAINT FK_Products_Brands
+    --     FOREIGN KEY (BrandId) REFERENCES dbo.Brands(Id)
 );
+GO
+
+--========================================================
+-- Uniqueness (Filtered unique indexes)
+--========================================================
+
+-- كود ثابت Unique داخل الصيدلية (إن وجد)
+CREATE UNIQUE INDEX UX_Products_Pharmacy_ProductCode
+ON dbo.Products(PharmacyId, ProductCode)
+WHERE ProductCode IS NOT NULL AND ProductCode <> '';
+GO
+
+-- SKU Unique داخل الصيدلية (إن وجد)
+CREATE UNIQUE INDEX UX_Products_Pharmacy_SKU
+ON dbo.Products(PharmacyId, SKU)
+WHERE SKU IS NOT NULL AND SKU <> '';
+GO
+
+-- Barcode Unique داخل الصيدلية (إن وجد)
+CREATE UNIQUE INDEX UX_Products_Pharmacy_Barcode
+ON dbo.Products(PharmacyId, Barcode)
+WHERE Barcode IS NOT NULL AND Barcode <> '';
+GO
+
+-- InternationalCode Unique داخل الصيدلية (إن وجد)
+CREATE UNIQUE INDEX UX_Products_Pharmacy_InternationalCode
+ON dbo.Products(PharmacyId, InternationalCode)
+WHERE InternationalCode IS NOT NULL AND InternationalCode <> '';
+GO
+
+--========================================================
+-- Query performance indexes
+--========================================================
+
+-- الاستعلام الأكثر شيوعًا: منتجات الصيدلية النشطة غير المحذوفة داخل تصنيف
+CREATE INDEX IX_Products_Pharmacy_Category_Active
+ON dbo.Products(PharmacyId, CategoryId, IsActive)
+INCLUDE (Name, NameEn, ListPrice, IsAvailable, IsFeatured, TrackInventory, RequiresPrescription)
+WHERE DeletedAt IS NULL;
+GO
+
+-- البحث بالاسم
+CREATE INDEX IX_Products_Pharmacy_Name
+ON dbo.Products(PharmacyId, Name)
+WHERE DeletedAt IS NULL;
+GO
+
+CREATE INDEX IX_Products_Pharmacy_NameEn
+ON dbo.Products(PharmacyId, NameEn)
+WHERE DeletedAt IS NULL;
+GO
+
+-- كلمات بحث/تطبيع (اختياري لكنه مفيد)
+CREATE INDEX IX_Products_Pharmacy_Search
+ON dbo.Products(PharmacyId, NormalizedName, NormalizedNameEn)
+INCLUDE (Name, NameEn)
+WHERE DeletedAt IS NULL;
+GO
+
+-- الفرز بالإنشاء
+CREATE INDEX IX_Products_CreatedAt
+ON dbo.Products(CreatedAt DESC);
+GO
+
 
 -- factor= 5
 -- user Points= 1000 points = 1000/factor= 200 EGP
