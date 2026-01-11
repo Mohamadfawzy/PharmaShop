@@ -15,11 +15,11 @@ public static class ProductMappingExtensions
             NameEn = dto.NameEn,
             Description = dto.Description,
             DescriptionEn = dto.DescriptionEn,
-            Barcode = dto.Barcode,
-            Price = dto.Price,
-            OldPrice = dto.OldPrice,
-            CategoryId = dto.CategoryId,
-            IsAvailable = dto.IsAvailable,
+            //Barcode = dto.Barcode,
+            //Price = dto.Price,
+            //OldPrice = dto.OldPrice,
+            //CategoryId = dto.CategoryId,
+            //IsAvailable = dto.IsAvailable,
             // It's best to set the domain/DB-related fields in the service (CreatedAt/IsActive).
             // But if you want to set them here:
             CreatedAt = DateTime.UtcNow,
@@ -60,16 +60,16 @@ public static class ProductMappingExtensions
             NameEn = product.NameEn ?? string.Empty,
             Description = product.Description ?? string.Empty,
             DescriptionEn = product.DescriptionEn ?? string.Empty,
-            Barcode = product.Barcode ?? string.Empty,
-            Price = product.Price,
-            IsAvailable = product.IsAvailable,
-            Points = product.Points,
-            PromoDisc = product.PromoDisc,
-            PromoEndDate = product.PromoEndDate,
-            IsGroupOffer = product.IsGroupOffer,
-            ImageName = product.ProductImages.FirstOrDefault(pi => pi.IsMain)?.ImageUrl
-                        ?? product.ProductImages.FirstOrDefault()?.ImageUrl
-                        ?? string.Empty
+            //Barcode = product.Barcode ?? string.Empty,
+            //Price = product.Price,
+            //IsAvailable = product.IsAvailable,
+            //Points = product.Points,
+            //PromoDisc = product.PromoDisc,
+            //PromoEndDate = product.PromoEndDate,
+            //IsGroupOffer = product.IsGroupOffer,
+            //ImageName = product.ProductImages.FirstOrDefault(pi => pi.IsMain)?.ImageUrl
+            //            ?? product.ProductImages.FirstOrDefault()?.ImageUrl
+            //            ?? string.Empty
         };
     }
 

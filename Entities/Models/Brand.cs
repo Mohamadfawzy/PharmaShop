@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Entities.Models;
 
-public partial class Tag
+public partial class Brand
 {
     public int Id { get; set; }
 
@@ -13,11 +13,15 @@ public partial class Tag
 
     public string? NameEn { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-
     public bool IsActive { get; set; }
 
-    public virtual Pharmacy Pharmacy { get; set; } = null!;
+    public DateTime CreatedAt { get; set; }
 
-    public virtual ICollection<ProductTag> ProductTags { get; set; } = new List<ProductTag>();
+    public DateTime? DeletedAt { get; set; }
+
+    public string? DeletedBy { get; set; }
+
+    public byte[] RowVersion { get; set; } = null!;
+
+    public virtual Pharmacy Pharmacy { get; set; } = null!;
 }

@@ -21,21 +21,35 @@ public partial class Pharmacy
 
     public string? Address { get; set; }
 
-    public double? Latitude { get; set; }
+    public decimal? Latitude { get; set; }
 
-    public double? Longitude { get; set; }
+    public decimal? Longitude { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
     public bool IsActive { get; set; }
 
-    public virtual ICollection<CustomerPointsHistory> CustomerPointsHistories { get; set; } = new List<CustomerPointsHistory>();
+    public virtual ICollection<Brand> Brands { get; set; } = new List<Brand>();
 
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
 
-    public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
+    public virtual PointSetting? PointSetting { get; set; }
+
+    public virtual ICollection<PointsTransaction> PointsTransactions { get; set; } = new List<PointsTransaction>();
+
+    public virtual ICollection<ProductBatch> ProductBatches { get; set; } = new List<ProductBatch>();
+
+    public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
+
+    public virtual ICollection<ProductInventory> ProductInventories { get; set; } = new List<ProductInventory>();
+
+    public virtual ICollection<ProductUnit> ProductUnits { get; set; } = new List<ProductUnit>();
+
+    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 
     public virtual ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
 
-    public virtual ICollection<SalesHeaderReturn> SalesHeaderReturns { get; set; } = new List<SalesHeaderReturn>();
+    public virtual Store? Store { get; set; }
+
+    public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 }

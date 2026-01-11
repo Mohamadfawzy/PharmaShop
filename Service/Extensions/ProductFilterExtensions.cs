@@ -13,17 +13,17 @@ public static class ProductFilterExtensions
         if (parameters.CategoryId.HasValue)
             query = query.Where(p => p.CategoryId == parameters.CategoryId);
 
-        if (parameters.IsAvailable.HasValue)
-            query = query.Where(p => p.IsAvailable == parameters.IsAvailable);
+        //if (parameters.IsAvailable.HasValue)
+        //    query = query.Where(p => p.IsAvailable == parameters.IsAvailable);
 
         if (parameters.IsActive.HasValue)
             query = query.Where(p => p.IsActive == parameters.IsActive);
 
-        if (parameters.MinPrice.HasValue)
-            query = query.Where(p => p.Price >= parameters.MinPrice.Value);
+        //if (parameters.MinPrice.HasValue)
+        //    query = query.Where(p => p.Price >= parameters.MinPrice.Value);
 
-        if (parameters.MaxPrice.HasValue)
-            query = query.Where(p => p.Price <= parameters.MaxPrice.Value);
+        //if (parameters.MaxPrice.HasValue)
+        //    query = query.Where(p => p.Price <= parameters.MaxPrice.Value);
 
         if (!string.IsNullOrWhiteSpace(parameters.Name))
             query = query.Where(p => p.Name.Contains(parameters.Name) || p.NameEn.Contains(parameters.Name));
@@ -50,10 +50,10 @@ public static class ProductFilterExtensions
                     ? query.OrderByDescending(p => p.UpdatedAt)
                     : query.OrderBy(p => p.UpdatedAt),
 
-            ProductOrderBy.Price =>
-                parameters.OrderDescending
-                    ? query.OrderByDescending(p => p.Price)
-                    : query.OrderBy(p => p.Price),
+            //ProductOrderBy.Price =>
+            //    parameters.OrderDescending
+            //        ? query.OrderByDescending(p => p.Price)
+            //        : query.OrderBy(p => p.Price),
 
             ProductOrderBy.Name =>
                 parameters.OrderDescending

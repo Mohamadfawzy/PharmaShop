@@ -76,10 +76,10 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
     public async Task<bool> SoftDeleteAsync(int productId, CancellationToken ct)
     {
         var affectedRows = await context.Products
-            .Where(p => p.Id == productId && !p.IsDeleted)
+            .Where(p => p.Id == productId )
             .ExecuteUpdateAsync(
                 setters => setters
-                    .SetProperty(p => p.IsDeleted, true)
+                    .SetProperty(p => p.IsActive, true)
                     .SetProperty(p => p.UpdatedAt, DateTime.UtcNow),
                 ct);
 
@@ -89,7 +89,7 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
     public async Task<bool> UpdateIsActiveAsync(int productId,bool isActive, CancellationToken ct)
     {
         var affectedRows = await context.Products
-            .Where(p => p.Id == productId && !p.IsDeleted)
+            .Where(p => p.Id == productId )
             .ExecuteUpdateAsync(
                 setters => setters
                     .SetProperty(p => p.IsActive, isActive),

@@ -15,5 +15,5 @@ public partial class Pharmacist
 
     public int? UserId { get; set; }
 
-    public virtual User? User { get; set; }
+    public virtual AspNetUser? User { get; set; }
 }

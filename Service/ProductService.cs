@@ -102,7 +102,7 @@ public class ProductService : IProductService
                 {
                     ProductId = productId,
                     ImageUrl = fileName,
-                    IsMain = sortOrder == 1, // First image is the main image
+                    IsPrimary = sortOrder == 1, // First image is the main image
                     SortOrder = sortOrder,
                     CreatedAt = DateTime.UtcNow
                 });
@@ -186,12 +186,12 @@ public class ProductService : IProductService
         product.Description = dto.Description;
         product.DescriptionEn = dto.DescriptionEn;
         product.Barcode = dto.Barcode;
-        product.Price = dto.Price;
-        product.OldPrice = dto.OldPrice;
-        product.IsAvailable = dto.IsAvailable;
+        //product.Price = dto.Price;
+        //product.OldPrice = dto.OldPrice;
+        //product.IsAvailable = dto.IsAvailable;
+        //product.Points = dto.Points;
+        //product.PromoDisc = dto.PromoDisc;
         product.IsActive = dto.IsActive;
-        product.Points = dto.Points;
-        product.PromoDisc = dto.PromoDisc;
         product.UpdatedAt = DateTime.UtcNow;
 
         unitOfWork.Products.Update(product);
@@ -350,16 +350,16 @@ public class ProductService : IProductService
         product.CreatedAt = DateTime.UtcNow;
 
         // Attach images if provided
-        if (imageIds != null && imageIds.Any())
-        {
-            product.ProductImages = imageIds
-                .Select((id, index) => new ProductImage
-                {
-                    ImageUrl = id,
-                    IsMain = index == 0 // أول صورة تعتبر الصورة الرئيسية
-                })
-                .ToList();
-        }
+        //if (imageIds != null && imageIds.Any())
+        //{
+        //    product.ProductImage = imageIds
+        //        .Select((id, index) => new ProductImage
+        //        {
+        //            ImageUrl = id,
+        //            IsPrimary = index == 0 // أول صورة تعتبر الصورة الرئيسية
+        //        })
+        //        .ToList();
+        //}
         return product;
     }
 

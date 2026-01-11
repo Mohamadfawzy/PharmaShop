@@ -41,19 +41,9 @@ public partial class Customer
 
     public virtual ICollection<CustomerAddress> CustomerAddresses { get; set; } = new List<CustomerAddress>();
 
-    public virtual ICollection<CustomerPointsHistory> CustomerPointsHistories { get; set; } = new List<CustomerPointsHistory>();
-
     public virtual Pharmacy? Pharmacy { get; set; }
 
-    public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
+    public virtual ICollection<PointsTransaction> PointsTransactions { get; set; } = new List<PointsTransaction>();
 
-    public virtual ICollection<PromoCodeUsage> PromoCodeUsages { get; set; } = new List<PromoCodeUsage>();
-
-    public virtual ICollection<PromoCode> PromoCodes { get; set; } = new List<PromoCode>();
-
-    public virtual ICollection<SalesHeaderReturn> SalesHeaderReturns { get; set; } = new List<SalesHeaderReturn>();
-
-    public virtual ICollection<SalesHeader> SalesHeaders { get; set; } = new List<SalesHeader>();
-
-    public virtual User? User { get; set; }
+    public virtual AspNetUser? User { get; set; }
 }

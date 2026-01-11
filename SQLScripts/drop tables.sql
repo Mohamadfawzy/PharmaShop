@@ -42,11 +42,14 @@ GO
 -- =====================================
 -- 3) Core business tables
 -- =====================================
-
+DROP TABLE IF EXISTS ProductImages
+DROP TABLE IF EXISTS ProductBatches
+DROP TABLE IF EXISTS ProductInventory 
+DROP TABLE IF EXISTS ProductUnits
 DROP TABLE IF EXISTS Products;
 DROP TABLE IF EXISTS Tags;
-
-DROP TABLE IF EXISTS Categories;
+--DROP TABLE IF EXISTS [audit].[CategoryAuditLog]
+-- DROP TABLE IF EXISTS Categories;
 
 GO
 

@@ -10,6 +10,8 @@ using WebAPI.Filters;
 using WebAPI.Middleware;
 using WebAPI.Services.Security;
 
+// dotnet ef dbcontext scaffold "Data Source=.;Initial Catalog=pharma_shope_db;Trusted_Connection=True;TrustServerCertificate=True;" Microsoft.EntityFrameworkCore.SqlServer --project Entities --startup-project WebAPI --output-dir Entities --context-dir Data --context RepositoryContext --use-database-names --force
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ----------------------- Services -----------------------
