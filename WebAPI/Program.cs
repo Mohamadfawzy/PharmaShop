@@ -1,9 +1,9 @@
-using Contracts;
 using Contracts.Images.Dtos;
 using Contracts.IServices;
-using Entities.Models;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using Repository;
+using Service.Validators;
+using Shared.Models.Dtos.Product;
 using Shared.Responses;
 using WebAPI.Extensions;
 using WebAPI.Filters;
@@ -17,6 +17,9 @@ var builder = WebApplication.CreateBuilder(args);
 // ----------------------- Services -----------------------
 builder.Services.AddScoped<TraceIdResultFilter>();
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IValidator<ProductUpdateDto>, ProductUpdateDtoValidator>();
+
+
 
 // Bind options from appsettings.json
 builder.Services.Configure<ImageServiceOptions>(

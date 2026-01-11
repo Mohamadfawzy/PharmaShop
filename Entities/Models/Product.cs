@@ -117,7 +117,7 @@ public partial class Product
 
     public virtual ICollection<ProductBatch> ProductBatches { get; set; } = new List<ProductBatch>();
 
-    public virtual ProductImage? ProductImage { get; set; }
+    public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 
     public virtual ICollection<ProductInventory> ProductInventories { get; set; } = new List<ProductInventory>();
 

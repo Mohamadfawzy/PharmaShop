@@ -18,6 +18,16 @@ CREATE TABLE Pharmacies (
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), 
     IsActive BIT NOT NULL DEFAULT 1            
 );
+go
+INSERT INTO Pharmacies(Name,NameEn,OwnerName,LicenseNumber,PhoneNumber,Email,Address,Latitude,Longitude)
+VALUES
+(
+    N'صيدلية الشفاء', N'Al Shifa Pharmacy',
+	N'محمد أحمد',N'PH-2024-001',
+	'01012345678','info@alshifa.com',
+	N'القاهرة - مدينة نصر - شارع مصطفى النحاس',
+    30.0566100,31.3304300
+);
 
 GO
 
@@ -228,6 +238,10 @@ WHERE DeletedAt IS NULL;
 GO
 
 
+INSERT INTO dbo.Brands (PharmacyId, Name, NameEn)
+VALUES (1, N'جلَكسو سميث كلاين', N'GlaxoSmithKline');
+
+
 
 /*========================================================
   Stores
@@ -277,6 +291,17 @@ CREATE UNIQUE INDEX UX_Stores_OneDefaultPerPharmacy
 ON dbo.Stores(PharmacyId)
 WHERE IsDefault = 1 AND DeletedAt IS NULL;
 GO
+
+
+INSERT INTO dbo.Stores
+(
+    PharmacyId,Name,Code,Address,IsDefault
+)
+VALUES
+(
+    1,N'المخزن الرئيسي',
+    'MAIN',N'القاهرة - مدينة نصر - شارع مصطفى النحاس', 1
+);
 
 
 /*========================================================
@@ -741,79 +766,61 @@ WHERE DeletedAt IS NULL;
 GO
 
 
-/*========================================================
-  ProductImages
-  - One Product -> Many Images
-  - Ensures only ONE primary image per product (filtered unique index)
-  - Supports ordering, alt text, thumbnails, soft delete
-========================================================*/
-GO
 CREATE TABLE dbo.ProductImages
 (
     Id            BIGINT IDENTITY(1,1) NOT NULL
-        CONSTRAINT PK_ProductImages PRIMARY KEY,           -- رقم تعريفي للصورة
+        CONSTRAINT PK_ProductImages PRIMARY KEY,
 
-    PharmacyId    INT NOT NULL,                            -- الصيدلية (Multi-tenant)
-    ProductId     INT NOT NULL,                            -- المنتج المرتبط (Many images per product)
+    PharmacyId    INT NOT NULL,
+    ProductId     INT NOT NULL,
 
-    ImageUrl      NVARCHAR(600) NOT NULL,                  -- رابط/مسار الصورة
-    ThumbnailUrl  NVARCHAR(600) NULL,                      -- رابط صورة مصغرة (اختياري)
-    AltText       NVARCHAR(200) NULL,                      -- نص بديل للصورة (SEO/Accessibility)
+    ImageUrl      NVARCHAR(600) NOT NULL,
+    ThumbnailUrl  NVARCHAR(600) NULL,
+    AltText       NVARCHAR(200) NULL,
 
-    SortOrder     INT NOT NULL
-        CONSTRAINT DF_ProductImages_SortOrder DEFAULT (0), -- ترتيب العرض
+    SortOrder     INT NOT NULL CONSTRAINT DF_ProductImages_SortOrder DEFAULT (0),
+    IsPrimary     BIT NOT NULL CONSTRAINT DF_ProductImages_IsPrimary DEFAULT (0),
 
-    IsPrimary     BIT NOT NULL
-        CONSTRAINT DF_ProductImages_IsPrimary DEFAULT (0), -- هل هي الصورة الرئيسية؟
+    CreatedAt     DATETIME2(0) NOT NULL CONSTRAINT DF_ProductImages_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    CreatedBy     NVARCHAR(100) NULL,
 
-    CreatedAt     DATETIME2(0) NOT NULL
-        CONSTRAINT DF_ProductImages_CreatedAt DEFAULT (SYSUTCDATETIME()), -- تاريخ الإضافة
-    CreatedBy     NVARCHAR(100) NULL,                      -- أضيفت بواسطة (اختياري)
+    DeletedAt     DATETIME2(0) NULL,
+    DeletedBy     NVARCHAR(100) NULL,
 
-    DeletedAt     DATETIME2(0) NULL,                       -- Soft delete
-    DeletedBy     NVARCHAR(100) NULL,                      -- حُذفت بواسطة (اختياري)
+    RowVersion    ROWVERSION NOT NULL,
 
-    RowVersion    ROWVERSION NOT NULL,                     -- Concurrency
+    CONSTRAINT CK_ProductImages_SortOrder CHECK (SortOrder >= 0),
 
-    CONSTRAINT CK_ProductImages_SortOrder
-        CHECK (SortOrder >= 0),
-
-    -- FK: Product
     CONSTRAINT FK_ProductImages_Products
         FOREIGN KEY (ProductId) REFERENCES dbo.Products(Id),
 
-    -- FK: Pharmacy
     CONSTRAINT FK_ProductImages_Pharmacies
         FOREIGN KEY (PharmacyId) REFERENCES dbo.Pharmacies(Id)
 );
 GO
 
-/*--------------------------------------------------------
-  Indexes
---------------------------------------------------------*/
+CREATE INDEX IX_ProductImages_Pharmacy_Product
+ON dbo.ProductImages(PharmacyId, ProductId)
+WHERE DeletedAt IS NULL;
+GO
 
--- جلب صور المنتج مرتبة + تفضيل الرئيسية (يساعد UI كثيرًا)
 CREATE INDEX IX_ProductImages_Product_Sort
 ON dbo.ProductImages(ProductId, IsPrimary DESC, SortOrder, Id)
 INCLUDE (ImageUrl, ThumbnailUrl, AltText)
 WHERE DeletedAt IS NULL;
 GO
 
--- ضمان صورة رئيسية واحدة فقط لكل منتج (غير محذوفة)
--- IMPORTANT: هذا هو الذي يمنع EF من عمل One-to-One
+-- ✅ primary واحدة فقط لكل منتج
 CREATE UNIQUE INDEX UX_ProductImages_Product_Primary
-ON dbo.ProductImages(ProductId)
+ON dbo.ProductImages(ProductId, IsPrimary)
 WHERE IsPrimary = 1 AND DeletedAt IS NULL;
 GO
 
--- (اختياري) تسريع الفلترة حسب الصيدلية
-CREATE INDEX IX_ProductImages_Pharmacy_Product
-ON dbo.ProductImages(PharmacyId, ProductId)
+-- (اختياري) يوضح للـ scaffold أنها one-to-many
+CREATE INDEX IX_ProductImages_ProductId
+ON dbo.ProductImages(ProductId)
 WHERE DeletedAt IS NULL;
 GO
-
-
-
 
 
 

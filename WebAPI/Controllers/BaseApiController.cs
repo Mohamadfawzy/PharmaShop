@@ -17,6 +17,11 @@ public abstract class BaseApiController : ControllerBase
         => response.IsSuccess
             ? Ok(response)
             : StatusCode((int)response.StatusCode, response);
+   
+    protected IActionResult FromAppResponse(AppResponse response)
+        => response.IsSuccess
+            ? Ok(response)
+            : StatusCode((int)response.StatusCode, response);
 
     // مساعد شائع عشان  لو احتجته في كنترولرز أخرى
     protected IActionResult ValidationError(string message)

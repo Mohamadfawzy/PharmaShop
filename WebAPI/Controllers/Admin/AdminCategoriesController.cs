@@ -21,8 +21,7 @@ public class AdminCategoriesController : AdminBaseApiController
         "image/webp"
     };
 
-    public AdminCategoriesController(ICategoryService categoryService,
-        IWebHostEnvironment env) : base(env)
+    public AdminCategoriesController(ICategoryService categoryService, IWebHostEnvironment env) : base(env)
     {
         _categoryService = categoryService;
     }

@@ -204,7 +204,7 @@ public partial class RepositoryContext : DbContext
 
         modelBuilder.Entity<CategoryAuditLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Category__3214EC07DD4B2CFE");
+            entity.HasKey(e => e.Id).HasName("PK__Category__3214EC07C20189E1");
 
             entity.ToTable("CategoryAuditLog", "audit");
 
@@ -224,9 +224,9 @@ public partial class RepositoryContext : DbContext
 
         modelBuilder.Entity<Customer>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC079B17B516");
+            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC070FB6C487");
 
-            entity.HasIndex(e => e.UserId, "UQ__Customer__1788CC4D88A8935A").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Customer__1788CC4D9DCE5C02").IsUnique();
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -256,7 +256,7 @@ public partial class RepositoryContext : DbContext
 
         modelBuilder.Entity<CustomerAddress>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC07836F6163");
+            entity.HasKey(e => e.Id).HasName("PK__Customer__3214EC0752A4EEFC");
 
             entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.CreatedAt)
@@ -294,9 +294,9 @@ public partial class RepositoryContext : DbContext
 
         modelBuilder.Entity<Pharmacist>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC0781A1ADB4");
+            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC07D4B7C353");
 
-            entity.HasIndex(e => e.UserId, "UQ__Pharmaci__1788CC4DFC32560E").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Pharmaci__1788CC4D48AB92EB").IsUnique();
 
             entity.Property(e => e.FullName).HasMaxLength(100);
             entity.Property(e => e.FullNameEn).HasMaxLength(200);
@@ -304,12 +304,12 @@ public partial class RepositoryContext : DbContext
 
             entity.HasOne(d => d.User).WithOne(p => p.Pharmacist)
                 .HasForeignKey<Pharmacist>(d => d.UserId)
-                .HasConstraintName("FK__Pharmacis__UserI__666B225D");
+                .HasConstraintName("FK__Pharmacis__UserI__5EBF139D");
         });
 
         modelBuilder.Entity<Pharmacy>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC07860E8703");
+            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC07F99F31FF");
 
             entity.Property(e => e.Address).HasMaxLength(300);
             entity.Property(e => e.CreatedAt)
@@ -501,11 +501,13 @@ public partial class RepositoryContext : DbContext
         {
             entity.HasIndex(e => new { e.PharmacyId, e.ProductId }, "IX_ProductImages_Pharmacy_Product").HasFilter("([DeletedAt] IS NULL)");
 
+            entity.HasIndex(e => e.ProductId, "IX_ProductImages_ProductId").HasFilter("([DeletedAt] IS NULL)");
+
             entity.HasIndex(e => new { e.ProductId, e.IsPrimary, e.SortOrder, e.Id }, "IX_ProductImages_Product_Sort")
                 .IsDescending(false, true, false, false)
                 .HasFilter("([DeletedAt] IS NULL)");
 
-            entity.HasIndex(e => e.ProductId, "UX_ProductImages_Product_Primary")
+            entity.HasIndex(e => new { e.ProductId, e.IsPrimary }, "UX_ProductImages_Product_Primary")
                 .IsUnique()
                 .HasFilter("([IsPrimary]=(1) AND [DeletedAt] IS NULL)");
 
@@ -527,8 +529,8 @@ public partial class RepositoryContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductImages_Pharmacies");
 
-            entity.HasOne(d => d.Product).WithOne(p => p.ProductImage)
-                .HasForeignKey<ProductImage>(d => d.ProductId)
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductImages)
+                .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductImages_Products");
         });
