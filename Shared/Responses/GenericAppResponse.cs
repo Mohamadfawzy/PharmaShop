@@ -9,7 +9,7 @@ public sealed class AppResponse<T> : AppResponseBase
     private AppResponse() { }
 
     public T? Data { get; private set; }
-    public PaginationInfo? Pagination { get; internal set; }
+    public PaginationInfo? Pagination { get;  set; }
 
     /// <summary>
     /// Resource location (for Created responses). Not RFC7807 Instance.

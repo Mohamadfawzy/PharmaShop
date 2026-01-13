@@ -1,6 +1,7 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Models.Dtos.Product;
+using Shared.Models.RequestFeatures;
 using WebAPI.Controllers.Admin;
 
 namespace WebAPI.Controllers;
@@ -26,13 +27,18 @@ public class ProductsController : AdminBaseApiController
        => FromAppResponse(await _productService.CreateProductAsync(dto, ct));
 
 
+    [HttpGet]
+    public async Task<IActionResult> List([FromQuery] ProductListQueryDto query, CancellationToken ct)
+        => FromAppResponse(await _productService.GetProductsAsync(query, ct));
+
+
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateDto dto,CancellationToken ct)
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateDto dto, CancellationToken ct)
     => FromAppResponse(await _productService.UpdateProductAsync(id, dto, ct));
 
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById([FromRoute] int id,[FromQuery] bool includeDeleted = false,CancellationToken ct = default)
+    public async Task<IActionResult> GetById([FromRoute] int id, [FromQuery] bool includeDeleted = false, CancellationToken ct = default)
         => FromAppResponse(await _productService.GetProductByIdAsync(id, includeDeleted, ct));
 
     [HttpGet("deleted")]
@@ -43,12 +49,15 @@ public class ProductsController : AdminBaseApiController
     => FromAppResponse(await _productService.GetDeletedProductsAsync(skip, take, ct));
 
 
+
+
+
     [HttpPatch("{id:int}/activate")]
-    public async Task<IActionResult> Activate([FromRoute] int id,[FromBody] ProductStateChangeDto dto,CancellationToken ct)
+    public async Task<IActionResult> Activate([FromRoute] int id, [FromBody] ProductStateChangeDto dto, CancellationToken ct)
     => FromAppResponse(await _productService.SetActiveAsync(id, true, dto, ct));
 
     [HttpPatch("{id:int}/deactivate")]
-    public async Task<IActionResult> Deactivate([FromRoute] int id,[FromBody] ProductStateChangeDto dto,CancellationToken ct)
+    public async Task<IActionResult> Deactivate([FromRoute] int id, [FromBody] ProductStateChangeDto dto, CancellationToken ct)
         => FromAppResponse(await _productService.SetActiveAsync(id, false, dto, ct));
 
 

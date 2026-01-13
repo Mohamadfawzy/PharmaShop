@@ -6,15 +6,12 @@ using Mapster;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Service.Extensions;
-using Service.Mappings;
 using Service.Validators;
 using Shared.Enums;
 using Shared.Models.Dtos.Product;
 using Shared.Models.RequestFeatures;
 using Shared.Responses;
 using System.Globalization;
-using System.Net;
 namespace Service;
 
 public class ProductService : IProductService
@@ -605,9 +602,30 @@ public class ProductService : IProductService
         }
     }
 
+    public async Task<AppResponse<List<ProductListItemDto>>> GetProductsAsync(ProductListQueryDto query, CancellationToken ct)
+    {
+        try
+        {
+            var pharmacyId = GetPharmacyIdOrDefault();
 
+            var page = query.Page < 1 ? 1 : query.Page;
+            var pageSize = query.PageSize < 1 ? 20 : (query.PageSize > 200 ? 200 : query.PageSize);
 
+            var result = await unitOfWork.Products.SearchAsync(pharmacyId, query, ct);
 
+            var response = AppResponse<List<ProductListItemDto>>.Ok(result.Items);
+            response.Pagination = result.TotalCount == 0
+                ? PaginationInfo.Empty(page, pageSize)
+                : PaginationInfo.Create(page, pageSize, result.TotalCount);
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "GetProductsAsync failed");
+            return AppResponse<List<ProductListItemDto>>.InternalError("Failed to load products");
+        }
+    }
 
 
 
@@ -883,8 +901,6 @@ public class ProductService : IProductService
     }
 
     // end Audit
-
-
 
 
     public async Task<AppResponse> UpdateProductAsync2(int productId, ProductUpdateDto dto, CancellationToken ct)
