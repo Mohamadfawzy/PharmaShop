@@ -18,6 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<TraceIdResultFilter>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IValidator<ProductUpdateDto>, ProductUpdateDtoValidator>();
+builder.Services.AddScoped<IValidator<ProductCreateDto>, ProductCreateDtoValidator>();
 
 
 

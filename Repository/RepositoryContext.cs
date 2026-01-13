@@ -49,6 +49,7 @@ public partial class RepositoryContext : DbContext
     public virtual DbSet<PointsTransaction> PointsTransactions { get; set; }
 
     public virtual DbSet<Product> Products { get; set; }
+    public DbSet<ProductAuditLog> ProductAuditLogs => Set<ProductAuditLog>();
 
     public virtual DbSet<ProductBatch> ProductBatches { get; set; }
 
@@ -221,6 +222,15 @@ public partial class RepositoryContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_CategoryAuditLog_Category");
         });
+
+        modelBuilder.Entity<ProductAuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_ProductAuditLog");
+
+            entity.ToTable("ProductAuditLog", "audit");
+
+        });
+
 
         modelBuilder.Entity<Customer>(entity =>
         {

@@ -22,6 +22,7 @@ public class ProductUpdateDto
     public string? Slug { get; init; }
     public string? Description { get; init; }
     public string? DescriptionEn { get; init; }
+    public string? AuditReason { get; init; }
 
     // Search helpers
     public string? SearchKeywords { get; init; }

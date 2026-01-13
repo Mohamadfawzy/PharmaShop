@@ -1,12 +1,7 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
-using Service;
 using Shared.Models.Dtos.Product;
-using Shared.Models.RequestFeatures;
-using Shared.Responses;
-using SixLabors.ImageSharp;
 using WebAPI.Controllers.Admin;
-using WebAPI.SpecificDtos;
 
 namespace WebAPI.Controllers;
 
@@ -32,14 +27,80 @@ public class ProductsController : AdminBaseApiController
 
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(
-        [FromRoute] int id, 
-        [FromBody] ProductUpdateDto dto,
-        CancellationToken ct)
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProductUpdateDto dto,CancellationToken ct)
     => FromAppResponse(await _productService.UpdateProductAsync(id, dto, ct));
 
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
-    => FromAppResponse(await _productService.GetProductByIdAsync(id, ct));
+    public async Task<IActionResult> GetById([FromRoute] int id,[FromQuery] bool includeDeleted = false,CancellationToken ct = default)
+        => FromAppResponse(await _productService.GetProductByIdAsync(id, includeDeleted, ct));
+
+    [HttpGet("deleted")]
+    public async Task<IActionResult> GetDeleted(
+    [FromQuery] int skip = 0,
+    [FromQuery] int take = 20,
+    CancellationToken ct = default)
+    => FromAppResponse(await _productService.GetDeletedProductsAsync(skip, take, ct));
+
+
+    [HttpPatch("{id:int}/activate")]
+    public async Task<IActionResult> Activate([FromRoute] int id,[FromBody] ProductStateChangeDto dto,CancellationToken ct)
+    => FromAppResponse(await _productService.SetActiveAsync(id, true, dto, ct));
+
+    [HttpPatch("{id:int}/deactivate")]
+    public async Task<IActionResult> Deactivate([FromRoute] int id,[FromBody] ProductStateChangeDto dto,CancellationToken ct)
+        => FromAppResponse(await _productService.SetActiveAsync(id, false, dto, ct));
+
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> SoftDelete(
+        [FromRoute] int id,
+        [FromBody] ProductStateChangeDto dto,
+        CancellationToken ct)
+        => FromAppResponse(await _productService.SetDeletedAsync(id, true, dto, ct));
+
+    [HttpPatch("{id:int}/restore")]
+    public async Task<IActionResult> Restore(
+    [FromRoute] int id,
+    [FromBody] ProductStateChangeDto dto,
+    CancellationToken ct)
+    => FromAppResponse(await _productService.SetDeletedAsync(id, false, dto, ct));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // audit
+    [HttpGet("{id:int}/audit")]
+    public async Task<IActionResult> GetAudit(
+    [FromRoute] int id,
+    [FromQuery] int skip = 0,
+    [FromQuery] int take = 20,
+    CancellationToken ct = default)
+    => FromAppResponse(await _productService.GetProductAuditAsync(id, skip, take, ct));
+
+
+    [HttpGet("audit/search")]
+    public async Task<IActionResult> SearchAudit(
+    [FromQuery] string? userId = null,
+    [FromQuery] DateTime? fromUtc = null,
+    [FromQuery] DateTime? toUtc = null,
+    [FromQuery] int skip = 0,
+    [FromQuery] int take = 20,
+    CancellationToken ct = default)
+    => FromAppResponse(await _productService.SearchProductAuditAsync(userId, fromUtc, toUtc, skip, take, ct));
+
 }

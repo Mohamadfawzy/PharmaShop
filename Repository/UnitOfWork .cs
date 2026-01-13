@@ -1,4 +1,5 @@
 ﻿using Contracts;
+using Entities.Models;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Repository;
@@ -13,14 +14,21 @@ public class UnitOfWork : IUnitOfWork
         Customers = new CustomerRepository(_context);
         Products = new ProductRepository(_context);
         Categories = new CategoryRepository(_context);
+        ProductAuditLogs = new GenericRepository<ProductAuditLog>(_context);
+
     }
 
     public ICustomerRepository Customers { get; private set; }
     public IProductRepository Products { get; private set; }
     public ICategoryRepository Categories { get; private set; }
+    public IGenericRepository<ProductAuditLog> ProductAuditLogs { get; }
 
 
     // METHODS
+    public void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class
+    {
+        _context.Entry(entity).Property("RowVersion").OriginalValue = rowVersion;
+    }
     public async Task<int> CompleteAsync(CancellationToken ct = default)
     {
         return await _context.SaveChangesAsync(ct);

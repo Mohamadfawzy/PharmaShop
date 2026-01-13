@@ -19,6 +19,72 @@ CREATE TABLE audit.CategoryAuditLog (
         FOREIGN KEY (CategoryId) REFERENCES dbo.Categories(Id)
 );
 
+/*========================================================
+  Schema: audit
+========================================================*/
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'audit')
+    EXEC('CREATE SCHEMA audit');
+GO
+
+
+
+/*========================================================
+  audit.ProductAuditLog
+  - Field-level audit (row per changed field)
+  - OperationId groups one update into one event
+========================================================*/
+CREATE TABLE audit.ProductAuditLog
+(
+    Id            BIGINT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_ProductAuditLog PRIMARY KEY,
+
+    PharmacyId    INT NOT NULL,                       -- Multi-tenant
+    ProductId     INT NOT NULL,                       -- Target product
+
+    OperationId   UNIQUEIDENTIFIER NOT NULL,          -- Groups one update operation
+    ChangeType    NVARCHAR(50) NOT NULL,              -- Update | Create | SoftDelete | Restore
+
+    FieldName     NVARCHAR(100) NULL,                 -- Which field changed
+    OldValue      NVARCHAR(MAX) NULL,                 -- Old value (stringified)
+    NewValue      NVARCHAR(MAX) NULL,                 -- New value (stringified)
+
+    ChangedBy     NVARCHAR(100) NULL,                 -- UserId / Username
+    ChangeDate    DATETIME2(0) NOT NULL
+        CONSTRAINT DF_ProductAuditLog_ChangeDate DEFAULT (SYSUTCDATETIME()),
+
+    Reason        NVARCHAR(500) NULL,                 -- Optional reason
+
+    CONSTRAINT FK_ProductAuditLog_Products
+        FOREIGN KEY (ProductId) REFERENCES dbo.Products(Id),
+
+    CONSTRAINT FK_ProductAuditLog_Pharmacies
+        FOREIGN KEY (PharmacyId) REFERENCES dbo.Pharmacies(Id)
+);
+GO
+
+/*========================================================
+  Indexes
+========================================================*/
+
+-- Fast timeline per product
+CREATE INDEX IX_ProductAuditLog_Product_ChangeDate
+ON audit.ProductAuditLog(ProductId, ChangeDate DESC)
+INCLUDE (OperationId, ChangeType, FieldName, OldValue, NewValue, ChangedBy, Reason, PharmacyId);
+GO
+
+-- Fast grouping by operation
+CREATE INDEX IX_ProductAuditLog_Product_Operation
+ON audit.ProductAuditLog(ProductId, OperationId)
+INCLUDE (ChangeDate, ChangeType, FieldName, OldValue, NewValue, ChangedBy, Reason, PharmacyId);
+GO
+
+-- Filter by user (audit for admin/user)
+CREATE INDEX IX_ProductAuditLog_Pharmacy_User_Date
+ON audit.ProductAuditLog(PharmacyId, ChangedBy, ChangeDate DESC)
+INCLUDE (ProductId, OperationId, ChangeType, FieldName, OldValue, NewValue, Reason);
+GO
+
+
 
 
 USE pharma_shope_db;
