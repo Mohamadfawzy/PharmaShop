@@ -16,4 +16,5 @@ public interface IProductRepository : IGenericRepository<Product>
     int pharmacyId,
     ProductListQueryDto query,
     CancellationToken ct);
+    Task<(OpenBoxResultDto? Result, Dictionary<string, string[]>? FieldErrors, string? ErrorMessage)> ConvertUnitsAsync(int pharmacyId, int productId, OpenBoxDto dto, CancellationToken ct);
 }

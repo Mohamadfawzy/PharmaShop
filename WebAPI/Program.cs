@@ -4,6 +4,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Service.Validators;
 using Shared.Models.Dtos.Product;
+using Shared.Models.Dtos.Product.Units;
 using Shared.Responses;
 using WebAPI.Extensions;
 using WebAPI.Filters;
@@ -19,6 +20,8 @@ builder.Services.AddScoped<TraceIdResultFilter>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IValidator<ProductUpdateDto>, ProductUpdateDtoValidator>();
 builder.Services.AddScoped<IValidator<ProductCreateDto>, ProductCreateDtoValidator>();
+
+builder.Services.AddScoped<IValidator<ProductUnitCreateDto>, ProductUnitCreateDtoValidator>();
 
 
 

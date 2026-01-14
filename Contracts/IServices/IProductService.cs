@@ -1,5 +1,6 @@
 ﻿
 using Shared.Models.Dtos.Product;
+using Shared.Models.Dtos.Product.Units;
 using Shared.Models.RequestFeatures;
 using Shared.Responses;
 
@@ -25,4 +26,6 @@ public interface IProductService
 
     Task<AppResponse<List<ProductAuditEventDto>>> SearchProductAuditAsync(
         string? userId, DateTime? fromUtc, DateTime? toUtc, int skip, int take, CancellationToken ct);
+    Task<AppResponse<ProductUnitCreatedDto>> AddProductUnitAsync(int productId, ProductUnitCreateDto dto, CancellationToken ct);
+    Task<AppResponse<OpenBoxResultDto>> OpenBoxAsync(int productId, OpenBoxDto dto, CancellationToken ct);
 }

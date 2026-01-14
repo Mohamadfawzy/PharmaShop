@@ -1,6 +1,7 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Models.Dtos.Product;
+using Shared.Models.Dtos.Product.Units;
 using Shared.Models.RequestFeatures;
 using WebAPI.Controllers.Admin;
 
@@ -69,19 +70,34 @@ public class ProductsController : AdminBaseApiController
         => FromAppResponse(await _productService.SetDeletedAsync(id, true, dto, ct));
 
     [HttpPatch("{id:int}/restore")]
-    public async Task<IActionResult> Restore(
-    [FromRoute] int id,
-    [FromBody] ProductStateChangeDto dto,
+    public async Task<IActionResult> Restore([FromRoute] int id,[FromBody] ProductStateChangeDto dto,CancellationToken ct)
+        => FromAppResponse(await _productService.SetDeletedAsync(id, false, dto, ct));
+
+
+
+    //----------------------------------------------
+    // Units
+    //----------------------------------------------
+
+    [HttpPost("{productId:int}/units")]
+    public async Task<IActionResult> AddUnit([FromRoute] int productId,[FromBody] ProductUnitCreateDto dto,CancellationToken ct)
+         =>FromAppResponse(await _productService.AddProductUnitAsync(productId, dto, ct));
+
+
+
+    //----------------------------------------------
+    // ProductBatches 
+    //----------------------------------------------
+
+
+    [HttpPost("{productId:int}/open-box")]
+    public async Task<IActionResult> OpenBox(
+    [FromRoute] int productId,
+    [FromBody] OpenBoxDto dto,
     CancellationToken ct)
-    => FromAppResponse(await _productService.SetDeletedAsync(id, false, dto, ct));
-
-
-
-
-
-
-
-
+    {
+        return FromAppResponse(await _productService.OpenBoxAsync(productId, dto, ct));
+    }
 
 
 

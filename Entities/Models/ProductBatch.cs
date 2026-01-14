@@ -17,7 +17,7 @@ public partial class ProductBatch
 
     public string BatchNumber { get; set; } = null!;
 
-    public DateOnly? ExpirationDate { get; set; }
+    public DateTime? ExpirationDate { get; set; }
 
     public DateTime ReceivedAt { get; set; }
 

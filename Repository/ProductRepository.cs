@@ -400,6 +400,224 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         };
     }
 
+    /// <summary>
+    /// Convert stock from a parent ProductUnit to a direct child ProductUnit (Open/Convert).
+    /// IMPORTANT: This method assumes the caller already started a transaction if needed.
+    /// </summary>
+    public async Task<(OpenBoxResultDto? Result, Dictionary<string, string[]>? FieldErrors, string? ErrorMessage)>
+        ConvertUnitsAsync(int pharmacyId, int productId, OpenBoxDto dto, CancellationToken ct)
+    {
+        // 1) Basic input guards (keep it minimal here)
+        if (dto.StoreId <= 0)
+            return (null, new() { ["StoreId"] = new[] { "StoreId must be > 0" } }, null);
+
+        if (dto.FromProductUnitId <= 0 || dto.ToProductUnitId <= 0)
+            return (null, new()
+            {
+                ["FromProductUnitId"] = new[] { "FromProductUnitId must be > 0" },
+                ["ToProductUnitId"] = new[] { "ToProductUnitId must be > 0" }
+            }, null);
+
+        if (dto.FromProductUnitId == dto.ToProductUnitId)
+            return (null, new() { ["ToProductUnitId"] = new[] { "ToProductUnitId must be different" } }, null);
+
+        if (dto.FromQtyToConvert <= 0)
+            return (null, new() { ["FromQtyToConvert"] = new[] { "FromQtyToConvert must be > 0" } }, null);
+
+        // 2) Load units (From + To) and validate direct parent-child conversion
+        var units = await _context.Set<ProductUnit>()
+            .AsNoTracking()
+            .Where(u => u.PharmacyId == pharmacyId
+                        && u.ProductId == productId
+                        && u.DeletedAt == null
+                        && u.IsActive
+                        && (u.Id == dto.FromProductUnitId || u.Id == dto.ToProductUnitId))
+            .ToListAsync(ct);
+
+        var fromUnit = units.SingleOrDefault(x => x.Id == dto.FromProductUnitId);
+        var toUnit = units.SingleOrDefault(x => x.Id == dto.ToProductUnitId);
+
+        if (fromUnit is null)
+            return (null, new() { ["FromProductUnitId"] = new[] { "FromProductUnitId is not valid for this product" } }, null);
+
+        if (toUnit is null)
+            return (null, new() { ["ToProductUnitId"] = new[] { "ToProductUnitId is not valid for this product" } }, null);
+
+        if (toUnit.ParentProductUnitId != fromUnit.Id)
+            return (null, new()
+            {
+                ["ToProductUnitId"] = new[] { "Invalid conversion: To unit must be a direct child of From unit" }
+            }, null);
+
+        if (toUnit.UnitsPerParent is null || toUnit.UnitsPerParent <= 0)
+            return (null, new() { ["UnitsPerParent"] = new[] { "UnitsPerParent must be configured (> 0) for the To unit" } }, null);
+
+        // UnitsPerParent is DECIMAL(18,3). For now we require it to be whole-number for inventory ints.
+        if (toUnit.UnitsPerParent % 1 != 0)
+            return (null, new() { ["UnitsPerParent"] = new[] { "UnitsPerParent must be an integer value for this conversion" } }, null);
+
+        var unitsPerFrom = (int)toUnit.UnitsPerParent.Value;
+        var toCreated = dto.FromQtyToConvert * unitsPerFrom;
+
+        // 3) Pick "from" batch (FEFO or explicit)
+        IQueryable<ProductBatch> fromBatchQuery = _context.Set<ProductBatch>()
+            .AsTracking()
+            .Where(b => b.PharmacyId == pharmacyId
+                        && b.StoreId == dto.StoreId
+                        && b.ProductId == productId
+                        && b.ProductUnitId == fromUnit.Id
+                        && b.DeletedAt == null
+                        && b.IsActive);
+
+        ProductBatch? fromBatch;
+
+        if (dto.FromBatchId.HasValue)
+        {
+            fromBatch = await fromBatchQuery.SingleOrDefaultAsync(b => b.Id == dto.FromBatchId.Value, ct);
+            if (fromBatch is null)
+                return (null, new() { ["FromBatchId"] = new[] { "Batch not found for the From unit" } }, null);
+        }
+        else
+        {
+            // FEFO: earliest expiry first; NULL expiry goes last
+            fromBatch = await fromBatchQuery
+                .Where(b => b.QuantityOnHand > 0)
+                .OrderBy(b => b.ExpirationDate == null)
+                .ThenBy(b => b.ExpirationDate)
+                .ThenBy(b => b.Id)
+                .FirstOrDefaultAsync(ct);
+
+            if (fromBatch is null)
+                return (null, null, "No available batch to convert from (check batches/quantities).");
+        }
+
+        if (fromBatch.QuantityOnHand < dto.FromQtyToConvert)
+            return (null, new() { ["FromQtyToConvert"] = new[] { "Not enough quantity in the selected batch" } }, null);
+
+        // 4) Inventory rows (From must exist; To can be created)
+        var invFrom = await _context.Set<ProductInventory>()
+            .AsTracking()
+            .SingleOrDefaultAsync(x =>
+                x.PharmacyId == pharmacyId
+                && x.StoreId == dto.StoreId
+                && x.ProductId == productId
+                && x.ProductUnitId == fromUnit.Id,
+                ct);
+
+        if (invFrom is null)
+            return (null, null, "From inventory row not found. Receive stock first.");
+
+        if (invFrom.QuantityOnHand < dto.FromQtyToConvert)
+            return (null, new() { ["FromQtyToConvert"] = new[] { "Not enough quantity in inventory" } }, null);
+
+        var invTo = await _context.Set<ProductInventory>()
+            .AsTracking()
+            .SingleOrDefaultAsync(x =>
+                x.PharmacyId == pharmacyId
+                && x.StoreId == dto.StoreId
+                && x.ProductId == productId
+                && x.ProductUnitId == toUnit.Id,
+                ct);
+
+        if (invTo is null)
+        {
+            invTo = new ProductInventory
+            {
+                PharmacyId = pharmacyId,
+                StoreId = dto.StoreId,
+                ProductId = productId,
+                ProductUnitId = toUnit.Id,
+                QuantityOnHand = 0,
+                ReservedQty = 0,
+                LastStockUpdateAt = DateTime.UtcNow
+            };
+            _context.Set<ProductInventory>().Add(invTo);
+        }
+
+        // 5) Upsert "to" batch using same BatchNumber + Expiry
+        var batchNumber = fromBatch.BatchNumber;
+        var expiry = fromBatch.ExpirationDate;
+
+        var toBatch = await _context.Set<ProductBatch>()
+            .AsTracking()
+            .SingleOrDefaultAsync(b =>
+                b.PharmacyId == pharmacyId
+                && b.StoreId == dto.StoreId
+                && b.ProductId == productId
+                && b.ProductUnitId == toUnit.Id
+                && b.BatchNumber == batchNumber
+                && b.DeletedAt == null,
+                ct);
+
+        if (toBatch is not null)
+        {
+            // important: keep expiry consistent
+            if (toBatch.ExpirationDate != expiry)
+                return (null, null, "Data conflict: existing To batch has different ExpirationDate for the same BatchNumber.");
+        }
+        else
+        {
+            toBatch = new ProductBatch
+            {
+                PharmacyId = pharmacyId,
+                StoreId = dto.StoreId,
+                ProductId = productId,
+                ProductUnitId = toUnit.Id,
+
+                BatchNumber = batchNumber,
+                ExpirationDate = expiry,
+
+                ReceivedAt = DateTime.UtcNow,
+                QuantityReceived = 0,
+                QuantityOnHand = 0,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Set<ProductBatch>().Add(toBatch);
+        }
+
+        // 6) Apply changes (no SaveChanges here if you prefer UnitOfWork.CompleteAsync)
+        fromBatch.QuantityOnHand -= dto.FromQtyToConvert;
+
+        toBatch.QuantityOnHand += toCreated;
+        toBatch.QuantityReceived += toCreated; // internal conversion inflow (optional)
+
+        invFrom.QuantityOnHand -= dto.FromQtyToConvert;
+        invFrom.LastStockUpdateAt = DateTime.UtcNow;
+
+        invTo.QuantityOnHand += toCreated;
+        invTo.LastStockUpdateAt = DateTime.UtcNow;
+
+        // TODO (future): write Audit/Ledger here (conversion out + conversion in) using dto.Reason + currentUser
+
+        return (new OpenBoxResultDto
+        {
+            ProductId = productId,
+            StoreId = dto.StoreId,
+
+            FromProductUnitId = fromUnit.Id,
+            ToProductUnitId = toUnit.Id,
+
+            FromQtyConverted = dto.FromQtyToConvert,
+            ToQtyCreated = toCreated,
+
+            UsedFromBatchId = fromBatch.Id,
+            BatchNumber = fromBatch.BatchNumber,
+            ExpirationDate = fromBatch.ExpirationDate,
+
+            FromQtyOnHandAfter = invFrom.QuantityOnHand,
+            ToQtyOnHandAfter = invTo.QuantityOnHand
+        }, null, null);
+    }
+
+
+
+
+
+
+
+
+
     private static IQueryable<Product> ApplySorting(
         IQueryable<Product> q,
         ProductSortBy sortBy,

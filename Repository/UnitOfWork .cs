@@ -15,6 +15,8 @@ public class UnitOfWork : IUnitOfWork
         Products = new ProductRepository(_context);
         Categories = new CategoryRepository(_context);
         ProductAuditLogs = new GenericRepository<ProductAuditLog>(_context);
+        Units = new GenericRepository<Unit>(_context);
+        ProductUnits = new GenericRepository<ProductUnit>(_context);
 
     }
 
@@ -22,6 +24,11 @@ public class UnitOfWork : IUnitOfWork
     public IProductRepository Products { get; private set; }
     public ICategoryRepository Categories { get; private set; }
     public IGenericRepository<ProductAuditLog> ProductAuditLogs { get; }
+
+    public IGenericRepository<Unit> Units { get; private set; }
+
+    public IGenericRepository<ProductUnit> ProductUnits { get; private set; }
+
 
 
     // METHODS

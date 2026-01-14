@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Service.Validators;
 using Shared.Enums;
 using Shared.Models.Dtos.Product;
+using Shared.Models.Dtos.Product.Units;
 using Shared.Models.RequestFeatures;
 using Shared.Responses;
 using System.Globalization;
@@ -22,6 +23,7 @@ public class ProductService : IProductService
     private readonly IValidator<ProductUpdateDto> _updateValidator;
     private readonly IValidator<ProductCreateDto> createValidator;
     private readonly ICurrentUserService currentUser;
+    private readonly IValidator<ProductUnitCreateDto> productUnitCreateValidator;
 
     public ProductService(
         IUnitOfWork unitOfWork,
@@ -29,7 +31,8 @@ public class ProductService : IProductService
         ILogger<ProductService> logger,
         IValidator<ProductUpdateDto> updateValidator,
         IValidator<ProductCreateDto> createValidator,
-        ICurrentUserService currentUser)
+        ICurrentUserService currentUser,
+        IValidator<ProductUnitCreateDto> productUnitCreateValidator)
     {
         this.unitOfWork = unitOfWork;
         this.imageService = imageService;
@@ -37,6 +40,7 @@ public class ProductService : IProductService
         _updateValidator = updateValidator;
         this.createValidator = createValidator;
         this.currentUser = currentUser;
+        this.productUnitCreateValidator = productUnitCreateValidator;
     }
 
     //public async Task<AppResponse<int>> CreateProductAsync(ProductCreateDto dto, CancellationToken ct)
@@ -298,8 +302,6 @@ public class ProductService : IProductService
             return AppResponse<List<ProductDetailsDto>>.InternalError("Failed to load deleted products");
         }
     }
-
-
 
     public async Task<AppResponse> UpdateProductAsync(int productId, ProductUpdateDto dto, CancellationToken ct)
     {
@@ -627,7 +629,247 @@ public class ProductService : IProductService
         }
     }
 
+    //----------------------------------------------
+    // Units
+    //----------------------------------------------
+    public async Task<AppResponse<ProductUnitCreatedDto>> AddProductUnitAsync(
+    int productId,
+    ProductUnitCreateDto dto,
+    CancellationToken ct)
+    {
+        try
+        {
+            var pharmacyId = GetPharmacyIdOrDefault();
 
+            // 1) validate (FluentValidation)
+            var validation = await productUnitCreateValidator.ValidateAsync(dto, ct);
+            if (!validation.IsValid)
+            {
+                var fieldErrors = validation.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).Distinct().ToArray());
+
+                return AppResponse<ProductUnitCreatedDto>.ValidationErrors(fieldErrors);
+            }
+
+            // 2) ensure product exists and belongs to pharmacy (and not deleted)
+            var productExists = await unitOfWork.Products.AnyAsync(
+                p => p.Id == productId && p.PharmacyId == pharmacyId && p.DeletedAt == null,
+                ct);
+
+            if (!productExists)
+                return AppResponse<ProductUnitCreatedDto>.NotFound("Product not found");
+
+            // 3) ensure Unit exists
+            var unitExists = await unitOfWork.Units.AnyAsync(u => u.Id == dto.UnitId, ct);
+            if (!unitExists)
+                return AppResponse<ProductUnitCreatedDto>.ValidationErrors(new Dictionary<string, string[]>
+                {
+                    ["UnitId"] = new[] { "Unit does not exist" }
+                });
+
+            // 4) optional BaseUnit exists
+            if (dto.BaseUnitId.HasValue)
+            {
+                var baseUnitExists = await unitOfWork.Units.AnyAsync(u => u.Id == dto.BaseUnitId.Value, ct);
+                if (!baseUnitExists)
+                    return AppResponse<ProductUnitCreatedDto>.ValidationErrors(new Dictionary<string, string[]>
+                    {
+                        ["BaseUnitId"] = new[] { "BaseUnit does not exist" }
+                    });
+            }
+
+            // 5) optional ParentProductUnit validation (same product + same pharmacy + not deleted)
+            if (dto.ParentProductUnitId.HasValue)
+            {
+                var parentOk = await unitOfWork.ProductUnits.AnyAsync(
+                    pu => pu.Id == dto.ParentProductUnitId.Value
+                          && pu.ProductId == productId
+                          && pu.PharmacyId == pharmacyId
+                          && pu.DeletedAt == null,
+                    ct);
+
+                if (!parentOk)
+                    return AppResponse<ProductUnitCreatedDto>.ValidationErrors(new Dictionary<string, string[]>
+                    {
+                        ["ParentProductUnitId"] = new[] { "Parent product unit not found for this product" }
+                    });
+            }
+
+            // 6) prevent duplicate (Product, Unit) in same pharmacy (non-deleted)
+            var duplicate = await unitOfWork.ProductUnits.AnyAsync(
+                pu => pu.PharmacyId == pharmacyId
+                      && pu.ProductId == productId
+                      && pu.UnitId == dto.UnitId
+                      && pu.DeletedAt == null,
+                ct);
+
+            if (duplicate)
+                return AppResponse<ProductUnitCreatedDto>.ValidationErrors(new Dictionary<string, string[]>
+                {
+                    ["UnitId"] = new[] { "This unit already exists for this product" }
+                });
+
+            // 7) optional uniqueness for SKU/UnitCode inside pharmacy
+            if (!string.IsNullOrWhiteSpace(dto.SKU))
+            {
+                var skuUsed = await unitOfWork.ProductUnits.AnyAsync(
+                    pu => pu.PharmacyId == pharmacyId && pu.SKU == dto.SKU && pu.DeletedAt == null,
+                    ct);
+
+                if (skuUsed)
+                    return AppResponse<ProductUnitCreatedDto>.ValidationErrors(new Dictionary<string, string[]>
+                    {
+                        ["SKU"] = new[] { "SKU already used in this pharmacy" }
+                    });
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.UnitCode))
+            {
+                var codeUsed = await unitOfWork.ProductUnits.AnyAsync(
+                    pu => pu.PharmacyId == pharmacyId && pu.UnitCode == dto.UnitCode && pu.DeletedAt == null,
+                    ct);
+
+                if (codeUsed)
+                    return AppResponse<ProductUnitCreatedDto>.ValidationErrors(new Dictionary<string, string[]>
+                    {
+                        ["UnitCode"] = new[] { "UnitCode already used in this pharmacy" }
+                    });
+            }
+
+            // 8) Transaction: if IsPrimary => unset old primary first
+            await using var tx = await unitOfWork.BeginTransactionAsync(ct);
+
+            if (dto.IsPrimary)
+            {
+                // find current primary (if any)
+                var currentPrimary = await unitOfWork.ProductUnits.SingleOrDefaultAsync(
+                    pu => pu.ProductId == productId
+                          && pu.PharmacyId == pharmacyId
+                          && pu.IsPrimary
+                          && pu.DeletedAt == null,
+                    asNoTracking: false,
+                    ct: ct);
+
+                if (currentPrimary != null)
+                {
+                    currentPrimary.IsPrimary = false;
+                    currentPrimary.UpdatedAt = DateTime.UtcNow;
+                    await unitOfWork.ProductUnits.UpdateAsync(currentPrimary, ct);
+                }
+            }
+
+            // 9) create new unit
+            var entity = new ProductUnit
+            {
+                PharmacyId = pharmacyId,
+                ProductId = productId,
+
+                UnitId = dto.UnitId,
+                SortOrder = dto.SortOrder,
+
+                UnitCode = string.IsNullOrWhiteSpace(dto.UnitCode) ? null : dto.UnitCode.Trim(),
+                SKU = string.IsNullOrWhiteSpace(dto.SKU) ? null : dto.SKU.Trim(),
+
+                ParentProductUnitId = dto.ParentProductUnitId,
+                UnitsPerParent = dto.UnitsPerParent,
+
+                BaseUnitId = dto.BaseUnitId,
+                BaseQuantity = dto.BaseQuantity,
+
+                CurrencyCode = dto.CurrencyCode.Trim().ToUpperInvariant(),
+                CostPrice = dto.CostPrice,
+                ListPrice = dto.ListPrice,
+                PriceUpdatedAt = DateTime.UtcNow,
+
+                IsPrimary = dto.IsPrimary,
+                IsActive = dto.IsActive,
+
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await unitOfWork.ProductUnits.AddAsync(entity, ct);
+            await unitOfWork.CompleteAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return AppResponse<ProductUnitCreatedDto>.Ok(new ProductUnitCreatedDto
+            {
+                ProductUnitId = entity.Id,
+                ProductId = entity.ProductId,
+                IsPrimary = entity.IsPrimary
+            }, "Product unit added successfully");
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "AddProductUnitAsync failed (DbUpdateException) ProductId={ProductId}", productId);
+            // Unique index violations could happen concurrently -> friendly message
+            return AppResponse<ProductUnitCreatedDto>.Conflict("Failed to add product unit due to a duplicate constraint");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "AddProductUnitAsync failed ProductId={ProductId}", productId);
+            return AppResponse<ProductUnitCreatedDto>.InternalError("Failed to add product unit");
+        }
+    }
+
+
+    //----------------------------------------------
+    // ProductBatches 
+    //----------------------------------------------
+
+    public async Task<AppResponse<OpenBoxResultDto>> OpenBoxAsync(
+        int productId,
+        OpenBoxDto dto,
+        CancellationToken ct)
+    {
+        try
+        {
+            var pharmacyId = GetPharmacyIdOrDefault();
+
+            // minimal validation here (keep it simple)
+            if (dto is null)
+                return AppResponse<OpenBoxResultDto>.ValidationError("Body is required");
+
+            // product must exist & allow split sale
+            var product = await unitOfWork.Products.FirstOrDefaultAsync(
+                p => p.Id == productId
+                     && p.PharmacyId == pharmacyId
+                     && p.DeletedAt == null,
+                asNoTracking: true,
+                ct: ct);
+
+            if (product is null)
+                return AppResponse<OpenBoxResultDto>.NotFound("Product not found");
+
+            if (!product.AllowSplitSale)
+                return AppResponse<OpenBoxResultDto>.ValidationError("This product does not allow split sale / conversion.");
+
+            await using var tx = await unitOfWork.BeginTransactionAsync(ct);
+
+            var (result, fieldErrors, errorMessage) =
+                await unitOfWork.Products.ConvertUnitsAsync(pharmacyId, productId, dto, ct);
+
+            if (fieldErrors is not null)
+                return AppResponse<OpenBoxResultDto>.ValidationErrors(fieldErrors);
+
+            if (errorMessage is not null)
+                return AppResponse<OpenBoxResultDto>.ValidationError(errorMessage);
+
+            await unitOfWork.CompleteAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return AppResponse<OpenBoxResultDto>.Ok(result!, "Conversion completed successfully");
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return AppResponse<OpenBoxResultDto>.Conflict("Stock changed by another request. Please retry.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "OpenBoxAsync failed ProductId={ProductId}", productId);
+            return AppResponse<OpenBoxResultDto>.InternalError("Failed to open/convert units");
+        }
+    }
 
     private static List<ProductAuditLog> BuildProductUpdateAuditLogs(Product product,ProductUpdateDto dto,int pharmacyId,string userId,Guid operationId,string? reason)
     {
