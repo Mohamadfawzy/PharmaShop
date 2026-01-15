@@ -22,6 +22,7 @@ builder.Services.AddScoped<IValidator<ProductUpdateDto>, ProductUpdateDtoValidat
 builder.Services.AddScoped<IValidator<ProductCreateDto>, ProductCreateDtoValidator>();
 
 builder.Services.AddScoped<IValidator<ProductUnitCreateDto>, ProductUnitCreateDtoValidator>();
+builder.Services.AddScoped<IValidator<ReceiveStockDto>, ReceiveStockDtoValidator>();
 
 
 

@@ -24,6 +24,7 @@ public class ProductService : IProductService
     private readonly IValidator<ProductCreateDto> createValidator;
     private readonly ICurrentUserService currentUser;
     private readonly IValidator<ProductUnitCreateDto> productUnitCreateValidator;
+    private readonly IValidator<ReceiveStockDto> receiveStockValidator;
 
     public ProductService(
         IUnitOfWork unitOfWork,
@@ -32,7 +33,8 @@ public class ProductService : IProductService
         IValidator<ProductUpdateDto> updateValidator,
         IValidator<ProductCreateDto> createValidator,
         ICurrentUserService currentUser,
-        IValidator<ProductUnitCreateDto> productUnitCreateValidator)
+        IValidator<ProductUnitCreateDto> productUnitCreateValidator,
+        IValidator<ReceiveStockDto> receiveStockValidator)
     {
         this.unitOfWork = unitOfWork;
         this.imageService = imageService;
@@ -41,6 +43,7 @@ public class ProductService : IProductService
         this.createValidator = createValidator;
         this.currentUser = currentUser;
         this.productUnitCreateValidator = productUnitCreateValidator;
+        this.receiveStockValidator = receiveStockValidator;
     }
 
     //public async Task<AppResponse<int>> CreateProductAsync(ProductCreateDto dto, CancellationToken ct)
@@ -868,6 +871,60 @@ public class ProductService : IProductService
         {
             logger.LogError(ex, "OpenBoxAsync failed ProductId={ProductId}", productId);
             return AppResponse<OpenBoxResultDto>.InternalError("Failed to open/convert units");
+        }
+    }
+
+    public async Task<AppResponse<ReceiveStockResultDto>> ReceiveStockAsync(
+       int productId,
+       ReceiveStockDto dto,
+       CancellationToken ct)
+    {
+        try
+        {
+            var pharmacyId = GetPharmacyIdOrDefault();
+
+            if (dto is null)
+                return AppResponse<ReceiveStockResultDto>.ValidationError("Body is required");
+
+            // 1) FluentValidation (shape validation)
+            var vr = await receiveStockValidator.ValidateAsync(dto, ct);
+            if (!vr.IsValid)
+            {
+                var fieldErrors = vr.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(e => e.ErrorMessage).Distinct().ToArray());
+
+                return AppResponse<ReceiveStockResultDto>.ValidationErrors(fieldErrors);
+            }
+
+            // 2) Transaction
+            await using var tx = await unitOfWork.BeginTransactionAsync(ct);
+
+            // 3) Business logic + DB checks happen in the repository
+            var (result, fieldErrorsFromRepo, errorMessage) =
+                await unitOfWork.Products.ReceiveStockAsync(pharmacyId, productId, dto, ct);
+
+            if (fieldErrorsFromRepo is not null)
+                return AppResponse<ReceiveStockResultDto>.ValidationErrors(fieldErrorsFromRepo);
+
+            if (errorMessage is not null)
+                return AppResponse<ReceiveStockResultDto>.ValidationError(errorMessage);
+
+            await unitOfWork.CompleteAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return AppResponse<ReceiveStockResultDto>.Ok(result!, "Stock received successfully");
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return AppResponse<ReceiveStockResultDto>.Conflict("Stock changed by another request. Please retry.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "ReceiveStockAsync failed ProductId={ProductId}", productId);
+            return AppResponse<ReceiveStockResultDto>.InternalError("Failed to receive stock");
         }
     }
 

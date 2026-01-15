@@ -612,6 +612,170 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
 
 
 
+    public async Task<(ReceiveStockResultDto? Result, Dictionary<string, string[]>? FieldErrors, string? ErrorMessage)>
+        ReceiveStockAsync(int pharmacyId, int productId, ReceiveStockDto dto, CancellationToken ct)
+    {
+        // 1) Basic validation (خفيف)
+        if (dto.StoreId <= 0)
+            return (null, new() { ["StoreId"] = new[] { "StoreId must be > 0" } }, null);
+
+        if (dto.ProductUnitId <= 0)
+            return (null, new() { ["ProductUnitId"] = new[] { "ProductUnitId must be > 0" } }, null);
+
+        if (dto.Quantity <= 0)
+            return (null, new() { ["Quantity"] = new[] { "Quantity must be > 0" } }, null);
+
+        if (string.IsNullOrWhiteSpace(dto.BatchNumber))
+            return (null, new() { ["BatchNumber"] = new[] { "BatchNumber is required" } }, null);
+
+        if (dto.BatchNumber.Length > 80)
+            return (null, new() { ["BatchNumber"] = new[] { "BatchNumber max length is 80" } }, null);
+
+        if (dto.Reason is not null && dto.Reason.Length > 500)
+            return (null, new() { ["Reason"] = new[] { "Reason max length is 500" } }, null);
+
+        // 2) Ensure product unit belongs to this product & pharmacy
+        var pu = await _context.Set<ProductUnit>()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(u =>
+                u.PharmacyId == pharmacyId
+                && u.ProductId == productId
+                && u.Id == dto.ProductUnitId
+                && u.DeletedAt == null
+                && u.IsActive,
+                ct);
+
+        if (pu is null)
+            return (null, new() { ["ProductUnitId"] = new[] { "Invalid ProductUnitId for this product" } }, null);
+
+        // 3) Product flags (HasExpiry)
+        var product = await _context.Set<Product>()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p =>
+                p.Id == productId
+                && p.PharmacyId == pharmacyId
+                && p.DeletedAt == null,
+                ct);
+
+        if (product is null)
+            return (null, null, "Product not found");
+
+        if (product.HasExpiry && dto.ExpirationDate is null)
+            return (null, new() { ["ExpirationDate"] = new[] { "ExpirationDate is required for expirable products" } }, null);
+
+        // (اختياري) منع استلام صلاحية منتهية
+        if (dto.ExpirationDate is not null && dto.ExpirationDate.Value.Date < DateTime.UtcNow.Date)
+            return (null, new() { ["ExpirationDate"] = new[] { "ExpirationDate cannot be in the past" } }, null);
+
+        // 4) Upsert Batch (tracking)
+        // حسب unique index: (StoreId, ProductUnitId, BatchNumber) WHERE DeletedAt IS NULL
+        var batch = await _context.Set<ProductBatch>()
+            .AsTracking()
+            .SingleOrDefaultAsync(b =>
+                b.PharmacyId == pharmacyId
+                && b.StoreId == dto.StoreId
+                && b.ProductId == productId
+                && b.ProductUnitId == dto.ProductUnitId
+                && b.BatchNumber == dto.BatchNumber
+                && b.DeletedAt == null,
+                ct);
+
+        if (batch is null)
+        {
+            batch = new ProductBatch
+            {
+                PharmacyId = pharmacyId,
+                StoreId = dto.StoreId,
+                ProductId = productId,
+                ProductUnitId = dto.ProductUnitId,
+
+                BatchNumber = dto.BatchNumber.Trim(),
+                ExpirationDate = dto.ExpirationDate?.Date,
+
+                ReceivedAt = DateTime.UtcNow,
+                QuantityReceived = 0,
+                QuantityOnHand = 0,
+                CostPrice = dto.CostPrice,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Set<ProductBatch>().Add(batch);
+        }
+        else
+        {
+            // لو المنتج له صلاحية، نضمن عدم تعارض صلاحية نفس BatchNumber
+            if (product.HasExpiry)
+            {
+                var existing = batch.ExpirationDate?.Date;
+                var incoming = dto.ExpirationDate?.Date;
+
+                if (existing != incoming)
+                    return (null, null, "Data conflict: same BatchNumber exists with a different ExpirationDate.");
+            }
+
+            // تحديث CostPrice لو أرسل المستخدم قيمة (اختياري)
+            if (dto.CostPrice.HasValue)
+                batch.CostPrice = dto.CostPrice;
+        }
+
+        // 5) Upsert Inventory row (tracking)
+        // PK: (StoreId, ProductUnitId)
+        var inv = await _context.Set<ProductInventory>()
+            .AsTracking()
+            .SingleOrDefaultAsync(x =>
+                x.PharmacyId == pharmacyId
+                && x.StoreId == dto.StoreId
+                && x.ProductUnitId == dto.ProductUnitId,
+                ct);
+
+        if (inv is null)
+        {
+            inv = new ProductInventory
+            {
+                PharmacyId = pharmacyId,
+                StoreId = dto.StoreId,
+                ProductId = productId,
+                ProductUnitId = dto.ProductUnitId,
+                QuantityOnHand = 0,
+                ReservedQty = 0,
+                LastStockUpdateAt = DateTime.UtcNow
+            };
+
+            _context.Set<ProductInventory>().Add(inv);
+        }
+        else
+        {
+            // safety: تأكد أن نفس ProductUnitId لا يستخدم مع ProductId مختلف (يجب ألا يحدث)
+            if (inv.ProductId != productId)
+                return (null, null, "Data conflict: Inventory row ProductId does not match this product.");
+        }
+
+        // 6) Apply quantities
+        batch.QuantityReceived += dto.Quantity;
+        batch.QuantityOnHand += dto.Quantity;
+
+        inv.QuantityOnHand += dto.Quantity;
+        inv.LastStockUpdateAt = DateTime.UtcNow;
+
+        // TODO (future): write Audit/Ledger here (Receive movement) using dto.Reason + currentUser
+
+        return (new ReceiveStockResultDto
+        {
+            ProductId = productId,
+            StoreId = dto.StoreId,
+            ProductUnitId = dto.ProductUnitId,
+
+            BatchId = batch.Id,
+            BatchNumber = batch.BatchNumber,
+            ExpirationDate = batch.ExpirationDate,
+
+            QuantityReceived = dto.Quantity,
+            BatchQtyOnHandAfter = batch.QuantityOnHand,
+            InventoryQtyOnHandAfter = inv.QuantityOnHand
+        }, null, null);
+    }
+
 
 
 

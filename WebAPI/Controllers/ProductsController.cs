@@ -100,6 +100,16 @@ public class ProductsController : AdminBaseApiController
     }
 
 
+    [HttpPost("{productId:int}/receive")]
+    public async Task<IActionResult> ReceiveStock(
+    [FromRoute] int productId,
+    [FromBody] ReceiveStockDto dto,
+    CancellationToken ct)
+    {
+        return FromAppResponse(await _productService.ReceiveStockAsync(productId, dto, ct));
+    }
+
+
 
 
 
