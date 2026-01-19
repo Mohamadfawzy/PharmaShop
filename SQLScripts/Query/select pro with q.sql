@@ -34,10 +34,8 @@ LEFT JOIN dbo.ProductBatches b
    AND b.DeletedAt IS NULL
 WHERE p.Id = @ProductId
   AND p.DeletedAt IS NULL
+  and pu.IsPrimary = 1
 ORDER BY
     pu.ParentProductUnitId,
     pu.SortOrder,
     b.ExpirationDate;
-
-
-
