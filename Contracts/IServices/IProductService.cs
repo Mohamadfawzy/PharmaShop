@@ -29,4 +29,5 @@ public interface IProductService
     Task<AppResponse<ProductUnitCreatedDto>> AddProductUnitAsync(int productId, ProductUnitCreateDto dto, CancellationToken ct);
     Task<AppResponse<OpenBoxResultDto>> OpenBoxAsync(int productId, OpenBoxDto dto, CancellationToken ct);
     Task<AppResponse<ReceiveStockResultDto>> ReceiveStockAsync(int productId, ReceiveStockDto dto, CancellationToken ct);
+    Task<AppResponse<StockAdjustmentResultDto>> AdjustStockAsync(int productId, StockAdjustmentDto dto, CancellationToken ct);
 }

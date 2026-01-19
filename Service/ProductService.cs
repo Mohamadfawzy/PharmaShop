@@ -1083,6 +1083,44 @@ public class ProductService : IProductService
     }
 
 
+    public async Task<AppResponse<StockAdjustmentResultDto>> AdjustStockAsync(
+       int productId,
+       StockAdjustmentDto dto,
+       CancellationToken ct)
+    {
+        try
+        {
+            var pharmacyId = GetPharmacyIdOrDefault();
+
+            if (dto is null)
+                return AppResponse<StockAdjustmentResultDto>.ValidationError("Body is required");
+
+            await using var tx = await unitOfWork.BeginTransactionAsync(ct);
+
+            var (result, fieldErrors, errorMessage) =
+                await unitOfWork.Products.AdjustStockAsync(pharmacyId, productId, dto, ct);
+
+            if (fieldErrors is not null)
+                return AppResponse<StockAdjustmentResultDto>.ValidationErrors(fieldErrors);
+
+            if (errorMessage is not null)
+                return AppResponse<StockAdjustmentResultDto>.ValidationError(errorMessage);
+
+            await unitOfWork.CompleteAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return AppResponse<StockAdjustmentResultDto>.Ok(result!, "Stock adjusted successfully");
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return AppResponse<StockAdjustmentResultDto>.Conflict("Stock changed by another request. Please retry.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "AdjustStockAsync failed ProductId={ProductId}", productId);
+            return AppResponse<StockAdjustmentResultDto>.InternalError("Failed to adjust stock");
+        }
+    }
     // Audit
 
     public async Task<AppResponse<List<ProductAuditEventDto>>> GetProductAuditAsync(

@@ -29,6 +29,8 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
     {
         _context.Entry(entity).Property(e => e.RowVersion).OriginalValue = rowVersion;
     }
+    
+    
     public async Task<PagedResult<ProductListItemDto>> SearchAsync(
        int pharmacyId,
        ProductListQueryDto query,
@@ -777,15 +779,176 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
     }
 
 
+    // ------------------------
+
+    public async Task<(StockAdjustmentResultDto? Result, Dictionary<string, string[]>? FieldErrors, string? ErrorMessage)>
+        AdjustStockAsync(int pharmacyId, int productId, StockAdjustmentDto dto, CancellationToken ct)
+    {
+        // 1) Basic validation (خفيف)
+        var errors = new Dictionary<string, string[]>();
+
+        if (dto.StoreId <= 0) errors["StoreId"] = new[] { "StoreId must be > 0" };
+        if (dto.ProductUnitId <= 0) errors["ProductUnitId"] = new[] { "ProductUnitId must be > 0" };
+        if (dto.CountedQty < 0) errors["CountedQty"] = new[] { "CountedQty must be >= 0" };
+
+        var hasBatchId = dto.BatchId.HasValue;
+        var hasBatchNumber = !string.IsNullOrWhiteSpace(dto.BatchNumber);
+
+        if (!hasBatchId && !hasBatchNumber)
+            errors["BatchId"] = new[] { "Provide BatchId OR BatchNumber (and ExpirationDate if needed)" };
+
+        if (hasBatchNumber && dto.BatchNumber!.Length > 80)
+            errors["BatchNumber"] = new[] { "BatchNumber max length is 80" };
+
+        if (dto.Reason is not null && dto.Reason.Length > 500)
+            errors["Reason"] = new[] { "Reason max length is 500" };
+
+        if (errors.Count > 0)
+            return (null, errors, null);
+
+        // 2) Ensure product exists
+        var product = await _context.Set<Product>()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p =>
+                p.Id == productId
+                && p.PharmacyId == pharmacyId
+                && p.DeletedAt == null,
+                ct);
+
+        if (product is null)
+            return (null, null, "Product not found");
+
+        // 3) Ensure ProductUnit belongs to product
+        var pu = await _context.Set<ProductUnit>()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(u =>
+                u.PharmacyId == pharmacyId
+                && u.ProductId == productId
+                && u.Id == dto.ProductUnitId
+                && u.DeletedAt == null
+                && u.IsActive,
+                ct);
+
+        if (pu is null)
+            return (null, new() { ["ProductUnitId"] = new[] { "Invalid ProductUnitId for this product" } }, null);
+
+        // 4) Locate batch (tracking) - MUST exist for adjustment
+        ProductBatch? batch;
+
+        if (dto.BatchId.HasValue)
+        {
+            batch = await _context.Set<ProductBatch>()
+                .AsTracking()
+                .SingleOrDefaultAsync(b =>
+                    b.Id == dto.BatchId.Value
+                    && b.PharmacyId == pharmacyId
+                    && b.StoreId == dto.StoreId
+                    && b.ProductId == productId
+                    && b.ProductUnitId == dto.ProductUnitId
+                    && b.DeletedAt == null,
+                    ct);
+
+            if (batch is null)
+                return (null, new() { ["BatchId"] = new[] { "Batch not found" } }, null);
+        }
+        else
+        {
+            // If product has expiry, require expiration date for precise match
+            if (product.HasExpiry && dto.ExpirationDate is null)
+                return (null, new() { ["ExpirationDate"] = new[] { "ExpirationDate is required for expirable products" } }, null);
+
+            var exp = dto.ExpirationDate?.Date;
+
+            batch = await _context.Set<ProductBatch>()
+                .AsTracking()
+                .SingleOrDefaultAsync(b =>
+                    b.PharmacyId == pharmacyId
+                    && b.StoreId == dto.StoreId
+                    && b.ProductId == productId
+                    && b.ProductUnitId == dto.ProductUnitId
+                    && b.BatchNumber == dto.BatchNumber!.Trim()
+                    && b.DeletedAt == null
+                    && (!product.HasExpiry || b.ExpirationDate == exp),
+                    ct);
+
+            if (batch is null)
+                return (null, new() { ["BatchNumber"] = new[] { "Batch not found for given BatchNumber/ExpirationDate" } }, null);
+        }
+
+        // 5) Inventory row (tracking) - must exist; if not, create it
+        var inv = await _context.Set<ProductInventory>()
+            .AsTracking()
+            .SingleOrDefaultAsync(x =>
+                x.PharmacyId == pharmacyId
+                && x.StoreId == dto.StoreId
+                && x.ProductUnitId == dto.ProductUnitId,
+                ct);
+
+        if (inv is null)
+        {
+            inv = new ProductInventory
+            {
+                PharmacyId = pharmacyId,
+                StoreId = dto.StoreId,
+                ProductId = productId,
+                ProductUnitId = dto.ProductUnitId,
+                QuantityOnHand = 0,
+                ReservedQty = 0,
+                LastStockUpdateAt = DateTime.UtcNow
+            };
+            _context.Set<ProductInventory>().Add(inv);
+        }
+        else
+        {
+            if (inv.ProductId != productId)
+                return (null, null, "Data conflict: Inventory row ProductId does not match this product.");
+        }
+
+        // 6) Apply adjustment (absolute counted qty on batch)
+        var oldBatchQty = batch.QuantityOnHand;
+        var newBatchQty = dto.CountedQty;
+        var delta = newBatchQty - oldBatchQty;
+
+        // Important: do not allow counted qty below reserved (if you later reserve per batch)
+        // currently reserved is at inventory-level only, so we just guard inventory not negative after applying delta.
+
+        batch.QuantityOnHand = newBatchQty;
+        batch.IsActive = newBatchQty > 0; // optional behavior
+
+        if (dto.CostPrice.HasValue)
+            batch.CostPrice = dto.CostPrice;
+
+        // Update inventory snapshot by same delta
+        var newInvQty = inv.QuantityOnHand + delta;
+        if (newInvQty < 0)
+            return (null, null, "Adjustment would make inventory negative. Check data consistency.");
+
+        inv.QuantityOnHand = newInvQty;
+        inv.LastStockUpdateAt = DateTime.UtcNow;
+
+        // TODO (future): write Audit/Ledger here (StockAdjustment movement) using dto.Reason + currentUser
+
+        return (new StockAdjustmentResultDto
+        {
+            ProductId = productId,
+            StoreId = dto.StoreId,
+            ProductUnitId = dto.ProductUnitId,
+
+            BatchId = batch.Id,
+            BatchNumber = batch.BatchNumber,
+            ExpirationDate = batch.ExpirationDate,
+
+            OldBatchQty = oldBatchQty,
+            NewBatchQty = newBatchQty,
+            DeltaQty = delta,
+
+            InventoryQtyOnHandAfter = inv.QuantityOnHand
+        }, null, null);
+    }
 
 
 
-
-
-    private static IQueryable<Product> ApplySorting(
-        IQueryable<Product> q,
-        ProductSortBy sortBy,
-        SortDirection dir)
+    private static IQueryable<Product> ApplySorting(IQueryable<Product> q,ProductSortBy sortBy,SortDirection dir)
     {
         var desc = dir == SortDirection.Desc;
 

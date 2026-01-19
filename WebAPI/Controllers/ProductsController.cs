@@ -10,7 +10,6 @@ namespace WebAPI.Controllers;
 [Route("api/v1/admin/Products")]
 [ApiController]
 public class ProductsController : AdminBaseApiController
-
 {
     private readonly IProductService _productService;
     private readonly IWebHostEnvironment env;
@@ -110,13 +109,11 @@ public class ProductsController : AdminBaseApiController
     }
 
 
-
-
-
-
-
-
-
+    [HttpPost("{productId:int}/stock-adjustment")]
+    public async Task<IActionResult> StockAdjustment([FromRoute] int productId,[FromBody] StockAdjustmentDto dto,CancellationToken ct)
+    {
+        return FromAppResponse(await _productService.AdjustStockAsync(productId, dto, ct));
+    }
 
     // audit
     [HttpGet("{id:int}/audit")]
