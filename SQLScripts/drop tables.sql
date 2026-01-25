@@ -32,17 +32,68 @@ GO
 -- =========================
 -- Promotions
 -- =========================
-IF OBJECT_ID(N'dbo.PromotionProducts', N'U') IS NOT NULL
-    DROP TABLE dbo.PromotionProducts;
+
+USE pharma_shope_db;
 GO
 
-IF OBJECT_ID(N'dbo.PromotionCategories', N'U') IS NOT NULL
-    DROP TABLE dbo.PromotionCategories;
+/*========================================================
+  Drop ONLY the tables created in the new Orders + Promotions module
+  - Drop children first to avoid FK errors
+========================================================*/
+
+-- 1) Audit tables (depend on Orders/OrderItems/Promotions/Effects/Coupons)
+IF OBJECT_ID('dbo.OrderItemPromotions','U') IS NOT NULL
+    DROP TABLE dbo.OrderItemPromotions;
 GO
 
-IF OBJECT_ID(N'dbo.Promotions', N'U') IS NOT NULL
+IF OBJECT_ID('dbo.OrderPromotions','U') IS NOT NULL
+    DROP TABLE dbo.OrderPromotions;
+GO
+
+-- 2) BuyXGetY rule table (depends on PromotionEffects)
+IF OBJECT_ID('dbo.PromotionBuyXGetYRules','U') IS NOT NULL
+    DROP TABLE dbo.PromotionBuyXGetYRules;
+GO
+
+-- 3) Promotion side tables (depend on Promotions)
+IF OBJECT_ID('dbo.PromotionEffects','U') IS NOT NULL
+    DROP TABLE dbo.PromotionEffects;
+GO
+
+IF OBJECT_ID('dbo.PromotionConditions','U') IS NOT NULL
+    DROP TABLE dbo.PromotionConditions;
+GO
+
+IF OBJECT_ID('dbo.PromotionSchedules','U') IS NOT NULL
+    DROP TABLE dbo.PromotionSchedules;
+GO
+
+IF OBJECT_ID('dbo.PromotionTargets','U') IS NOT NULL
+    DROP TABLE dbo.PromotionTargets;
+GO
+
+IF OBJECT_ID('dbo.PromotionUsageLimits','U') IS NOT NULL
+    DROP TABLE dbo.PromotionUsageLimits;
+GO
+
+IF OBJECT_ID('dbo.PromotionCoupons','U') IS NOT NULL
+    DROP TABLE dbo.PromotionCoupons;
+GO
+
+-- 4) Orders tables (OrderItems depends on Orders)
+IF OBJECT_ID('dbo.OrderItems','U') IS NOT NULL
+    DROP TABLE dbo.OrderItems;
+GO
+
+IF OBJECT_ID('dbo.Orders','U') IS NOT NULL
+    DROP TABLE dbo.Orders;
+GO
+
+-- 5) Core Promotions table (drop last)
+IF OBJECT_ID('dbo.Promotions','U') IS NOT NULL
     DROP TABLE dbo.Promotions;
 GO
+
 
 -- =========================
 -- Tags

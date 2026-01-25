@@ -1,7 +1,14 @@
 ﻿
 use pharma_shope_db;
 
-CREATE SCHEMA audit;
+/*========================================================
+  Schema: audit
+========================================================*/
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'audit')
+    EXEC('CREATE SCHEMA audit');
+GO
+
+
 GO
 
 -- CategoryAuditLog 
@@ -18,14 +25,6 @@ CREATE TABLE audit.CategoryAuditLog (
     CONSTRAINT FK_CategoryAuditLog_Category
         FOREIGN KEY (CategoryId) REFERENCES dbo.Categories(Id)
 );
-
-/*========================================================
-  Schema: audit
-========================================================*/
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'audit')
-    EXEC('CREATE SCHEMA audit');
-GO
-
 
 
 /*========================================================
