@@ -187,15 +187,19 @@ GO
 CREATE TABLE Products (
     Id INT IDENTITY(1,1) PRIMARY KEY,
 	SubCategoryId INT NOT NULL,
+
     Name NVARCHAR(250) NOT NULL,
 	NameEn NVARCHAR(250) NOT NULL,
     Description NVARCHAR(MAX) NULL,
 	DescriptionEn NVARCHAR(MAX) NULL,
+
     Barcode VARCHAR(50) NOT NULL, -- الباركود الخاص بالصيدلية
     InternationalCode VARCHAR(50) NULL,  -- الكود الدولي إن وجد
     StockProductCode VARCHAR(50) NULL, -- الكود في نظام stock
+
     Price DECIMAL(18,2) NOT NULL, -- 200 EGP
     OldPrice DECIMAL(18,2) NULL,
+
     IsAvailable BIT NOT NULL DEFAULT 1, -- InStock
     IsIntegrated BIT NOT NULL DEFAULT 0,
     IntegratedAt DATETIME NULL,

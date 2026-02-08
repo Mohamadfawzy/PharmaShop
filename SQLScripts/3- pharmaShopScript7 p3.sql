@@ -158,6 +158,7 @@ GO
   Promotions
   - تعريف العرض (بدون Targets/Effects/Conditions)
 ========================================================*/
+-- id = 10 
 CREATE TABLE dbo.Promotions
 (
     Id              INT IDENTITY(1,1) NOT NULL
@@ -181,6 +182,18 @@ CREATE TABLE dbo.Promotions
 
     Priority        INT NOT NULL
         CONSTRAINT DF_Promotions_Priority DEFAULT(0),     -- أولوية العرض (لحل التعارض)
+    
+	-- PromotionUsageLimits
+    MaxRedemptionsTotal       INT NULL,                    -- أقصى مرات إجمالي
+    MaxRedemptionsPerCustomer INT NULL,                    -- أقصى مرات لكل عميل
+    MaxRedemptionsPerOrder    INT NULL,                    -- أقصى مرات داخل الطلب
+
+    CONSTRAINT CK_PromotionUsageLimits CHECK (
+        (MaxRedemptionsTotal IS NULL OR MaxRedemptionsTotal > 0)
+        AND (MaxRedemptionsPerCustomer IS NULL OR MaxRedemptionsPerCustomer > 0)
+        AND (MaxRedemptionsPerOrder IS NULL OR MaxRedemptionsPerOrder > 0)),
+
+
 
     -- 0=Exclusive,1=Stackable,2=BestDiscountOnly,3=PriorityOnly
     StackPolicy     TINYINT NOT NULL
@@ -560,33 +573,6 @@ GO
 CREATE INDEX IX_PromotionCoupons_PromotionId
 ON dbo.PromotionCoupons(PromotionId, IsActive);
 GO
-
-
-/*========================================================
-  PromotionUsageLimits
-  - حدود الاستخدام للعرض (بدون كوبون أيضًا)
-========================================================*/
-CREATE TABLE dbo.PromotionUsageLimits
-(
-    PromotionId     INT NOT NULL
-        CONSTRAINT PK_PromotionUsageLimits PRIMARY KEY,   -- نفس PromotionId
-
-    MaxRedemptionsTotal       INT NULL,                    -- أقصى مرات إجمالي
-    MaxRedemptionsPerCustomer INT NULL,                    -- أقصى مرات لكل عميل
-    MaxRedemptionsPerOrder    INT NULL,                    -- أقصى مرات داخل الطلب
-
-    CONSTRAINT FK_PromotionUsageLimits_Promotions
-        FOREIGN KEY (PromotionId) REFERENCES dbo.Promotions(Id),
-
-    CONSTRAINT CK_PromotionUsageLimits CHECK (
-        (MaxRedemptionsTotal IS NULL OR MaxRedemptionsTotal > 0)
-        AND (MaxRedemptionsPerCustomer IS NULL OR MaxRedemptionsPerCustomer > 0)
-        AND (MaxRedemptionsPerOrder IS NULL OR MaxRedemptionsPerOrder > 0)
-    )
-);
-GO
-
-
 
 
 /*========================================================

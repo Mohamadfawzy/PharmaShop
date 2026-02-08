@@ -20,7 +20,7 @@ public sealed class CurrentUserService : ICurrentUserService
 
     public string? UserId =>
         GetClaimValue(ClaimTypes.NameIdentifier)
-        ?? GetClaimValue("sub"); // شائع في JWT
+        ?? GetClaimValue("sub"); 
 
     public string? UserName =>
         GetClaimValue(ClaimTypes.Name)

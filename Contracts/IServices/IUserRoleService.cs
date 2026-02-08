@@ -16,7 +16,4 @@ public interface IUserRoleService
 
     Task<AppResponse<List<RoleDto>>> GetAllRolesAsync(CancellationToken ct);
     Task<AppResponse<UserRolesResponseDto>> GetUserRolesAsync(int userId, CancellationToken ct);
-
-
-
 }

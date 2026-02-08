@@ -27,7 +27,6 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
             // العميل قفل الاتصال/ألغى الطلب
-            // أفضل ممارسة: لا ترجع InternalError هنا
             context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest; // قد لا يكون معرّف في constants
         }
         catch (Exception ex)
@@ -79,7 +78,6 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
         // For now: default internal error, hide details in production.
         if (_env.IsDevelopment())
         {
-            // في التطوير: ممكن تُظهر رسالة أكثر (لكن لا تضع StackTrace في response عادةً)
             return AppResponse.Fail(
                 error: "An internal error occurred",
                 errorCode: AppErrorCode.InternalServerError,

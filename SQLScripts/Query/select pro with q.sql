@@ -1,5 +1,5 @@
 use pharma_shope_db;
-DECLARE @ProductId INT = 10;
+DECLARE @ProductId INT = 2;
 DECLARE @StoreId   INT = 1;
 
 SELECT

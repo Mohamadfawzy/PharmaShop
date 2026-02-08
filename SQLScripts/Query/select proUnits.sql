@@ -1,5 +1,6 @@
+use pharma_shope_db;
 DECLARE @PharmacyId INT = 1;
-DECLARE @ProductId  INT = 10;
+DECLARE @ProductId  INT = 1;
 
 SELECT
     pu.Id                 AS ProductUnitId,
