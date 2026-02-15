@@ -264,94 +264,199 @@ GO
 
 CREATE TABLE dbo.Products
 (
-    /* -------------------- Identity / Tenant / Location -------------------- */
+    /* -------------------- Identity / Location -------------------- */
     Id                INT IDENTITY(1,1) NOT NULL
-        CONSTRAINT PK_Products PRIMARY KEY,
+        CONSTRAINT PK_Products PRIMARY KEY,                 -- معرف المنتج
 
-    StoreId           INT NOT NULL,      -- الفرع/المخزن الذي يخدم المتجر
+    StoreId           INT NOT NULL,                         -- الفرع/المخزن الذي يخدم المتجر
 
-    CategoryId        INT NOT NULL,
-    CompanyId         INT NULL,
+    CategoryId        INT NOT NULL,                         -- التصنيف
+    CompanyId         INT NULL,                             -- الشركة (اختياري)
 
     /* -------------------- ERP / Integration -------------------- */
-    ErpProductId      DECIMAL(18,0) NULL,         -- product_id في ERP
-    InternationalCode VARCHAR(50) NULL,           -- كود دولي 
+    ErpProductId      DECIMAL(18,0) NULL,                   -- product_id في ERP
+    InternationalCode VARCHAR(50) NULL,                     -- كود دولي
 
     /* -------------------- Names / Content -------------------- */
-    NameAr            NVARCHAR(250) NOT NULL,
-    NameEn            NVARCHAR(250) NULL,
+    NameAr            NVARCHAR(250) NOT NULL,               -- اسم عربي
+    NameEn            NVARCHAR(250) NULL,                   -- اسم إنجليزي (اختياري)
 
-    DescriptionAr     NVARCHAR(MAX) NULL,
-    DescriptionEn     NVARCHAR(MAX) NULL,
+    DescriptionAr     NVARCHAR(MAX) NULL,                   -- وصف عربي
+    DescriptionEn     NVARCHAR(MAX) NULL,                   -- وصف إنجليزي
 
-    SearchKeywords    NVARCHAR(500) NULL,
+    SearchKeywords    NVARCHAR(500) NULL,                   -- كلمات مفتاحية للبحث
 
     /* -------------------- Units & Pricing (Outer default) -------------------- */
-    OuterUnitId       INT NOT NULL,               -- الوحدة الكبرى (Box/Bottle...)
-    InnerUnitId       INT NULL,                   -- الوحدة الصغرى (Strip/Tablet/Ampoule...) إن وُجدت
+    OuterUnitId       INT NOT NULL,                         -- الوحدة الكبرى (Box/Bottle...)
+    InnerUnitId       INT NULL,                             -- الوحدة الصغرى (Strip/Tablet/Ampoule...) إن وُجدت
 
-    InnerPerOuter     INT NULL,                   -- عدد Inner داخل Outer (مثال 4 شرائط/علبة)
-	
-	ListPrice        DECIMAL(18,2) NOT NULL,
+    InnerPerOuter     INT NULL,                             -- عدد Inner داخل Outer (مثال 4 شرائط/علبة)
 
-    OuterUnitPrice        DECIMAL(18,2) NOT NULL DEFAULT (0),
+    OuterUnitPrice    DECIMAL(18,2) NOT NULL
+        CONSTRAINT DF_Products_OuterUnitPrice DEFAULT (0),  -- سعر الوحدة الكبرى
 
-    InnerUnitPrice        DECIMAL(18,2) NULL DEFAULT (0),
+    InnerUnitPrice    DECIMAL(18,2) NULL
+        CONSTRAINT DF_Products_InnerUnitPrice DEFAULT (0),  -- سعر الوحدة الصغرى (إن وُجدت)
+
+    /* -------------------- Order limits -------------------- */
+    MinOrderQty       INT NOT NULL
+        CONSTRAINT DF_Products_MinOrderQty DEFAULT (1),     -- أقل كمية
+    MaxOrderQty       INT NULL,                             -- أقصى كمية
+    MaxPerDayQty      INT NULL,                             -- أقصى يوميًا
+
+    IsReturnable      BIT NOT NULL
+        CONSTRAINT DF_Products_IsReturnable DEFAULT (1),    -- قابل للإرجاع؟
+
+    AllowSplitSale    BIT NOT NULL
+        CONSTRAINT DF_Products_AllowSplitSale DEFAULT (0),  -- يسمح ببيع مجزأ؟
 
     /* -------------------- Stock & Expiry (summary) -------------------- */
-    Quantity     DECIMAL(18,3) NOT NULL DEFAULT (0), 
+    Quantity          DECIMAL(18,3) NOT NULL
+        CONSTRAINT DF_Products_Quantity DEFAULT (0),        -- الكمية (مثال 2.500)
 
     HasExpiry         BIT NOT NULL
-        CONSTRAINT DF_Products_HasExpiry DEFAULT (1),
+        CONSTRAINT DF_Products_HasExpiry DEFAULT (1),       -- له صلاحية؟
 
-    NearestExpiryDate DATE NULL,                  -- أقرب صلاحية ضمن المخزون المتاح (ملخص)
-    LastStockSyncAt   DATETIME2(0) NULL,          -- آخر وقت مزامنة للمخزون/الصلاحية
+    NearestExpiryDate DATE NULL,                            -- أقرب صلاحية ضمن المخزون المتاح (ملخص)
+    LastStockSyncAt   DATETIME2(0) NULL,                    -- آخر وقت مزامنة للمخزون/الصلاحية
 
     /* -------------------- Offers / Discounts -------------------- */
-    HasPromotion              BIT NOT NULL
-        CONSTRAINT DF_Products_HasOffer DEFAULT (0),
+    HasPromotion      BIT NOT NULL
+        CONSTRAINT DF_Products_HasPromotion DEFAULT (0),    -- هل يوجد عرض؟
 
     PromotionDiscountPercent  DECIMAL(5,2) NOT NULL
-        CONSTRAINT DF_Products_OfferDiscountPercent DEFAULT (0),
+        CONSTRAINT DF_Products_PromotionDiscountPercent DEFAULT (0), -- نسبة الخصم %
 
-    PromotionStartsAt         DATETIME2(0) NULL,
-    PromotionEndsAt           DATETIME2(0) NULL,
+    PromotionStartsAt DATETIME2(0) NULL,                    -- بداية العرض
+    PromotionEndsAt   DATETIME2(0) NULL,                    -- نهاية العرض
+
+    /* -------------------- Flags -------------------- */
+    IsFeatured        BIT NOT NULL
+        CONSTRAINT DF_Products_IsFeatured DEFAULT (0),      -- مميز؟
+
+    /* -------------------- Integration flags -------------------- */
+    IsIntegrated      BIT NOT NULL
+        CONSTRAINT DF_Products_IsIntegrated DEFAULT (0),    -- مدمج؟
+    IntegratedAt      DATETIME2(0) NULL,                    -- تاريخ الدمج
 
     /* -------------------- Points -------------------- */
-    EarnPoints         BIT NOT NULL
-        CONSTRAINT DF_Products_EarnPoints DEFAULT (1),
+    Points INT NOT NULL
+        CONSTRAINT DF_Products_PointsOuter DEFAULT (0),
 
     /* -------------------- Selling Rules -------------------- */
     RequiresPrescription BIT NOT NULL
-        CONSTRAINT DF_Products_RequiresPrescription DEFAULT (0),
+        CONSTRAINT DF_Products_RequiresPrescription DEFAULT (0), -- يحتاج روشتة؟
 
-    MinQuantity    DECIMAL(18,3) NOT NULL DEFAULT (1),
+    IsAvailable       BIT NOT NULL
+        CONSTRAINT DF_Products_IsAvailable DEFAULT (0),     -- متاح؟ (يتم ضبطه بالمزامنة/المنطق)
 
-    MaxQuantity    DECIMAL(18,3) NULL,   -- NULL = بلا حد
-
-    IsAvailable          BIT NOT NULL
-        CONSTRAINT DF_Products_IsFeatured DEFAULT (0),
-
-    IsActive            BIT NOT NULL
-        CONSTRAINT DF_Products_IsActive DEFAULT (1),
-
-   
+    IsActive          BIT NOT NULL
+        CONSTRAINT DF_Products_IsActive DEFAULT (1),        -- نشط/ظاهر؟
 
     /* -------------------- Auditing / Soft Delete / Concurrency -------------------- */
-    CreatedAt          DATETIME2(0) NOT NULL  DEFAULT (SYSDATETIME()),
+    CreatedAt         DATETIME2(0) NOT NULL
+        CONSTRAINT DF_Products_CreatedAt DEFAULT (SYSDATETIME()), -- إنشاء
 
-    UpdatedAt          DATETIME2(0) NULL,
+    UpdatedAt         DATETIME2(0) NULL,                    -- تعديل
+    DeletedAt         DATETIME2(0) NULL,                    -- حذف منطقي
 
-    DeletedAt          DATETIME2(0) NULL,
+    /* -------------------- Data integrity (Checks) -------------------- */
+    CONSTRAINT CK_Products_QuantityNonNegative
+        CHECK (Quantity >= 0),
+
+    CONSTRAINT CK_Products_PricesNonNegative
+        CHECK (OuterUnitPrice >= 0 AND (InnerUnitPrice IS NULL OR InnerUnitPrice >= 0)),
+
+    CONSTRAINT CK_Products_PromotionPercent
+        CHECK (PromotionDiscountPercent >= 0 AND PromotionDiscountPercent <= 100),
+
+    CONSTRAINT CK_Products_PromotionDates
+        CHECK (
+            (PromotionStartsAt IS NULL AND PromotionEndsAt IS NULL)
+            OR (PromotionStartsAt IS NOT NULL AND PromotionEndsAt IS NOT NULL AND PromotionEndsAt > PromotionStartsAt)
+        ),
+
+    CONSTRAINT CK_Products_OrderLimits
+        CHECK (
+            MinOrderQty > 0
+            AND (MaxOrderQty IS NULL OR MaxOrderQty >= MinOrderQty)
+            AND (MaxPerDayQty IS NULL OR MaxPerDayQty > 0)
+        ),
+
+    /* Inner rule: إذا يوجد InnerUnitId يجب وجود InnerPerOuter >= 1 */
+    CONSTRAINT CK_Products_InnerRules
+        CHECK (
+            (InnerUnitId IS NULL AND InnerPerOuter IS NULL)
+            OR (InnerUnitId IS NOT NULL AND InnerPerOuter IS NOT NULL AND InnerPerOuter >= 1)
+        )
 );
 GO
 
 
 
+/* -------------------- Foreign Keys -------------------- */
+ALTER TABLE dbo.Products
+ADD CONSTRAINT FK_Products_Stores
+    FOREIGN KEY (StoreId) REFERENCES dbo.Stores(Id);
+
+ALTER TABLE dbo.Products
+ADD CONSTRAINT FK_Products_Categories
+    FOREIGN KEY (CategoryId) REFERENCES dbo.Categories(Id);
+
+ALTER TABLE dbo.Products
+ADD CONSTRAINT FK_Products_Companies
+    FOREIGN KEY (CompanyId) REFERENCES dbo.Companies(Id);
+
+ALTER TABLE dbo.Products
+ADD CONSTRAINT FK_Products_Units_Outer
+    FOREIGN KEY (OuterUnitId) REFERENCES dbo.Units(Id);
+
+ALTER TABLE dbo.Products
+ADD CONSTRAINT FK_Products_Units_Inner
+    FOREIGN KEY (InnerUnitId) REFERENCES dbo.Units(Id);
+GO
 
 
 
+/* -------------------- Indexes -------------------- */
 
+-- Unique InternationalCode per Store (filtered: allow NULL, ignore soft-deleted)
+CREATE UNIQUE INDEX UX_Products_Store_InternationalCode
+ON dbo.Products(StoreId, InternationalCode)
+WHERE InternationalCode IS NOT NULL AND InternationalCode <> '' AND DeletedAt IS NULL;
+GO
+
+-- Fast listing for store/category/active/available
+CREATE INDEX IX_Products_List
+ON dbo.Products(StoreId, CategoryId, IsActive, IsAvailable)
+INCLUDE (NameAr, NameEn, OuterUnitPrice, InnerUnitPrice, Quantity, HasPromotion, PromotionDiscountPercent)
+WHERE DeletedAt IS NULL;
+GO
+
+-- Search by Arabic name
+CREATE INDEX IX_Products_NameAr
+ON dbo.Products(StoreId, NameAr)
+WHERE DeletedAt IS NULL;
+GO
+
+-- Search by English name (if present)
+CREATE INDEX IX_Products_NameEn
+ON dbo.Products(StoreId, NameEn)
+WHERE DeletedAt IS NULL AND NameEn IS NOT NULL;
+GO
+
+-- Offers browsing
+CREATE INDEX IX_Products_Promotions
+ON dbo.Products(StoreId, HasPromotion, PromotionEndsAt)
+INCLUDE (NameAr, OuterUnitPrice, InnerUnitPrice, PromotionDiscountPercent)
+WHERE DeletedAt IS NULL AND HasPromotion = 1;
+GO
+
+-- ERP mapping index (useful for sync)
+CREATE INDEX IX_Products_Store_ErpProductId
+ON dbo.Products(StoreId, ErpProductId)
+WHERE DeletedAt IS NULL AND ErpProductId IS NOT NULL;
+GO
 
 
 CREATE TABLE dbo.ProductImages
