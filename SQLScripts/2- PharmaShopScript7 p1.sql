@@ -208,7 +208,7 @@ GO
   - Brand per Pharmacy (optional but useful)
 ========================================================*/
 GO
-CREATE TABLE dbo.Companies
+CREATE TABLE dbo.Brands
 (
     Id          INT IDENTITY(1,1) NOT NULL
         CONSTRAINT PK_Brands PRIMARY KEY,              -- معرف الماركة
@@ -242,6 +242,68 @@ INSERT INTO dbo.Brands (PharmacyId, Name, NameEn)
 VALUES (1, N'جلَكسو سميث كلاين', N'GlaxoSmithKline');
 
 
+
+/*========================================================
+  Stores
+  - Supports multiple warehouses/locations per pharmacy
+========================================================*/
+GO
+CREATE TABLE dbo.Stores
+(
+    Id          INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_Stores PRIMARY KEY,              -- معرف المخزن
+
+    PharmacyId  INT NOT NULL,                          -- الصيدلية المالكة
+
+    Name        NVARCHAR(150) NOT NULL,                -- اسم المخزن (Main Store / Branch 1...)
+    Code        VARCHAR(30) NULL,                      -- كود مختصر ثابت (اختياري)
+    Address     NVARCHAR(300) NULL,                    -- عنوان (اختياري)
+
+    IsDefault   BIT NOT NULL CONSTRAINT DF_Stores_IsDefault DEFAULT (0), -- مخزن افتراضي؟
+    IsActive    BIT NOT NULL CONSTRAINT DF_Stores_IsActive DEFAULT (1),  -- نشط؟
+
+    CreatedAt   DATETIME2(0) NOT NULL CONSTRAINT DF_Stores_CreatedAt DEFAULT (SYSUTCDATETIME()),
+
+    DeletedAt   DATETIME2(0) NULL,
+    DeletedBy   NVARCHAR(100) NULL,
+
+    RowVersion  ROWVERSION NOT NULL,
+
+    CONSTRAINT FK_Stores_Pharmacies
+        FOREIGN KEY (PharmacyId) REFERENCES dbo.Pharmacies(Id)
+);
+GO
+
+-- اسم المخزن Unique داخل الصيدلية (غير محذوف)
+CREATE UNIQUE INDEX UX_Stores_Pharmacy_Name
+ON dbo.Stores(PharmacyId, Name)
+WHERE DeletedAt IS NULL;
+GO
+
+-- كود المخزن Unique داخل الصيدلية (لو مستخدم)
+CREATE UNIQUE INDEX UX_Stores_Pharmacy_Code
+ON dbo.Stores(PharmacyId, Code)
+WHERE Code IS NOT NULL AND Code <> '' AND DeletedAt IS NULL;
+GO
+
+-- ضمان مخزن افتراضي واحد لكل صيدلية
+CREATE UNIQUE INDEX UX_Stores_OneDefaultPerPharmacy
+ON dbo.Stores(PharmacyId)
+WHERE IsDefault = 1 AND DeletedAt IS NULL;
+GO
+
+
+INSERT INTO dbo.Stores
+(
+    PharmacyId,Name,Code,Address,IsDefault
+)
+VALUES
+(
+    1,N'المخزن الرئيسي',
+    'MAIN',N'القاهرة - مدينة نصر - شارع مصطفى النحاس', 1
+);
+
+
 /*========================================================
   Products
   - Barcode/InternationalCode/StockProductCode are stored here (unified per product)
@@ -253,35 +315,33 @@ CREATE TABLE dbo.Products
     Id                   INT IDENTITY(1,1) NOT NULL
         CONSTRAINT PK_Products PRIMARY KEY,                -- معرف المنتج
 
-    PharmacyId           INT NOT NULL DEFAULT (1),                     -- الصيدلية المالكة (Multi-tenant)
+    PharmacyId           INT NOT NULL,                     -- الصيدلية المالكة (Multi-tenant)
     CategoryId           INT NOT NULL,                     -- التصنيف (Existing table)
-    CompanyId              INT NULL,                         -- الشركة المصنعة (اختياري)
+    BrandId              INT NULL,                         -- الماركة (اختياري)
 
     -- Unified product codes (as requested)
+    Barcode              VARCHAR(50) NULL,                 -- باركود موحد للمنتج (بحث/تعريف)
     InternationalCode    VARCHAR(50) NULL,                 -- كود دولي موحد (إن كان موحدًا في ERP)
-    SystemCode     VARCHAR(50) NULL,                 -- كود المنتج في نظام المخزون/ERP (موحد)
+    StockProductCode     VARCHAR(50) NULL,                 -- كود المنتج في نظام المخزون/ERP (موحد)
 
     -- Names / descriptions
-    NameAr                 NVARCHAR(250) NOT NULL,           -- اسم عربي
+    Name                 NVARCHAR(250) NOT NULL,           -- اسم عربي
     NameEn               NVARCHAR(250) NOT NULL,           -- اسم إنجليزي
+    Slug                 NVARCHAR(300) NULL,               -- SEO Slug (اختياري)
 
-    DescriptionAr          NVARCHAR(MAX) NULL,               -- وصف عربي
+    Description          NVARCHAR(MAX) NULL,               -- وصف عربي
     DescriptionEn        NVARCHAR(MAX) NULL,               -- وصف إنجليزي
 
     -- Search helpers
     SearchKeywords       NVARCHAR(500) NULL,               -- كلمات مفتاحية
+    NormalizedName       NVARCHAR(250) NULL,               -- اسم مُطبّع للبحث
+    NormalizedNameEn     NVARCHAR(250) NULL,               -- اسم مُطبّع EN
 
     -- Packaging info (informational)
     DosageForm           NVARCHAR(50) NULL,                -- Tablet/Syrup...
     Strength             NVARCHAR(50) NULL,                -- 500mg...
     PackSize             NVARCHAR(80) NULL,                -- 3 strips x 10 tabs...
     Unit                 NVARCHAR(30) NULL,                -- وحدة العرض العامة (Box/Bottle...) (اختياري)
-
-
-	PromoDiscId -- 1
-	GroupId
-
-
 
     -- Compliance / rules
     RequiresPrescription BIT NOT NULL
