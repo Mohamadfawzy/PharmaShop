@@ -203,60 +203,70 @@ GO
 
 
 
-/*========================================================
+ --========================================================
   Brands
   - Brand per Pharmacy (optional but useful)
-========================================================*/
+======================================================== 
+
 GO
 CREATE TABLE dbo.Companies
 (
     Id          INT IDENTITY(1,1) NOT NULL
-        CONSTRAINT PK_Brands PRIMARY KEY,              -- معرف الماركة
+        CONSTRAINT PK_Companies PRIMARY KEY,
 
-    PharmacyId  INT NOT NULL,                          -- الصيدلية المالكة (Multi-tenant)
+    PharmacyId  INT NOT NULL,  -- Tenant key
 
-    Name        NVARCHAR(150) NOT NULL,                -- اسم الماركة عربي
-    NameEn      NVARCHAR(150) NULL,                    -- اسم الماركة إنجليزي (اختياري)
+    NameAr      NVARCHAR(150) NOT NULL,
+    NameEn      NVARCHAR(150) NULL,
 
-    IsActive    BIT NOT NULL CONSTRAINT DF_Brands_IsActive DEFAULT (1), -- نشط؟
-    CreatedAt   DATETIME2(0) NOT NULL CONSTRAINT DF_Brands_CreatedAt DEFAULT (SYSUTCDATETIME()), -- تاريخ الإنشاء
+    IsActive    BIT NOT NULL
+        CONSTRAINT DF_Companies_IsActive DEFAULT (1),
 
-    DeletedAt   DATETIME2(0) NULL,                     -- Soft delete
-    DeletedBy   NVARCHAR(100) NULL,                    -- حُذف بواسطة
+    CreatedAt   DATETIME2(0) NOT NULL
+        CONSTRAINT DF_Companies_CreatedAt DEFAULT (SYSUTCDATETIME()),
 
-    RowVersion  ROWVERSION NOT NULL,                   -- Concurrency
+    DeletedAt   DATETIME2(0) NULL,   -- Soft delete
+    DeletedBy   NVARCHAR(100) NULL,
 
-    CONSTRAINT FK_Brands_Pharmacies
+    RowVersion  ROWVERSION NOT NULL, -- Concurrency
+
+    CONSTRAINT FK_Companies_Pharmacies
         FOREIGN KEY (PharmacyId) REFERENCES dbo.Pharmacies(Id)
 );
 GO
 
--- اسم الماركة Unique داخل الصيدلية (غير محذوف)
-CREATE UNIQUE INDEX UX_Brands_Pharmacy_Name
-ON dbo.Brands(PharmacyId, Name)
+-- Unique per tenant (ignoring soft-deleted rows)
+CREATE UNIQUE INDEX UX_Companies_Pharmacy_NameAr
+ON dbo.Companies (PharmacyId, NameAr)
+WHERE DeletedAt IS NULL;
+GO
+-- Search / sort by English name (if present)
+CREATE INDEX IX_Companies_Pharmacy_NameEn
+ON dbo.Companies (PharmacyId, NameEn)
+WHERE DeletedAt IS NULL AND NameEn IS NOT NULL;
+GO
+
+-- Fast listing by tenant and active flag
+CREATE INDEX IX_Companies_Pharmacy_IsActive
+ON dbo.Companies (PharmacyId, IsActive)
+INCLUDE (NameAr, NameEn, CreatedAt)
 WHERE DeletedAt IS NULL;
 GO
 
-
-INSERT INTO dbo.Brands (PharmacyId, Name, NameEn)
-VALUES (1, N'جلَكسو سميث كلاين', N'GlaxoSmithKline');
-
-
-/*========================================================
-  Products
-  - Barcode/InternationalCode/StockProductCode are stored here (unified per product)
-  - Selling price & per-unit inventory are NOT here (they are in ProductUnits / Inventory)
-========================================================*/
+-- Optional: enforce unique English name per tenant
+CREATE UNIQUE INDEX UX_Companies_Pharmacy_NameEn
+ON dbo.Companies (PharmacyId, NameEn)
+WHERE DeletedAt IS NULL AND NameEn IS NOT NULL AND NameEn <> N'';
 GO
 
 
-/*===========================================================
+ --===========================================================
   dbo.Products (Improved)
   - Default sale unit = Outer (big unit)
   - Optional inner unit with its own price
   - Stock quantity stored in Outer units as DECIMAL:
       Example: InnerPerOuter=4, 2 boxes + 2 strips => 2.500
-===========================================================*/
+=========================================================== 
 
 IF OBJECT_ID('dbo.Products', 'U') IS NOT NULL
     DROP TABLE dbo.Products;
@@ -264,7 +274,7 @@ GO
 
 CREATE TABLE dbo.Products
 (
-    /* -------------------- Identity / Location -------------------- */
+     -- -------------------- Identity / Location --------------------  
     Id                INT IDENTITY(1,1) NOT NULL
         CONSTRAINT PK_Products PRIMARY KEY,                 -- معرف المنتج
 
@@ -273,11 +283,11 @@ CREATE TABLE dbo.Products
     CategoryId        INT NOT NULL,                         -- التصنيف
     CompanyId         INT NULL,                             -- الشركة (اختياري)
 
-    /* -------------------- ERP / Integration -------------------- */
+     -- -------------------- ERP / Integration --------------------  
     ErpProductId      DECIMAL(18,0) NULL,                   -- product_id في ERP
     InternationalCode VARCHAR(50) NULL,                     -- كود دولي
 
-    /* -------------------- Names / Content -------------------- */
+     -- -------------------- Names / Content --------------------  
     NameAr            NVARCHAR(250) NOT NULL,               -- اسم عربي
     NameEn            NVARCHAR(250) NULL,                   -- اسم إنجليزي (اختياري)
 
@@ -286,7 +296,7 @@ CREATE TABLE dbo.Products
 
     SearchKeywords    NVARCHAR(500) NULL,                   -- كلمات مفتاحية للبحث
 
-    /* -------------------- Units & Pricing (Outer default) -------------------- */
+     -- -------------------- Units & Pricing (Outer default) --------------------  
     OuterUnitId       INT NOT NULL,                         -- الوحدة الكبرى (Box/Bottle...)
     InnerUnitId       INT NULL,                             -- الوحدة الصغرى (Strip/Tablet/Ampoule...) إن وُجدت
 
@@ -298,7 +308,7 @@ CREATE TABLE dbo.Products
     InnerUnitPrice    DECIMAL(18,2) NULL
         CONSTRAINT DF_Products_InnerUnitPrice DEFAULT (0),  -- سعر الوحدة الصغرى (إن وُجدت)
 
-    /* -------------------- Order limits -------------------- */
+     -- -------------------- Order limits --------------------  
     MinOrderQty       INT NOT NULL
         CONSTRAINT DF_Products_MinOrderQty DEFAULT (1),     -- أقل كمية
     MaxOrderQty       INT NULL,                             -- أقصى كمية
@@ -310,7 +320,7 @@ CREATE TABLE dbo.Products
     AllowSplitSale    BIT NOT NULL
         CONSTRAINT DF_Products_AllowSplitSale DEFAULT (0),  -- يسمح ببيع مجزأ؟
 
-    /* -------------------- Stock & Expiry (summary) -------------------- */
+     -- -------------------- Stock & Expiry (summary) --------------------  
     Quantity          DECIMAL(18,3) NOT NULL
         CONSTRAINT DF_Products_Quantity DEFAULT (0),        -- الكمية (مثال 2.500)
 
@@ -320,7 +330,7 @@ CREATE TABLE dbo.Products
     NearestExpiryDate DATE NULL,                            -- أقرب صلاحية ضمن المخزون المتاح (ملخص)
     LastStockSyncAt   DATETIME2(0) NULL,                    -- آخر وقت مزامنة للمخزون/الصلاحية
 
-    /* -------------------- Offers / Discounts -------------------- */
+     -- -------------------- Offers / Discounts --------------------  
     HasPromotion      BIT NOT NULL
         CONSTRAINT DF_Products_HasPromotion DEFAULT (0),    -- هل يوجد عرض؟
 
@@ -330,20 +340,20 @@ CREATE TABLE dbo.Products
     PromotionStartsAt DATETIME2(0) NULL,                    -- بداية العرض
     PromotionEndsAt   DATETIME2(0) NULL,                    -- نهاية العرض
 
-    /* -------------------- Flags -------------------- */
+     -- -------------------- Flags --------------------  
     IsFeatured        BIT NOT NULL
         CONSTRAINT DF_Products_IsFeatured DEFAULT (0),      -- مميز؟
 
-    /* -------------------- Integration flags -------------------- */
+     -- -------------------- Integration flags --------------------  
     IsIntegrated      BIT NOT NULL
         CONSTRAINT DF_Products_IsIntegrated DEFAULT (0),    -- مدمج؟
     IntegratedAt      DATETIME2(0) NULL,                    -- تاريخ الدمج
 
-    /* -------------------- Points -------------------- */
+     -- -------------------- Points --------------------  
     Points INT NOT NULL
         CONSTRAINT DF_Products_PointsOuter DEFAULT (0),
 
-    /* -------------------- Selling Rules -------------------- */
+     -- -------------------- Selling Rules --------------------  
     RequiresPrescription BIT NOT NULL
         CONSTRAINT DF_Products_RequiresPrescription DEFAULT (0), -- يحتاج روشتة؟
 
@@ -353,14 +363,14 @@ CREATE TABLE dbo.Products
     IsActive          BIT NOT NULL
         CONSTRAINT DF_Products_IsActive DEFAULT (1),        -- نشط/ظاهر؟
 
-    /* -------------------- Auditing / Soft Delete / Concurrency -------------------- */
+     -- -------------------- Auditing / Soft Delete / Concurrency --------------------  
     CreatedAt         DATETIME2(0) NOT NULL
         CONSTRAINT DF_Products_CreatedAt DEFAULT (SYSDATETIME()), -- إنشاء
 
     UpdatedAt         DATETIME2(0) NULL,                    -- تعديل
     DeletedAt         DATETIME2(0) NULL,                    -- حذف منطقي
 
-    /* -------------------- Data integrity (Checks) -------------------- */
+     -- -------------------- Data integrity (Checks) --------------------  
     CONSTRAINT CK_Products_QuantityNonNegative
         CHECK (Quantity >= 0),
 
@@ -383,7 +393,7 @@ CREATE TABLE dbo.Products
             AND (MaxPerDayQty IS NULL OR MaxPerDayQty > 0)
         ),
 
-    /* Inner rule: إذا يوجد InnerUnitId يجب وجود InnerPerOuter >= 1 */
+     -- Inner rule: إذا يوجد InnerUnitId يجب وجود InnerPerOuter >= 1  
     CONSTRAINT CK_Products_InnerRules
         CHECK (
             (InnerUnitId IS NULL AND InnerPerOuter IS NULL)
@@ -394,7 +404,7 @@ GO
 
 
 
-/* -------------------- Foreign Keys -------------------- */
+ -- -------------------- Foreign Keys --------------------  
 ALTER TABLE dbo.Products
 ADD CONSTRAINT FK_Products_Stores
     FOREIGN KEY (StoreId) REFERENCES dbo.Stores(Id);
@@ -418,7 +428,7 @@ GO
 
 
 
-/* -------------------- Indexes -------------------- */
+ -- -------------------- Indexes --------------------  
 
 -- Unique InternationalCode per Store (filtered: allow NULL, ignore soft-deleted)
 CREATE UNIQUE INDEX UX_Products_Store_InternationalCode
