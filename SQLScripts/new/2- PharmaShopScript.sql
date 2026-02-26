@@ -203,201 +203,132 @@ GO
 
 
 
- --========================================================
-  Brands
-  - Brand per Pharmacy (optional but useful)
-======================================================== 
+-- ========================================================
+ -- Companies
+-- ======================================================== 
 
-GO
-CREATE TABLE dbo.Companies
-(
-    Id          INT IDENTITY(1,1) NOT NULL
-        CONSTRAINT PK_Companies PRIMARY KEY,
-
-    PharmacyId  INT NOT NULL,  -- Tenant key
-
-    NameAr      NVARCHAR(150) NOT NULL,
-    NameEn      NVARCHAR(150) NULL,
-
-    IsActive    BIT NOT NULL
-        CONSTRAINT DF_Companies_IsActive DEFAULT (1),
-
-    CreatedAt   DATETIME2(0) NOT NULL
-        CONSTRAINT DF_Companies_CreatedAt DEFAULT (SYSUTCDATETIME()),
-
-    DeletedAt   DATETIME2(0) NULL,   -- Soft delete
-    DeletedBy   NVARCHAR(100) NULL,
-
-    RowVersion  ROWVERSION NOT NULL, -- Concurrency
-
-    CONSTRAINT FK_Companies_Pharmacies
-        FOREIGN KEY (PharmacyId) REFERENCES dbo.Pharmacies(Id)
+CREATE TABLE [dbo].[Companies] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [NameAr] nvarchar(150) NOT NULL,
+    [NameEn] nvarchar(150) NULL,
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Companies_IsActive] DEFAULT ((1)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Companies_CreatedAt] DEFAULT (SYSDATETIME()),
+    [DeletedAt] datetime2(0) NULL, -- Soft delete
+    [DeletedBy] nvarchar(100) NULL,
+    CONSTRAINT [PK_Companies] PRIMARY KEY ([Id])
 );
 GO
 
--- Unique per tenant (ignoring soft-deleted rows)
-CREATE UNIQUE INDEX UX_Companies_Pharmacy_NameAr
-ON dbo.Companies (PharmacyId, NameAr)
-WHERE DeletedAt IS NULL;
-GO
--- Search / sort by English name (if present)
-CREATE INDEX IX_Companies_Pharmacy_NameEn
-ON dbo.Companies (PharmacyId, NameEn)
-WHERE DeletedAt IS NULL AND NameEn IS NOT NULL;
+ -- Unique Arabic name (ignoring soft-deleted rows)  
+CREATE UNIQUE INDEX [UX_Companies_NameAr]
+ON [dbo].[Companies] ([NameAr])
+WHERE [DeletedAt] IS NULL;
 GO
 
--- Fast listing by tenant and active flag
-CREATE INDEX IX_Companies_Pharmacy_IsActive
-ON dbo.Companies (PharmacyId, IsActive)
-INCLUDE (NameAr, NameEn, CreatedAt)
-WHERE DeletedAt IS NULL;
+ -- Index for English name search/sort (ignoring soft-deleted rows)  
+CREATE INDEX [IX_Companies_NameEn]
+ON [dbo].[Companies] ([NameEn])
+WHERE [DeletedAt] IS NULL AND [NameEn] IS NOT NULL;
 GO
 
--- Optional: enforce unique English name per tenant
-CREATE UNIQUE INDEX UX_Companies_Pharmacy_NameEn
-ON dbo.Companies (PharmacyId, NameEn)
-WHERE DeletedAt IS NULL AND NameEn IS NOT NULL AND NameEn <> N'';
+-- Index for active listing with covered columns (ignoring soft-deleted rows)  
+CREATE INDEX [IX_Companies_IsActive]
+ON [dbo].[Companies] ([IsActive])
+INCLUDE ([NameAr], [NameEn], [CreatedAt])
+WHERE [DeletedAt] IS NULL;
 GO
 
 
- --===========================================================
-  dbo.Products (Improved)
-  - Default sale unit = Outer (big unit)
-  - Optional inner unit with its own price
-  - Stock quantity stored in Outer units as DECIMAL:
-      Example: InnerPerOuter=4, 2 boxes + 2 strips => 2.500
-=========================================================== 
+-- ===========================================================
+
+-- =========================================================== 
 
 IF OBJECT_ID('dbo.Products', 'U') IS NOT NULL
     DROP TABLE dbo.Products;
 GO
 
-CREATE TABLE dbo.Products
-(
-     -- -------------------- Identity / Location --------------------  
-    Id                INT IDENTITY(1,1) NOT NULL
-        CONSTRAINT PK_Products PRIMARY KEY,                 -- معرف المنتج
+CREATE TABLE [dbo].[Products] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [StoreId] int NOT NULL,
+    [CategoryId] int NOT NULL,
+    [CompanyId] int NULL,
 
-    StoreId           INT NOT NULL,                         -- الفرع/المخزن الذي يخدم المتجر
+    [ErpProductId] decimal(18,0) NULL,
+    [InternationalCode] varchar(50) NULL,
 
-    CategoryId        INT NOT NULL,                         -- التصنيف
-    CompanyId         INT NULL,                             -- الشركة (اختياري)
+    [NameAr] nvarchar(250) NOT NULL,
+    [NameEn] nvarchar(250) NULL,
+    [DescriptionAr] nvarchar(max) NULL,
+    [DescriptionEn] nvarchar(max) NULL,
+    [SearchKeywords] nvarchar(500) NULL,
 
-     -- -------------------- ERP / Integration --------------------  
-    ErpProductId      DECIMAL(18,0) NULL,                   -- product_id في ERP
-    InternationalCode VARCHAR(50) NULL,                     -- كود دولي
+    [OuterUnitId] int NOT NULL,
+    [InnerUnitId] int NULL,
+    [InnerPerOuter] int NULL,
 
-     -- -------------------- Names / Content --------------------  
-    NameAr            NVARCHAR(250) NOT NULL,               -- اسم عربي
-    NameEn            NVARCHAR(250) NULL,                   -- اسم إنجليزي (اختياري)
+    [OuterUnitPrice] decimal(18,2) NOT NULL CONSTRAINT [DF_Products_OuterUnitPrice] DEFAULT ((0)),
+    [InnerUnitPrice] decimal(18,2) NULL CONSTRAINT [DF_Products_InnerUnitPrice] DEFAULT ((0)),
 
-    DescriptionAr     NVARCHAR(MAX) NULL,                   -- وصف عربي
-    DescriptionEn     NVARCHAR(MAX) NULL,                   -- وصف إنجليزي
+    [MinOrderQty] int NOT NULL CONSTRAINT [DF_Products_MinOrderQty] DEFAULT ((1)),
+    [MaxOrderQty] int NULL,
+    [MaxPerDayQty] int NULL,
 
-    SearchKeywords    NVARCHAR(500) NULL,                   -- كلمات مفتاحية للبحث
+    [IsReturnable] bit NOT NULL CONSTRAINT [DF_Products_IsReturnable] DEFAULT ((1)),
+    [AllowSplitSale] bit NOT NULL CONSTRAINT [DF_Products_AllowSplitSale] DEFAULT ((0)),
 
-     -- -------------------- Units & Pricing (Outer default) --------------------  
-    OuterUnitId       INT NOT NULL,                         -- الوحدة الكبرى (Box/Bottle...)
-    InnerUnitId       INT NULL,                             -- الوحدة الصغرى (Strip/Tablet/Ampoule...) إن وُجدت
+    [Quantity] decimal(18,3) NOT NULL CONSTRAINT [DF_Products_Quantity] DEFAULT ((0)), -- Stored in OUTER units (e.g., 2.500)
+    [HasExpiry] bit NOT NULL CONSTRAINT [DF_Products_HasExpiry] DEFAULT ((1)),
+    [NearestExpiryDate] date NULL,
+    [LastStockSyncAt] datetime2(0) NULL,
 
-    InnerPerOuter     INT NULL,                             -- عدد Inner داخل Outer (مثال 4 شرائط/علبة)
+    [HasPromotion] bit NOT NULL CONSTRAINT [DF_Products_HasPromotion] DEFAULT ((0)),
+    [PromotionDiscountPercent] decimal(5,2) NOT NULL CONSTRAINT [DF_Products_PromotionDiscountPercent] DEFAULT ((0)),
+    [PromotionStartsAt] datetime2(0) NULL,
+    [PromotionEndsAt] datetime2(0) NULL,
 
-    OuterUnitPrice    DECIMAL(18,2) NOT NULL
-        CONSTRAINT DF_Products_OuterUnitPrice DEFAULT (0),  -- سعر الوحدة الكبرى
+    [IsFeatured] bit NOT NULL CONSTRAINT [DF_Products_IsFeatured] DEFAULT ((0)),
 
-    InnerUnitPrice    DECIMAL(18,2) NULL
-        CONSTRAINT DF_Products_InnerUnitPrice DEFAULT (0),  -- سعر الوحدة الصغرى (إن وُجدت)
+    [IsIntegrated] bit NOT NULL CONSTRAINT [DF_Products_IsIntegrated] DEFAULT ((0)),
+    [IntegratedAt] datetime2(0) NULL,
 
-     -- -------------------- Order limits --------------------  
-    MinOrderQty       INT NOT NULL
-        CONSTRAINT DF_Products_MinOrderQty DEFAULT (1),     -- أقل كمية
-    MaxOrderQty       INT NULL,                             -- أقصى كمية
-    MaxPerDayQty      INT NULL,                             -- أقصى يوميًا
+    [Points] int NOT NULL CONSTRAINT [DF_Products_PointsOuter] DEFAULT ((0)),
 
-    IsReturnable      BIT NOT NULL
-        CONSTRAINT DF_Products_IsReturnable DEFAULT (1),    -- قابل للإرجاع؟
+    [RequiresPrescription] bit NOT NULL CONSTRAINT [DF_Products_RequiresPrescription] DEFAULT ((0)),
+    [IsAvailable] bit NOT NULL CONSTRAINT [DF_Products_IsAvailable] DEFAULT ((0)),
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Products_IsActive] DEFAULT ((1)),
 
-    AllowSplitSale    BIT NOT NULL
-        CONSTRAINT DF_Products_AllowSplitSale DEFAULT (0),  -- يسمح ببيع مجزأ؟
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Products_CreatedAt] DEFAULT (sysdatetime()),
+    [UpdatedAt] datetime2(0) NULL,
+    [DeletedAt] datetime2(0) NULL, -- Soft delete
 
-     -- -------------------- Stock & Expiry (summary) --------------------  
-    Quantity          DECIMAL(18,3) NOT NULL
-        CONSTRAINT DF_Products_Quantity DEFAULT (0),        -- الكمية (مثال 2.500)
+    CONSTRAINT [PK_Products] PRIMARY KEY ([Id]),
 
-    HasExpiry         BIT NOT NULL
-        CONSTRAINT DF_Products_HasExpiry DEFAULT (1),       -- له صلاحية؟
+    CONSTRAINT [CK_Products_QuantityNonNegative]
+        CHECK ([Quantity] >= (0)),
 
-    NearestExpiryDate DATE NULL,                            -- أقرب صلاحية ضمن المخزون المتاح (ملخص)
-    LastStockSyncAt   DATETIME2(0) NULL,                    -- آخر وقت مزامنة للمخزون/الصلاحية
+    CONSTRAINT [CK_Products_PricesNonNegative]
+        CHECK ([OuterUnitPrice] >= (0) AND ([InnerUnitPrice] IS NULL OR [InnerUnitPrice] >= (0))),
 
-     -- -------------------- Offers / Discounts --------------------  
-    HasPromotion      BIT NOT NULL
-        CONSTRAINT DF_Products_HasPromotion DEFAULT (0),    -- هل يوجد عرض؟
+    CONSTRAINT [CK_Products_PromotionPercent]
+        CHECK ([PromotionDiscountPercent] >= (0) AND [PromotionDiscountPercent] <= (100)),
 
-    PromotionDiscountPercent  DECIMAL(5,2) NOT NULL
-        CONSTRAINT DF_Products_PromotionDiscountPercent DEFAULT (0), -- نسبة الخصم %
-
-    PromotionStartsAt DATETIME2(0) NULL,                    -- بداية العرض
-    PromotionEndsAt   DATETIME2(0) NULL,                    -- نهاية العرض
-
-     -- -------------------- Flags --------------------  
-    IsFeatured        BIT NOT NULL
-        CONSTRAINT DF_Products_IsFeatured DEFAULT (0),      -- مميز؟
-
-     -- -------------------- Integration flags --------------------  
-    IsIntegrated      BIT NOT NULL
-        CONSTRAINT DF_Products_IsIntegrated DEFAULT (0),    -- مدمج؟
-    IntegratedAt      DATETIME2(0) NULL,                    -- تاريخ الدمج
-
-     -- -------------------- Points --------------------  
-    Points INT NOT NULL
-        CONSTRAINT DF_Products_PointsOuter DEFAULT (0),
-
-     -- -------------------- Selling Rules --------------------  
-    RequiresPrescription BIT NOT NULL
-        CONSTRAINT DF_Products_RequiresPrescription DEFAULT (0), -- يحتاج روشتة؟
-
-    IsAvailable       BIT NOT NULL
-        CONSTRAINT DF_Products_IsAvailable DEFAULT (0),     -- متاح؟ (يتم ضبطه بالمزامنة/المنطق)
-
-    IsActive          BIT NOT NULL
-        CONSTRAINT DF_Products_IsActive DEFAULT (1),        -- نشط/ظاهر؟
-
-     -- -------------------- Auditing / Soft Delete / Concurrency --------------------  
-    CreatedAt         DATETIME2(0) NOT NULL
-        CONSTRAINT DF_Products_CreatedAt DEFAULT (SYSDATETIME()), -- إنشاء
-
-    UpdatedAt         DATETIME2(0) NULL,                    -- تعديل
-    DeletedAt         DATETIME2(0) NULL,                    -- حذف منطقي
-
-     -- -------------------- Data integrity (Checks) --------------------  
-    CONSTRAINT CK_Products_QuantityNonNegative
-        CHECK (Quantity >= 0),
-
-    CONSTRAINT CK_Products_PricesNonNegative
-        CHECK (OuterUnitPrice >= 0 AND (InnerUnitPrice IS NULL OR InnerUnitPrice >= 0)),
-
-    CONSTRAINT CK_Products_PromotionPercent
-        CHECK (PromotionDiscountPercent >= 0 AND PromotionDiscountPercent <= 100),
-
-    CONSTRAINT CK_Products_PromotionDates
+    CONSTRAINT [CK_Products_PromotionDates]
         CHECK (
-            (PromotionStartsAt IS NULL AND PromotionEndsAt IS NULL)
-            OR (PromotionStartsAt IS NOT NULL AND PromotionEndsAt IS NOT NULL AND PromotionEndsAt > PromotionStartsAt)
+            ([PromotionStartsAt] IS NULL AND [PromotionEndsAt] IS NULL)
+            OR ([PromotionStartsAt] IS NOT NULL AND [PromotionEndsAt] IS NOT NULL AND [PromotionEndsAt] > [PromotionStartsAt])
         ),
 
-    CONSTRAINT CK_Products_OrderLimits
+    CONSTRAINT [CK_Products_OrderLimits]
         CHECK (
-            MinOrderQty > 0
-            AND (MaxOrderQty IS NULL OR MaxOrderQty >= MinOrderQty)
-            AND (MaxPerDayQty IS NULL OR MaxPerDayQty > 0)
+            [MinOrderQty] > (0)
+            AND ([MaxOrderQty] IS NULL OR [MaxOrderQty] >= [MinOrderQty])
+            AND ([MaxPerDayQty] IS NULL OR [MaxPerDayQty] > (0))
         ),
 
-     -- Inner rule: إذا يوجد InnerUnitId يجب وجود InnerPerOuter >= 1  
-    CONSTRAINT CK_Products_InnerRules
+    CONSTRAINT [CK_Products_InnerRules]
         CHECK (
-            (InnerUnitId IS NULL AND InnerPerOuter IS NULL)
-            OR (InnerUnitId IS NOT NULL AND InnerPerOuter IS NOT NULL AND InnerPerOuter >= 1)
+            ([InnerUnitId] IS NULL AND [InnerPerOuter] IS NULL)
+            OR ([InnerUnitId] IS NOT NULL AND [InnerPerOuter] IS NOT NULL AND [InnerPerOuter] >= (1))
         )
 );
 GO
@@ -468,63 +399,64 @@ ON dbo.Products(StoreId, ErpProductId)
 WHERE DeletedAt IS NULL AND ErpProductId IS NOT NULL;
 GO
 
+CREATE TABLE [dbo].[ProductImages] (
+    [Id] bigint NOT NULL IDENTITY(1,1),
+    [PharmacyId] int NOT NULL,
+    [ProductId] int NOT NULL,
 
-CREATE TABLE dbo.ProductImages
-(
-    Id            BIGINT IDENTITY(1,1) NOT NULL
-        CONSTRAINT PK_ProductImages PRIMARY KEY,
+    [ImageUrl] nvarchar(600) NOT NULL,
+    [ThumbnailUrl] nvarchar(600) NULL,
+    [AltText] nvarchar(200) NULL,
 
-    PharmacyId    INT NOT NULL,
-    ProductId     INT NOT NULL,
+    [SortOrder] int NOT NULL CONSTRAINT [DF_ProductImages_SortOrder] DEFAULT ((0)),
+    [IsPrimary] bit NOT NULL CONSTRAINT [DF_ProductImages_IsPrimary] DEFAULT ((0)),
 
-    ImageUrl      NVARCHAR(600) NOT NULL,
-    ThumbnailUrl  NVARCHAR(600) NULL,
-    AltText       NVARCHAR(200) NULL,
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_ProductImages_CreatedAt] DEFAULT (sysdatetime()),
+    [CreatedBy] nvarchar(100) NULL,
 
-    SortOrder     INT NOT NULL CONSTRAINT DF_ProductImages_SortOrder DEFAULT (0),
-    IsPrimary     BIT NOT NULL CONSTRAINT DF_ProductImages_IsPrimary DEFAULT (0),
+    [DeletedAt] datetime2(0) NULL, -- Soft delete
+    [DeletedBy] nvarchar(100) NULL,
 
-    CreatedAt     DATETIME2(0) NOT NULL CONSTRAINT DF_ProductImages_CreatedAt DEFAULT (SYSUTCDATETIME()),
-    CreatedBy     NVARCHAR(100) NULL,
+    [RowVersion] rowversion NOT NULL, -- Concurrency
 
-    DeletedAt     DATETIME2(0) NULL,
-    DeletedBy     NVARCHAR(100) NULL,
+    CONSTRAINT [PK_ProductImages] PRIMARY KEY ([Id]),
 
-    RowVersion    ROWVERSION NOT NULL,
+    CONSTRAINT [CK_ProductImages_SortOrder]
+        CHECK ([SortOrder] >= (0)),
 
-    CONSTRAINT CK_ProductImages_SortOrder CHECK (SortOrder >= 0),
+    CONSTRAINT [FK_ProductImages_Products_ProductId]
+        FOREIGN KEY ([ProductId]) REFERENCES [dbo].[Products] ([Id]) ON DELETE NO ACTION,
 
-    CONSTRAINT FK_ProductImages_Products
-        FOREIGN KEY (ProductId) REFERENCES dbo.Products(Id),
-
-    CONSTRAINT FK_ProductImages_Pharmacies
-        FOREIGN KEY (PharmacyId) REFERENCES dbo.Pharmacies(Id)
+    CONSTRAINT [FK_ProductImages_Pharmacies_PharmacyId]
+        FOREIGN KEY ([PharmacyId]) REFERENCES [dbo].[Pharmacies] ([Id]) ON DELETE NO ACTION
 );
 GO
 
-CREATE INDEX IX_ProductImages_Pharmacy_Product
-ON dbo.ProductImages(PharmacyId, ProductId)
-WHERE DeletedAt IS NULL;
+
+-- Fast lookup by tenant and product (ignoring soft-deleted rows) 
+CREATE INDEX [IX_ProductImages_PharmacyId_ProductId]
+ON [dbo].[ProductImages] ([PharmacyId], [ProductId])
+WHERE [DeletedAt] IS NULL;
 GO
 
-CREATE INDEX IX_ProductImages_Product_Sort
-ON dbo.ProductImages(ProductId, IsPrimary DESC, SortOrder, Id)
-INCLUDE (ImageUrl, ThumbnailUrl, AltText)
-WHERE DeletedAt IS NULL;
+-- Efficient ordering: primary first, then sort order (ignoring soft-deleted rows) 
+CREATE INDEX [IX_ProductImages_ProductId_Sort]
+ON [dbo].[ProductImages] ([ProductId], [IsPrimary] DESC, [SortOrder], [Id])
+INCLUDE ([ImageUrl], [ThumbnailUrl], [AltText])
+WHERE [DeletedAt] IS NULL;
 GO
 
--- ✅ primary واحدة فقط لكل منتج
-CREATE UNIQUE INDEX UX_ProductImages_Product_Primary
-ON dbo.ProductImages(ProductId, IsPrimary)
-WHERE IsPrimary = 1 AND DeletedAt IS NULL;
+-- Enforce a single primary image per product (ignoring soft-deleted rows) 
+CREATE UNIQUE INDEX [UX_ProductImages_ProductId_Primary]
+ON [dbo].[ProductImages] ([ProductId], [IsPrimary])
+WHERE [IsPrimary] = (1) AND [DeletedAt] IS NULL;
 GO
 
--- (اختياري) يوضح للـ scaffold أنها one-to-many
-CREATE INDEX IX_ProductImages_ProductId
-ON dbo.ProductImages(ProductId)
-WHERE DeletedAt IS NULL;
+-- Simple FK helper index for ORMs/scaffolding (ignoring soft-deleted rows) 
+CREATE INDEX [IX_ProductImages_ProductId]
+ON [dbo].[ProductImages] ([ProductId])
+WHERE [DeletedAt] IS NULL;
 GO
-
 
 
 
