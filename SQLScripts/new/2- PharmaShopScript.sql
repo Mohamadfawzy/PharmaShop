@@ -6,7 +6,7 @@
 Go
 CREATE TABLE Pharmacies (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    Name NVARCHAR(200) NOT NULL,
+    NameAr NVARCHAR(200) NOT NULL,
 	NameEn NVARCHAR(200) NOT NULL,
     OwnerName NVARCHAR(150) NULL,               
     LicenseNumber NVARCHAR(100) NULL,           
@@ -19,7 +19,7 @@ CREATE TABLE Pharmacies (
     IsActive BIT NOT NULL DEFAULT 1            
 );
 go
-INSERT INTO Pharmacies(Name,NameEn,OwnerName,LicenseNumber,PhoneNumber,Email,Address,Latitude,Longitude)
+INSERT INTO Pharmacies(NameAr,NameEn,OwnerName,LicenseNumber,PhoneNumber,Email,Address,Latitude,Longitude)
 VALUES
 (
     N'صيدلية الشفاء', N'Al Shifa Pharmacy',
@@ -30,127 +30,201 @@ VALUES
 );
 
 GO
+CREATE TABLE [dbo].[Customers] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [UserId] int NULL,
 
-CREATE TABLE Customers (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-	UserId INT UNIQUE NULL, 
-    PharmacyId INT NULL,                    -- العميل ينتمي لأي صيدلية
-    FullName NVARCHAR(200) NOT NULL,  
-    FullNameEn NVARCHAR(200) NOT NULL,
-    PhoneNumber NVARCHAR(20) NULL,             
-    Gender NVARCHAR(10) NULL,                
-    DateOfBirth DATE NULL,
+    [FullNameAr] nvarchar(200) NOT NULL,
+    [FullNameEn] nvarchar(200) NOT NULL,
 
-    Email NVARCHAR(150) NULL,
-    NationalId NVARCHAR(20) NULL,               
+    [PhoneNumber] nvarchar(20) NULL,
+    [Gender] nvarchar(10) NULL,
+    [DateOfBirth] date NULL,
 
-    CustomerType NVARCHAR(50) DEFAULT 'Regular', -- Regular / VIP / Corporate
+    [Email] nvarchar(150) NULL,
+    [NationalId] nvarchar(20) NULL,
 
-    Points INT NOT NULL DEFAULT 0,              -- عدد النقاط المتاحة
-    PointsExpiryDate DATETIME NULL,             -- أقرب تاريخ انتهاء للنقاط
+    [CustomerType] nvarchar(50) NOT NULL CONSTRAINT [DF_Customers_CustomerType] DEFAULT (N'Regular'), -- Regular/VIP/Corporate
 
-    Notes NVARCHAR(500) NULL,
+    [Points] int NOT NULL CONSTRAINT [DF_Customers_Points] DEFAULT ((0)),
+    [PointsExpiryDate] datetime2(0) NULL,
 
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
+    [Notes] nvarchar(500) NULL,
 
-	CONSTRAINT FK_Customers_Users FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id),
-    CONSTRAINT FK_Customers_Pharmacies FOREIGN KEY (PharmacyId) REFERENCES Pharmacies(Id)
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Customers_CreatedAt] DEFAULT (sysdatetime()),
+    [UpdatedAt] datetime2(0) NULL,
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Customers_IsActive] DEFAULT ((1)),
+
+    CONSTRAINT [PK_Customers] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_Customers_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [dbo].[AspNetUsers] ([Id]) ON DELETE NO ACTION,
+	
+	
+    CONSTRAINT [CK_Customers_Gender_Allowed]
+        CHECK ([Gender] IS NULL OR [Gender] IN (N'Male', N'Female')),
+
+    CONSTRAINT [CK_Customers_CustomerType_Allowed]
+        CHECK ([CustomerType] IN (N'Regular', N'VIP', N'Corporate')),
+
+    CONSTRAINT [CK_Customers_Points_NonNegative]
+        CHECK ([Points] >= (0))
+
+
 );
+GO
+/* Enforce one customer per AspNetUser (ignore NULLs) */
+CREATE UNIQUE INDEX [UX_Customers_UserId]
+ON [dbo].[Customers] ([UserId])
+WHERE [UserId] IS NOT NULL;
+GO
+
+/* Phone lookup (useful for login/OTP or search) */
+CREATE INDEX [IX_Customers_PhoneNumber]
+ON [dbo].[Customers] ([PhoneNumber])
+WHERE [PhoneNumber] IS NOT NULL;
+GO
+
+/* Email lookup (optional search/login) */
+CREATE INDEX [IX_Customers_Email]
+ON [dbo].[Customers] ([Email])
+WHERE [Email] IS NOT NULL;
+GO
+GO
+
+CREATE TABLE [dbo].[CustomerAddresses] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [CustomerId] int NOT NULL,
+    [Title] nvarchar(100) NOT NULL,
+    [City] nvarchar(100) NOT NULL,
+    [Region] nvarchar(100) NULL,
+    [Street] nvarchar(300) NOT NULL,
+    [Latitude] float NULL,
+    [Longitude] float NULL,
+    [IsDefault] bit NOT NULL CONSTRAINT [DF_CustomerAddresses_IsDefault] DEFAULT ((0)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_CustomerAddresses_CreatedAt] DEFAULT (sysdatetime()),
+    CONSTRAINT [PK_CustomerAddresses] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_CustomerAddresses_Customers_CustomerId]
+        FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+/* Fast lookup: all addresses for a customer */
+CREATE INDEX [IX_CustomerAddresses_CustomerId]
+ON [dbo].[CustomerAddresses] ([CustomerId]);
+GO
+
+/* Fast lookup: default address for a customer */
+CREATE INDEX [IX_CustomerAddresses_CustomerId_IsDefault]
+ON [dbo].[CustomerAddresses] ([CustomerId], [IsDefault]);
+GO
+
+/* Enforce a single default address per customer */
+CREATE UNIQUE INDEX [UX_CustomerAddresses_CustomerId_Default]
+ON [dbo].[CustomerAddresses] ([CustomerId])
+WHERE [IsDefault] = (1);
+GO
 
 GO
 
-CREATE TABLE CustomerAddresses (
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    CustomerId INT NOT NULL,
-    Title NVARCHAR(100) NOT NULL,      
-    City NVARCHAR(100) NOT NULL,
-    Region NVARCHAR(100) NULL,         
-    Street NVARCHAR(300) NOT NULL,
-    Latitude FLOAT NULL,               
-    Longitude FLOAT NULL,
-    IsDefault BIT NOT NULL DEFAULT 0,  
-    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+CREATE TABLE [dbo].[Employees] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [UserId] int NULL,
+    [PharmacyId] int NOT NULL,
 
-    CONSTRAINT FK_CustomerAddresses_Customer FOREIGN KEY (CustomerId) REFERENCES Customers(Id)
+    [FullNameAr] nvarchar(200) NOT NULL,
+    [FullNameEn] nvarchar(200) NULL,
+
+    [PhoneNumber] nvarchar(20) NULL,
+    [Email] nvarchar(150) NULL,
+    [NationalId] nvarchar(20) NULL,
+
+    [JobTitle] nvarchar(100) NULL,
+    [EmployeeCode] nvarchar(50) NULL,
+
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Employees_IsActive] DEFAULT ((1)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Employees_CreatedAt] DEFAULT (sysdatetime()),
+    [UpdatedAt] datetime2(0) NULL,
+    [DeletedAt] datetime2(0) NULL, -- Soft delete
+
+    CONSTRAINT [PK_Employees] PRIMARY KEY ([Id]),
+
+    CONSTRAINT [FK_Employees_AspNetUsers_UserId]
+        FOREIGN KEY ([UserId]) REFERENCES [dbo].[AspNetUsers] ([Id]) ON DELETE NO ACTION,
+
+    CONSTRAINT [FK_Employees_Pharmacies_PharmacyId]
+        FOREIGN KEY ([PharmacyId]) REFERENCES [dbo].[Pharmacies] ([Id]) ON DELETE NO ACTION
 );
-
 GO
 
--- الصيدلي
-CREATE TABLE Pharmacists (
-    Id INT PRIMARY KEY IDENTITY,
-    FullName NVARCHAR(100),
-    FullNameEn NVARCHAR(200) NOT NULL,
-    Specialty NVARCHAR(100),
-    UserId INT UNIQUE NULL,
-    FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id)
-);
+/* Enforce one employee per AspNetUser (ignore NULLs) */
+CREATE UNIQUE INDEX [UX_Employees_UserId]
+ON [dbo].[Employees] ([UserId])
+WHERE [UserId] IS NOT NULL AND [DeletedAt] IS NULL;
+GO
+
+/* Fast filtering by pharmacy (tenant) */
+CREATE INDEX [IX_Employees_PharmacyId]
+ON [dbo].[Employees] ([PharmacyId])
+INCLUDE ([FullNameAr], [PhoneNumber], [IsActive])
+WHERE [DeletedAt] IS NULL;
+GO
+
+/* Phone lookup (useful for search/login/OTP) */
+CREATE INDEX [IX_Employees_PhoneNumber]
+ON [dbo].[Employees] ([PhoneNumber])
+WHERE [PhoneNumber] IS NOT NULL AND [DeletedAt] IS NULL;
+GO
+
+/* Email lookup (optional search/login) */
+CREATE INDEX [IX_Employees_Email]
+ON [dbo].[Employees] ([Email])
+WHERE [Email] IS NOT NULL AND [DeletedAt] IS NULL;
+GO
+
+/* Employee code lookup (optional) */
+CREATE INDEX [IX_Employees_EmployeeCode]
+ON [dbo].[Employees] ([EmployeeCode])
+WHERE [EmployeeCode] IS NOT NULL AND [DeletedAt] IS NULL;
+GO
 
 GO
 
 --=======================================
 -- Categories
 --=======================================
+CREATE TABLE [dbo].[Categories] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [ParentCategoryId] int NULL,
+    [NameAr] nvarchar(200) NOT NULL,
+    [NameEn] nvarchar(200) NOT NULL,
+    [Description] nvarchar(max) NULL,
+    [ImageId] nvarchar(128) NULL,
+    [ImageFormat] tinyint NULL,
+    [ImageVersion] int NOT NULL CONSTRAINT [DF_Categories_ImageVersion] DEFAULT ((0)),
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Categories_IsActive] DEFAULT ((1)),
+    [IsDeleted] bit NOT NULL CONSTRAINT [DF_Categories_IsDeleted] DEFAULT ((0)),
+    [CreatedAt] datetime NOT NULL CONSTRAINT [DF_Categories_CreatedAt] DEFAULT (getdate()),
+    [UpdatedAt] datetime NULL,
+    [ImageUpdatedAt] datetime NULL,
 
-CREATE TABLE dbo.Categories
-(
-    Id INT IDENTITY(1,1) NOT NULL
-        CONSTRAINT PK_Categories PRIMARY KEY,
-	
-	ParentCategoryId INT NULL,
+    CONSTRAINT [PK_Categories] PRIMARY KEY ([Id]),
 
-    Name NVARCHAR(200) NOT NULL,
-    NameEn NVARCHAR(200) NOT NULL,
-    Description NVARCHAR(MAX) NULL,
+    CONSTRAINT [CK_Categories_ImageFormat]
+        CHECK ([ImageFormat] IS NULL OR [ImageFormat] IN ((1), (2), (3))),
 
-    -- Stable image identifier (store only the id, not a URL/path)
-    ImageId NVARCHAR(128) NULL,
-
-    -- Stored format enum:
-    -- 1 = Jpeg, 2 = Png, 3 = Webp
-    ImageFormat TINYINT NULL
-        CONSTRAINT CK_Categories_ImageFormat CHECK (ImageFormat IS NULL OR ImageFormat IN (1, 2, 3)),
-
-    -- Cache busting (increment when image content changes)
-    ImageVersion INT NOT NULL
-        CONSTRAINT DF_Categories_ImageVersion DEFAULT (0),
-
-    -- =========================
-    -- Standard fields
-    -- =========================
-
-    IsActive BIT NOT NULL
-        CONSTRAINT DF_Categories_IsActive DEFAULT (1),
-
-    IsDeleted BIT NOT NULL
-        CONSTRAINT DF_Categories_IsDeleted DEFAULT (0),
-
-    -- Use UTC timestamps for consistency across servers
-    CreatedAt DATETIME NOT NULL
-        CONSTRAINT DF_Categories_CreatedAt DEFAULT GETDATE(),
-
-    UpdatedAt DATETIME NULL,
-	
-	-- Last time the image content was updated (UTC)
-    ImageUpdatedAt DATETIME NULL,
-
-    CONSTRAINT FK_Categories_ParentCategory
-        FOREIGN KEY (ParentCategoryId) REFERENCES dbo.Categories(Id)
+    CONSTRAINT [FK_Categories_ParentCategory]
+        FOREIGN KEY ([ParentCategoryId]) REFERENCES [dbo].[Categories] ([Id]) ON DELETE NO ACTION
 );
 GO
 
--- Helpful index for tree queries (parent-child traversal)
-CREATE INDEX IX_Categories_ParentCategoryId
-       ON dbo.Categories(ParentCategoryId);
-
+/* Tree traversal support (parent-child queries) */
+CREATE INDEX [IX_Categories_ParentCategoryId]
+ON [dbo].[Categories] ([ParentCategoryId]);
 GO
 
--- Optional index if you frequently query by ImageId (not always needed)
-CREATE INDEX IX_Categories_ImageId
-	   ON dbo.Categories(ImageId) WHERE ImageId IS NOT NULL;
-
+/* Optional: ImageId lookup (filtered) */
+CREATE INDEX [IX_Categories_ImageId]
+ON [dbo].[Categories] ([ImageId])
+WHERE [ImageId] IS NOT NULL;
 GO
 
 
@@ -161,30 +235,26 @@ GO
   -- e.g., Box / Strip / Ampoule / Tablet / Bottle ...
 --========================================================
 GO
-CREATE TABLE dbo.Units
-(
-    Id          INT IDENTITY(1,1) NOT NULL
-        CONSTRAINT PK_Units PRIMARY KEY,          -- معرف الوحدة
-
-    Code        VARCHAR(30) NOT NULL,             -- كود ثابت (BOX, STRIP, AMPOULE...)
-    NameAr      NVARCHAR(60) NOT NULL,            -- اسم عربي (علبة/شريط/أمبول)
-    NameEn      NVARCHAR(60) NOT NULL,            -- اسم إنجليزي (Box/Strip/Ampoule)
-
-    IsActive    BIT NOT NULL CONSTRAINT DF_Units_IsActive DEFAULT (1), -- نشطة؟
-    CreatedAt   DATETIME2(0) NOT NULL CONSTRAINT DF_Units_CreatedAt DEFAULT (SYSUTCDATETIME()), -- تاريخ الإنشاء
-
-    RowVersion  ROWVERSION NOT NULL               -- Concurrency
+CREATE TABLE [dbo].[Units] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [Code] varchar(30) NOT NULL, -- Stable code (e.g., BOX, STRIP)
+    [NameAr] nvarchar(60) NOT NULL,
+    [NameEn] nvarchar(60) NOT NULL,
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Units_IsActive] DEFAULT ((1)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Units_CreatedAt] DEFAULT (sysutcdatetime()),
+    [RowVersion] rowversion NOT NULL, -- Concurrency
+    CONSTRAINT [PK_Units] PRIMARY KEY ([Id])
 );
 GO
 
--- Code يجب أن يكون Unique على مستوى النظام (Lookup)
-CREATE UNIQUE INDEX UX_Units_Code
-ON dbo.Units(Code);
+/* Unique stable unit code */
+CREATE UNIQUE INDEX [UX_Units_Code]
+ON [dbo].[Units] ([Code]);
 GO
 
--- (اختياري) منع تكرار الاسم الإنجليزي
-CREATE UNIQUE INDEX UX_Units_NameEn
-ON dbo.Units(NameEn);
+/* Optional: unique English name */
+CREATE UNIQUE INDEX [UX_Units_NameEn]
+ON [dbo].[Units] ([NameEn]);
 GO
 
 -- Optional seed data
@@ -198,10 +268,6 @@ VALUES
 ('TABLET',  N'قرص',   N'Tablet'),
 ('CAPSULE', N'كبسولة',N'Capsule');
 GO
-
-
-
-
 
 -- ========================================================
  -- Companies
@@ -238,9 +304,61 @@ INCLUDE ([NameAr], [NameEn], [CreatedAt])
 WHERE [DeletedAt] IS NULL;
 GO
 
+-- ========================================================
+ -- Stores
+-- ======================================================== 
+
+CREATE TABLE [dbo].[Stores] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [PharmacyId] int NOT NULL,
+    [NameAr] nvarchar(150) NOT NULL,
+    [NameEn] nvarchar(150) NOT NULL,
+    [Code] varchar(30) NULL,
+    [Address] nvarchar(300) NULL,
+    [IsDefault] bit NOT NULL CONSTRAINT [DF_Stores_IsDefault] DEFAULT ((0)),
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Stores_IsActive] DEFAULT ((1)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Stores_CreatedAt] DEFAULT (sysutcdatetime()),
+    [DeletedAt] datetime2(0) NULL, -- Soft delete
+    [DeletedBy] nvarchar(100) NULL,
+    CONSTRAINT [PK_Stores] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_Stores_Pharmacies_PharmacyId] FOREIGN KEY ([PharmacyId]) REFERENCES [dbo].[Pharmacies] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+/* Unique store code per pharmacy (ignoring soft-deleted rows) */
+CREATE UNIQUE INDEX [UX_Stores_PharmacyId_Code]
+ON [dbo].[Stores] ([PharmacyId], [Code])
+WHERE [Code] IS NOT NULL AND [Code] <> '' AND [DeletedAt] IS NULL;
+GO
+
+/* Fast listing by pharmacy and active flag (ignoring soft-deleted rows) */
+CREATE INDEX [IX_Stores_PharmacyId_IsActive]
+ON [dbo].[Stores] ([PharmacyId], [IsActive])
+INCLUDE ([NameAr], [NameEn], [IsDefault], [Code])
+WHERE [DeletedAt] IS NULL;
+GO
+
+/* Enforce a single default store per pharmacy (ignoring soft-deleted rows) */
+CREATE UNIQUE INDEX [UX_Stores_PharmacyId_Default]
+ON [dbo].[Stores] ([PharmacyId])
+WHERE [IsDefault] = (1) AND [DeletedAt] IS NULL;
+GO
+
+/* Name search (Arabic) within pharmacy (ignoring soft-deleted rows) */
+CREATE INDEX [IX_Stores_PharmacyId_NameAr]
+ON [dbo].[Stores] ([PharmacyId], [NameAr])
+WHERE [DeletedAt] IS NULL;
+GO
+
+/* Name search (English) within pharmacy (ignoring soft-deleted rows) */
+CREATE INDEX [IX_Stores_PharmacyId_NameEn]
+ON [dbo].[Stores] ([PharmacyId], [NameEn])
+WHERE [DeletedAt] IS NULL;
+GO
+
 
 -- ===========================================================
-
+-- Products
 -- =========================================================== 
 
 IF OBJECT_ID('dbo.Products', 'U') IS NOT NULL
@@ -332,8 +450,6 @@ CREATE TABLE [dbo].[Products] (
         )
 );
 GO
-
-
 
  -- -------------------- Foreign Keys --------------------  
 ALTER TABLE dbo.Products
