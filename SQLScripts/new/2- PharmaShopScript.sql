@@ -6,7 +6,7 @@
 Go
 CREATE TABLE Pharmacies (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    NameAr NVARCHAR(200) NOT NULL,
+    Name NVARCHAR(200) NOT NULL,
 	NameEn NVARCHAR(200) NOT NULL,
     OwnerName NVARCHAR(150) NULL,               
     LicenseNumber NVARCHAR(100) NULL,           
@@ -18,18 +18,9 @@ CREATE TABLE Pharmacies (
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), 
     IsActive BIT NOT NULL DEFAULT 1            
 );
-go
-INSERT INTO Pharmacies(NameAr,NameEn,OwnerName,LicenseNumber,PhoneNumber,Email,Address,Latitude,Longitude)
-VALUES
-(
-    N'صيدلية الشفاء', N'Al Shifa Pharmacy',
-	N'محمد أحمد',N'PH-2024-001',
-	'01012345678','info@alshifa.com',
-	N'القاهرة - مدينة نصر - شارع مصطفى النحاس',
-    30.0566100,31.3304300
-);
 
 GO
+
 CREATE TABLE [dbo].[Customers] (
     [Id] int NOT NULL IDENTITY(1,1),
     [UserId] int NULL,
@@ -57,38 +48,34 @@ CREATE TABLE [dbo].[Customers] (
 
     CONSTRAINT [PK_Customers] PRIMARY KEY ([Id]),
     CONSTRAINT [FK_Customers_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [dbo].[AspNetUsers] ([Id]) ON DELETE NO ACTION,
-	
-	
-    CONSTRAINT [CK_Customers_Gender_Allowed]
-        CHECK ([Gender] IS NULL OR [Gender] IN (N'Male', N'Female')),
-
-    CONSTRAINT [CK_Customers_CustomerType_Allowed]
-        CHECK ([CustomerType] IN (N'Regular', N'VIP', N'Corporate')),
-
-    CONSTRAINT [CK_Customers_Points_NonNegative]
-        CHECK ([Points] >= (0))
-
-
 );
 GO
-/* Enforce one customer per AspNetUser (ignore NULLs) */
+
+
+-- indexes
+
+-- Enforce one customer per AspNetUser (ignore NULLs)  
 CREATE UNIQUE INDEX [UX_Customers_UserId]
 ON [dbo].[Customers] ([UserId])
 WHERE [UserId] IS NOT NULL;
 GO
 
-/* Phone lookup (useful for login/OTP or search) */
+-- Phone lookup (useful for login/OTP or search)  
 CREATE INDEX [IX_Customers_PhoneNumber]
 ON [dbo].[Customers] ([PhoneNumber])
 WHERE [PhoneNumber] IS NOT NULL;
 GO
 
-/* Email lookup (optional search/login) */
+-- Email lookup (optional search/login)  
 CREATE INDEX [IX_Customers_Email]
 ON [dbo].[Customers] ([Email])
 WHERE [Email] IS NOT NULL;
+
 GO
-GO
+
+--.......................................
+-- CustomerAddresses
+--.......................................
 
 CREATE TABLE [dbo].[CustomerAddresses] (
     [Id] int NOT NULL IDENTITY(1,1),
@@ -102,28 +89,31 @@ CREATE TABLE [dbo].[CustomerAddresses] (
     [IsDefault] bit NOT NULL CONSTRAINT [DF_CustomerAddresses_IsDefault] DEFAULT ((0)),
     [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_CustomerAddresses_CreatedAt] DEFAULT (sysdatetime()),
     CONSTRAINT [PK_CustomerAddresses] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_CustomerAddresses_Customers_CustomerId]
-        FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers] ([Id]) ON DELETE NO ACTION
+    CONSTRAINT [FK_CustomerAddresses_Customers_CustomerId] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers] ([Id]) ON DELETE NO ACTION
 );
 GO
 
-/* Fast lookup: all addresses for a customer */
+
+-- Fast lookup: all addresses for a customer  
 CREATE INDEX [IX_CustomerAddresses_CustomerId]
 ON [dbo].[CustomerAddresses] ([CustomerId]);
 GO
 
-/* Fast lookup: default address for a customer */
+-- Fast lookup: default address for a customer  
 CREATE INDEX [IX_CustomerAddresses_CustomerId_IsDefault]
 ON [dbo].[CustomerAddresses] ([CustomerId], [IsDefault]);
 GO
 
-/* Enforce a single default address per customer */
+-- Enforce a single default address per customer  
 CREATE UNIQUE INDEX [UX_CustomerAddresses_CustomerId_Default]
 ON [dbo].[CustomerAddresses] ([CustomerId])
 WHERE [IsDefault] = (1);
 GO
-
 GO
+
+-- =======================================
+-- Employees
+-- =======================================
 
 CREATE TABLE [dbo].[Employees] (
     [Id] int NOT NULL IDENTITY(1,1),
@@ -147,50 +137,51 @@ CREATE TABLE [dbo].[Employees] (
 
     CONSTRAINT [PK_Employees] PRIMARY KEY ([Id]),
 
-    CONSTRAINT [FK_Employees_AspNetUsers_UserId]
-        FOREIGN KEY ([UserId]) REFERENCES [dbo].[AspNetUsers] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_Employees_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [dbo].[AspNetUsers] ([Id]) ON DELETE NO ACTION,
 
-    CONSTRAINT [FK_Employees_Pharmacies_PharmacyId]
-        FOREIGN KEY ([PharmacyId]) REFERENCES [dbo].[Pharmacies] ([Id]) ON DELETE NO ACTION
+    CONSTRAINT [FK_Employees_Pharmacies_PharmacyId] FOREIGN KEY ([PharmacyId]) REFERENCES [dbo].[Pharmacies] ([Id]) ON DELETE NO ACTION
 );
 GO
 
-/* Enforce one employee per AspNetUser (ignore NULLs) */
+
+
+-- Enforce one employee per AspNetUser (ignore NULLs)  
 CREATE UNIQUE INDEX [UX_Employees_UserId]
 ON [dbo].[Employees] ([UserId])
 WHERE [UserId] IS NOT NULL AND [DeletedAt] IS NULL;
 GO
 
-/* Fast filtering by pharmacy (tenant) */
+-- Fast filtering by pharmacy (tenant)  
 CREATE INDEX [IX_Employees_PharmacyId]
 ON [dbo].[Employees] ([PharmacyId])
 INCLUDE ([FullNameAr], [PhoneNumber], [IsActive])
 WHERE [DeletedAt] IS NULL;
 GO
 
-/* Phone lookup (useful for search/login/OTP) */
+-- Phone lookup (useful for search/login/OTP)  
 CREATE INDEX [IX_Employees_PhoneNumber]
 ON [dbo].[Employees] ([PhoneNumber])
 WHERE [PhoneNumber] IS NOT NULL AND [DeletedAt] IS NULL;
 GO
 
-/* Email lookup (optional search/login) */
+-- Email lookup (optional search/login)  
 CREATE INDEX [IX_Employees_Email]
 ON [dbo].[Employees] ([Email])
 WHERE [Email] IS NOT NULL AND [DeletedAt] IS NULL;
 GO
 
-/* Employee code lookup (optional) */
+-- Employee code lookup (optional)  
 CREATE INDEX [IX_Employees_EmployeeCode]
 ON [dbo].[Employees] ([EmployeeCode])
 WHERE [EmployeeCode] IS NOT NULL AND [DeletedAt] IS NULL;
-GO
 
 GO
 
 --=======================================
 -- Categories
 --=======================================
+
+
 CREATE TABLE [dbo].[Categories] (
     [Id] int NOT NULL IDENTITY(1,1),
     [ParentCategoryId] int NULL,
@@ -207,33 +198,27 @@ CREATE TABLE [dbo].[Categories] (
     [ImageUpdatedAt] datetime NULL,
 
     CONSTRAINT [PK_Categories] PRIMARY KEY ([Id]),
-
-    CONSTRAINT [CK_Categories_ImageFormat]
-        CHECK ([ImageFormat] IS NULL OR [ImageFormat] IN ((1), (2), (3))),
-
-    CONSTRAINT [FK_Categories_ParentCategory]
-        FOREIGN KEY ([ParentCategoryId]) REFERENCES [dbo].[Categories] ([Id]) ON DELETE NO ACTION
+    CONSTRAINT [CK_Categories_ImageFormat] CHECK ([ImageFormat] IS NULL OR [ImageFormat] IN ((1), (2), (3))),
+    CONSTRAINT [FK_Categories_ParentCategory] FOREIGN KEY ([ParentCategoryId]) REFERENCES [dbo].[Categories] ([Id]) ON DELETE NO ACTION
 );
 GO
 
-/* Tree traversal support (parent-child queries) */
+-- Tree traversal support (parent-child queries)  
 CREATE INDEX [IX_Categories_ParentCategoryId]
 ON [dbo].[Categories] ([ParentCategoryId]);
 GO
 
-/* Optional: ImageId lookup (filtered) */
+-- Optional: ImageId lookup (filtered)  
 CREATE INDEX [IX_Categories_ImageId]
 ON [dbo].[Categories] ([ImageId])
 WHERE [ImageId] IS NOT NULL;
 GO
 
 
+-- ========================================================
+-- Units 
+-- ========================================================
 
---========================================================
-  --Units (Lookup)
-  -- Dictionary of unit types used across the system
-  -- e.g., Box / Strip / Ampoule / Tablet / Bottle ...
---========================================================
 GO
 CREATE TABLE [dbo].[Units] (
     [Id] int NOT NULL IDENTITY(1,1),
@@ -247,12 +232,12 @@ CREATE TABLE [dbo].[Units] (
 );
 GO
 
-/* Unique stable unit code */
+-- Unique stable unit code  
 CREATE UNIQUE INDEX [UX_Units_Code]
 ON [dbo].[Units] ([Code]);
 GO
 
-/* Optional: unique English name */
+-- Optional: unique English name  
 CREATE UNIQUE INDEX [UX_Units_NameEn]
 ON [dbo].[Units] ([NameEn]);
 GO
@@ -269,8 +254,9 @@ VALUES
 ('CAPSULE', N'كبسولة',N'Capsule');
 GO
 
+
 -- ========================================================
- -- Companies
+-- Companies
 -- ======================================================== 
 
 CREATE TABLE [dbo].[Companies] (
@@ -301,58 +287,6 @@ GO
 CREATE INDEX [IX_Companies_IsActive]
 ON [dbo].[Companies] ([IsActive])
 INCLUDE ([NameAr], [NameEn], [CreatedAt])
-WHERE [DeletedAt] IS NULL;
-GO
-
--- ========================================================
- -- Stores
--- ======================================================== 
-
-CREATE TABLE [dbo].[Stores] (
-    [Id] int NOT NULL IDENTITY(1,1),
-    [PharmacyId] int NOT NULL,
-    [NameAr] nvarchar(150) NOT NULL,
-    [NameEn] nvarchar(150) NOT NULL,
-    [Code] varchar(30) NULL,
-    [Address] nvarchar(300) NULL,
-    [IsDefault] bit NOT NULL CONSTRAINT [DF_Stores_IsDefault] DEFAULT ((0)),
-    [IsActive] bit NOT NULL CONSTRAINT [DF_Stores_IsActive] DEFAULT ((1)),
-    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Stores_CreatedAt] DEFAULT (sysutcdatetime()),
-    [DeletedAt] datetime2(0) NULL, -- Soft delete
-    [DeletedBy] nvarchar(100) NULL,
-    CONSTRAINT [PK_Stores] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_Stores_Pharmacies_PharmacyId] FOREIGN KEY ([PharmacyId]) REFERENCES [dbo].[Pharmacies] ([Id]) ON DELETE NO ACTION
-);
-GO
-
-/* Unique store code per pharmacy (ignoring soft-deleted rows) */
-CREATE UNIQUE INDEX [UX_Stores_PharmacyId_Code]
-ON [dbo].[Stores] ([PharmacyId], [Code])
-WHERE [Code] IS NOT NULL AND [Code] <> '' AND [DeletedAt] IS NULL;
-GO
-
-/* Fast listing by pharmacy and active flag (ignoring soft-deleted rows) */
-CREATE INDEX [IX_Stores_PharmacyId_IsActive]
-ON [dbo].[Stores] ([PharmacyId], [IsActive])
-INCLUDE ([NameAr], [NameEn], [IsDefault], [Code])
-WHERE [DeletedAt] IS NULL;
-GO
-
-/* Enforce a single default store per pharmacy (ignoring soft-deleted rows) */
-CREATE UNIQUE INDEX [UX_Stores_PharmacyId_Default]
-ON [dbo].[Stores] ([PharmacyId])
-WHERE [IsDefault] = (1) AND [DeletedAt] IS NULL;
-GO
-
-/* Name search (Arabic) within pharmacy (ignoring soft-deleted rows) */
-CREATE INDEX [IX_Stores_PharmacyId_NameAr]
-ON [dbo].[Stores] ([PharmacyId], [NameAr])
-WHERE [DeletedAt] IS NULL;
-GO
-
-/* Name search (English) within pharmacy (ignoring soft-deleted rows) */
-CREATE INDEX [IX_Stores_PharmacyId_NameEn]
-ON [dbo].[Stores] ([PharmacyId], [NameEn])
 WHERE [DeletedAt] IS NULL;
 GO
 
@@ -451,6 +385,8 @@ CREATE TABLE [dbo].[Products] (
 );
 GO
 
+
+
  -- -------------------- Foreign Keys --------------------  
 ALTER TABLE dbo.Products
 ADD CONSTRAINT FK_Products_Stores
@@ -514,6 +450,10 @@ CREATE INDEX IX_Products_Store_ErpProductId
 ON dbo.Products(StoreId, ErpProductId)
 WHERE DeletedAt IS NULL AND ErpProductId IS NOT NULL;
 GO
+
+-- ========================================================
+-- ProductImages
+-- ========================================================
 
 CREATE TABLE [dbo].[ProductImages] (
     [Id] bigint NOT NULL IDENTITY(1,1),
