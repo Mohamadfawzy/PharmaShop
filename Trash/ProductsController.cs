@@ -49,6 +49,9 @@ public class ProductsController : AdminBaseApiController
     => FromAppResponse(await _productService.GetDeletedProductsAsync(skip, take, ct));
 
 
+
+
+
     [HttpPatch("{id:int}/activate")]
     public async Task<IActionResult> Activate([FromRoute] int id, [FromBody] ProductStateChangeDto dto, CancellationToken ct)
     => FromAppResponse(await _productService.SetActiveAsync(id, true, dto, ct));
@@ -69,5 +72,67 @@ public class ProductsController : AdminBaseApiController
     public async Task<IActionResult> Restore([FromRoute] int id,[FromBody] ProductStateChangeDto dto,CancellationToken ct)
         => FromAppResponse(await _productService.SetDeletedAsync(id, false, dto, ct));
 
+
+
+    //----------------------------------------------
+    // Units
+    //----------------------------------------------
+
+    [HttpPost("{productId:int}/units")]
+    public async Task<IActionResult> AddUnit([FromRoute] int productId,[FromBody] ProductUnitCreateDto dto,CancellationToken ct)
+         =>FromAppResponse(await _productService.AddProductUnitAsync(productId, dto, ct));
+
+
+
+    //----------------------------------------------
+    // ProductBatches 
+    //----------------------------------------------
+
+
+    [HttpPost("{productId:int}/open-box")]
+    public async Task<IActionResult> OpenBox(
+    [FromRoute] int productId,
+    [FromBody] OpenBoxDto dto,
+    CancellationToken ct)
+    {
+        return FromAppResponse(await _productService.OpenBoxAsync(productId, dto, ct));
+    }
+
+
+    [HttpPost("{productId:int}/receive")]
+    public async Task<IActionResult> ReceiveStock(
+    [FromRoute] int productId,
+    [FromBody] ReceiveStockDto dto,
+    CancellationToken ct)
+    {
+        return FromAppResponse(await _productService.ReceiveStockAsync(productId, dto, ct));
+    }
+
+
+    [HttpPost("{productId:int}/stock-adjustment")]
+    public async Task<IActionResult> StockAdjustment([FromRoute] int productId,[FromBody] StockAdjustmentDto dto,CancellationToken ct)
+    {
+        return FromAppResponse(await _productService.AdjustStockAsync(productId, dto, ct));
+    }
+
+    // audit
+    [HttpGet("{id:int}/audit")]
+    public async Task<IActionResult> GetAudit(
+    [FromRoute] int id,
+    [FromQuery] int skip = 0,
+    [FromQuery] int take = 20,
+    CancellationToken ct = default)
+    => FromAppResponse(await _productService.GetProductAuditAsync(id, skip, take, ct));
+
+
+    [HttpGet("audit/search")]
+    public async Task<IActionResult> SearchAudit(
+    [FromQuery] string? userId = null,
+    [FromQuery] DateTime? fromUtc = null,
+    [FromQuery] DateTime? toUtc = null,
+    [FromQuery] int skip = 0,
+    [FromQuery] int take = 20,
+    CancellationToken ct = default)
+    => FromAppResponse(await _productService.SearchProductAuditAsync(userId, fromUtc, toUtc, skip, take, ct));
 
 }

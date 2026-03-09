@@ -57,13 +57,13 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
     }
 
 
-    public async Task AddCategoryAuditLogsRangeAsync(List<CategoryAuditLog> logs)
-    {
-        if (logs == null || logs.Count == 0)
-            return;
+    //public async Task AddCategoryAuditLogsRangeAsync(List<CategoryAuditLog> logs)
+    //{
+    //    if (logs == null || logs.Count == 0)
+    //        return;
 
-        await context.CategoryAuditLogs.AddRangeAsync(logs);
-    }
+    //    await context.CategoryAuditLogs.AddRangeAsync(logs);
+    //}
 
 
 
@@ -72,7 +72,7 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
         return await context.Categories
             .AsNoTracking()
             .Where(c => c.ParentCategoryId == null && !c.IsDeleted)
-            .OrderBy(c => c.Name)
+            .OrderBy(c => c.NameAr)
             .ToListAsync(ct);
     }
 
@@ -81,7 +81,7 @@ public class CategoryRepository : GenericRepository<Category>, ICategoryReposito
         return await context.Categories
             .AsNoTracking()
             .Where(c => !c.IsDeleted)
-            .OrderBy(c => c.Name)
+            .OrderBy(c => c.NameAr)
             .ToListAsync(ct);
     }
 

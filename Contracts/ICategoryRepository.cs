@@ -5,7 +5,7 @@ namespace Contracts;
 
 public interface ICategoryRepository : IGenericRepository<Category>
 {
-    Task AddCategoryAuditLogsRangeAsync(List<CategoryAuditLog> logs);
+    //Task AddCategoryAuditLogsRangeAsync(List<CategoryAuditLog> logs);
 
     //Task AddAsync(Category category, CancellationToken ct);
     Task<bool> ExistsByIdAsync(int categoryId, CancellationToken ct);

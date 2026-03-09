@@ -8,10 +8,8 @@ public interface IUnitOfWork : IDisposable
     IProductRepository Products { get; }
 
     IGenericRepository<Entities.Models.Unit> Units { get; }
-    IGenericRepository<Entities.Models.ProductUnit> ProductUnits { get; }
 
     ICategoryRepository Categories { get; }
-    IGenericRepository<ProductAuditLog> ProductAuditLogs { get; }
     void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class;
 
     Task<int> CompleteAsync(CancellationToken ct = default);

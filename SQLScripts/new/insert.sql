@@ -1,13 +1,14 @@
 ﻿
 use pharma_shope_db;
-go
-
-INSERT INTO dbo.Companies (PharmacyId, NameAr, NameEn)
-VALUES (1, N'جلَكسو سميث كلاين', N'GlaxoSmithKline');
 GO
 
+USE [pharma_shope_db]
+GO
 
-go
+INSERT INTO [dbo].[Companies] ([NameAr],[NameEn],[IsActive])
+     VALUES('باراك فيل','bark fell',1)
+GO
+
 INSERT INTO Pharmacies(Name,NameEn,OwnerName,LicenseNumber,PhoneNumber,Email,Address,Latitude,Longitude)
 VALUES
 (

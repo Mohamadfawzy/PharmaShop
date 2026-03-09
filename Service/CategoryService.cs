@@ -66,7 +66,7 @@ public class CategoryService : ICategoryService
 
             var category = new Category
             {
-                Name = dto.Name,
+                NameAr = dto.Name,
                 NameEn = dto.NameEn,
                 Description = dto.Description,
                 ParentCategoryId = dto.ParentCategoryId,
@@ -103,10 +103,10 @@ public class CategoryService : ICategoryService
                 return AppResponse<bool>.NotFound("Category not found");
 
             var userId = currentUser.UserId ?? "system";
-            var auditLogs = BuildUpdateAuditLogs(category, dto, userId);
+            //var auditLogs = BuildUpdateAuditLogs(category, dto, userId);
 
-            if (auditLogs.Count == 0)
-                return AppResponse<bool>.Ok(true, "No changes detected");
+            //if (auditLogs.Count == 0)
+            //    return AppResponse<bool>.Ok(true, "No changes detected");
 
             //  Apply changes
             ApplyUpdate(category, dto);
@@ -115,7 +115,7 @@ public class CategoryService : ICategoryService
             await using var tx = await unitOfWork.BeginTransactionAsync(ct);
 
             await unitOfWork.Categories.UpdateAsync(category, ct);
-            await unitOfWork.Categories.AddCategoryAuditLogsRangeAsync(auditLogs);
+            //await unitOfWork.Categories.AddCategoryAuditLogsRangeAsync(auditLogs);
 
             await unitOfWork.CompleteAsync(ct);
             await tx.CommitAsync(ct);
@@ -169,7 +169,7 @@ public class CategoryService : ICategoryService
 
             var categories = await unitOfWork.Categories.GetAllAsync(
                 criteria: criteria,
-                orderBy: q => q.OrderBy(c => c.Name),
+                orderBy: q => q.OrderBy(c => c.NameAr),
                 skip: skip,
                 take: param.PageSize,
                 ct: ct
@@ -178,7 +178,7 @@ public class CategoryService : ICategoryService
             var result = categories.Select(c => new CategoryDetailsDto
             {
                 Id = c.Id,
-                Name = c.Name,
+                Name = c.NameAr,
                 NameEn = c.NameEn,
                 ParentCategoryId = c.ParentCategoryId,
                 ImageId = c.ImageId,
@@ -341,7 +341,7 @@ public class CategoryService : ICategoryService
             var dto = new CategoryDto
             {
                 Id = category.Id,
-                Name = category.Name,
+                Name = category.NameAr,
                 NameEn = category.NameEn,
                 ParentCategoryId = category.ParentCategoryId,
                 ImageId = category.ImageId,
@@ -366,7 +366,7 @@ public class CategoryService : ICategoryService
             var result = categories.Select(c => new CategoryDto
             {
                 Id = c.Id,
-                Name = c.Name,
+                Name = c.NameAr,
                 NameEn = c.NameEn,
                 ImageId = c.ImageId,
                 IsActive = c.IsActive
@@ -410,7 +410,7 @@ public class CategoryService : ICategoryService
                 c => new CategoryTreeDto
                 {
                     Id = c.Id,
-                    Name = c.Name,
+                    Name = c.NameAr,
                     NameEn = c.NameEn,
                     ImageUrl = c.ImageId,
                     IsActive = c.IsActive
@@ -483,40 +483,40 @@ public class CategoryService : ICategoryService
 
     private static void ApplyUpdate(Category category, CategoryUpdateDto dto)
     {
-        category.Name = dto.Name;
+        category.NameAr = dto.Name;
         category.NameEn = dto.NameEn;
         category.Description = dto.Description;
     }
 
-    private static List<CategoryAuditLog> BuildUpdateAuditLogs(Category category, CategoryUpdateDto dto, string userId)
-    {
-        var logs = new List<CategoryAuditLog>();
+    //private static List<CategoryAuditLog> BuildUpdateAuditLogs(Category category, CategoryUpdateDto dto, string userId)
+    //{
+    //    var logs = new List<CategoryAuditLog>();
 
-        void Add(string field, string? oldVal, string? newVal)
-        {
-            logs.Add(new CategoryAuditLog
-            {
-                CategoryId = category.Id,
-                ChangeType = "Update",
-                FieldName = field,
-                OldValue = oldVal,
-                NewValue = newVal,
-                ChangedBy = userId,
-                ChangeDate = DateTime.UtcNow
-            });
-        }
+    //    void Add(string field, string? oldVal, string? newVal)
+    //    {
+    //        logs.Add(new CategoryAuditLog
+    //        {
+    //            CategoryId = category.Id,
+    //            ChangeType = "Update",
+    //            FieldName = field,
+    //            OldValue = oldVal,
+    //            NewValue = newVal,
+    //            ChangedBy = userId,
+    //            ChangeDate = DateTime.UtcNow
+    //        });
+    //    }
 
-        if (!string.Equals(category.Name, dto.Name, StringComparison.Ordinal))
-            Add("Name", category.Name, dto.Name);
+    //    if (!string.Equals(category.Name, dto.Name, StringComparison.Ordinal))
+    //        Add("Name", category.Name, dto.Name);
 
-        if (!string.Equals(category.NameEn, dto.NameEn, StringComparison.Ordinal))
-            Add("NameEn", category.NameEn, dto.NameEn);
+    //    if (!string.Equals(category.NameEn, dto.NameEn, StringComparison.Ordinal))
+    //        Add("NameEn", category.NameEn, dto.NameEn);
 
-        if (!string.Equals(category.Description, dto.Description, StringComparison.Ordinal))
-            Add("DescriptionEn", category.Description, dto.Description);
+    //    if (!string.Equals(category.Description, dto.Description, StringComparison.Ordinal))
+    //        Add("DescriptionEn", category.Description, dto.Description);
 
-        return logs;
-    }
+    //    return logs;
+    //}
 
     private static int NormalizePageNumber(int pageNumber) => pageNumber <= 0 ? 1 : pageNumber;
 

@@ -19,7 +19,7 @@ public partial class Unit
 
     public byte[] RowVersion { get; set; } = null!;
 
-    public virtual ICollection<Product> ProductInnerUnits { get; set; } = new List<Product>();
+    public virtual ICollection<ProductUnit> ProductUnitBaseUnits { get; set; } = new List<ProductUnit>();
 
-    public virtual ICollection<Product> ProductOuterUnits { get; set; } = new List<Product>();
+    public virtual ICollection<ProductUnit> ProductUnitUnits { get; set; } = new List<ProductUnit>();
 }

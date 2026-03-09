@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="uploads\**" />
+    <Content Remove="uploads\**" />
+    <EmbeddedResource Remove="uploads\**" />
+    <None Remove="uploads\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
@@ -25,8 +32,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="uploads\medium\" />
-    <Folder Include="uploads\small\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
 

@@ -1,9 +1,6 @@
 ﻿use  pharma_shope_db; 
---=======================================
--- Personses
---=======================================
-
 Go
+
 CREATE TABLE Pharmacies (
     Id INT PRIMARY KEY IDENTITY(1,1),
     Name NVARCHAR(200) NOT NULL,
@@ -18,8 +15,11 @@ CREATE TABLE Pharmacies (
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(), 
     IsActive BIT NOT NULL DEFAULT 1            
 );
-
 GO
+
+--=======================================
+-- Personses
+--=======================================
 
 CREATE TABLE [dbo].[Customers] (
     [Id] int NOT NULL IDENTITY(1,1),
@@ -289,6 +289,60 @@ ON [dbo].[Companies] ([IsActive])
 INCLUDE ([NameAr], [NameEn], [CreatedAt])
 WHERE [DeletedAt] IS NULL;
 GO
+
+-- ===========================================================
+-- Stores
+-- =========================================================== 
+CREATE TABLE [dbo].[Stores] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [PharmacyId] int NOT NULL,
+    [NameAr] nvarchar(150) NOT NULL,
+    [NameEn] nvarchar(150) NOT NULL,
+    [Code] varchar(30) NULL,
+    [Address] nvarchar(300) NULL,
+    [IsDefault] bit NOT NULL CONSTRAINT [DF_Stores_IsDefault] DEFAULT ((0)),
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Stores_IsActive] DEFAULT ((1)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Stores_CreatedAt] DEFAULT (sysutcdatetime()),
+    [DeletedAt] datetime2(0) NULL, -- Soft delete
+    [DeletedBy] nvarchar(100) NULL,
+    [RowVersion] rowversion NOT NULL, -- Concurrency
+    CONSTRAINT [PK_Stores] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_Stores_Pharmacies_PharmacyId]
+        FOREIGN KEY ([PharmacyId]) REFERENCES [dbo].[Pharmacies] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+/* Unique store code per pharmacy (ignoring soft-deleted rows) */
+CREATE UNIQUE INDEX [UX_Stores_PharmacyId_Code]
+ON [dbo].[Stores] ([PharmacyId], [Code])
+WHERE [Code] IS NOT NULL AND [Code] <> '' AND [DeletedAt] IS NULL;
+GO
+
+/* Fast listing by pharmacy and active flag (ignoring soft-deleted rows) */
+CREATE INDEX [IX_Stores_PharmacyId_IsActive]
+ON [dbo].[Stores] ([PharmacyId], [IsActive])
+INCLUDE ([NameAr], [NameEn], [IsDefault], [Code])
+WHERE [DeletedAt] IS NULL;
+GO
+
+/* Enforce a single default store per pharmacy (ignoring soft-deleted rows) */
+CREATE UNIQUE INDEX [UX_Stores_PharmacyId_Default]
+ON [dbo].[Stores] ([PharmacyId])
+WHERE [IsDefault] = (1) AND [DeletedAt] IS NULL;
+GO
+
+/* Name search (Arabic) within pharmacy (ignoring soft-deleted rows) */
+CREATE INDEX [IX_Stores_PharmacyId_NameAr]
+ON [dbo].[Stores] ([PharmacyId], [NameAr])
+WHERE [DeletedAt] IS NULL;
+GO
+
+/* Name search (English) within pharmacy (ignoring soft-deleted rows) */
+CREATE INDEX [IX_Stores_PharmacyId_NameEn]
+ON [dbo].[Stores] ([PharmacyId], [NameEn])
+WHERE [DeletedAt] IS NULL;
+GO
+
 
 
 -- ===========================================================

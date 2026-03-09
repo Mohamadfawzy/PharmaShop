@@ -9,7 +9,9 @@ public partial class Customer
 
     public int? UserId { get; set; }
 
-    public string FullNameAr { get; set; } = null!;
+    public int? PharmacyId { get; set; }
+
+    public string FullName { get; set; } = null!;
 
     public string FullNameEn { get; set; } = null!;
 
@@ -23,7 +25,7 @@ public partial class Customer
 
     public string? NationalId { get; set; }
 
-    public string CustomerType { get; set; } = null!;
+    public string? CustomerType { get; set; }
 
     public int Points { get; set; }
 
@@ -37,7 +39,11 @@ public partial class Customer
 
     public bool IsActive { get; set; }
 
-    public virtual CustomerAddress? CustomerAddress { get; set; }
+    public virtual ICollection<CustomerAddress> CustomerAddresses { get; set; } = new List<CustomerAddress>();
+
+    public virtual Pharmacy? Pharmacy { get; set; }
+
+    public virtual ICollection<PointsTransaction> PointsTransactions { get; set; } = new List<PointsTransaction>();
 
     public virtual AspNetUser? User { get; set; }
 }

@@ -29,9 +29,25 @@ public partial class Pharmacy
 
     public bool IsActive { get; set; }
 
-    public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
+    public virtual ICollection<Brand> Brands { get; set; } = new List<Brand>();
+
+    public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
+
+    public virtual PointSetting? PointSetting { get; set; }
+
+    public virtual ICollection<PointsTransaction> PointsTransactions { get; set; } = new List<PointsTransaction>();
+
+    public virtual ICollection<ProductBatch> ProductBatches { get; set; } = new List<ProductBatch>();
 
     public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
+
+    public virtual ICollection<ProductInventory> ProductInventories { get; set; } = new List<ProductInventory>();
+
+    public virtual ICollection<ProductUnit> ProductUnits { get; set; } = new List<ProductUnit>();
+
+    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+
+    public virtual ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
 
     public virtual Store? Store { get; set; }
 

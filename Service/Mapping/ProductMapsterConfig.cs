@@ -17,17 +17,16 @@ public static class ProductMapsterConfig
             .NewConfig()
             // هنضبطها في السيرفيس لأنهم Multi-tenant/Audit:
             .Ignore(dest => dest.Id)
-            .Ignore(dest => dest.PharmacyId)
             .Ignore(dest => dest.CreatedAt)
             .Ignore(dest => dest.UpdatedAt)
-            .Ignore(dest => dest.DeletedAt)
-            .Ignore(dest => dest.DeletedBy)
-            .Ignore(dest => dest.CreatedBy)
-            .Ignore(dest => dest.UpdatedBy)
-            .Ignore(dest => dest.RowVersion)
+            .Ignore(dest => dest.DeletedAt);
+            //.Ignore(dest => dest.DeletedBy)
+            //.Ignore(dest => dest.CreatedBy)
+            //.Ignore(dest => dest.UpdatedBy)
+            //.Ignore(dest => dest.RowVersion)
 
             // Normalized fields هنحسبهم في السيرفيس:
-            .Ignore(dest => dest.NormalizedName)
-            .Ignore(dest => dest.NormalizedNameEn);
+            //.Ignore(dest => dest.NormalizedName)
+            //.Ignore(dest => dest.NormalizedNameEn);
     }
 }

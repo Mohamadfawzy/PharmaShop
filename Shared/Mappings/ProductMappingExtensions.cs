@@ -11,9 +11,9 @@ public static class ProductMappingExtensions
 
         return new Product
         {
-            Name = dto.Name,
+            NameAr = dto.Name,
             NameEn = dto.NameEn,
-            Description = dto.Description,
+            DescriptionAr = dto.Description,
             DescriptionEn = dto.DescriptionEn,
             //Barcode = dto.Barcode,
             //Price = dto.Price,
@@ -34,9 +34,9 @@ public static class ProductMappingExtensions
 
         return new Product
         {
-            Name = dto.Name,
+            NameAr = dto.Name,
             NameEn = dto.NameEn,
-            Description = dto.Description,
+            DescriptionAr = dto.Description,
             DescriptionEn = dto.DescriptionEn,
             //Barcode = dto.Barcode,
             //Price = dto.Price,
@@ -56,9 +56,9 @@ public static class ProductMappingExtensions
         return new ProductSubDetailsDto
         {
             Id = product.Id,
-            Name = product.Name ?? string.Empty,
+            Name = product.NameAr ?? string.Empty,
             NameEn = product.NameEn ?? string.Empty,
-            Description = product.Description ?? string.Empty,
+            Description = product.DescriptionAr ?? string.Empty,
             DescriptionEn = product.DescriptionEn ?? string.Empty,
             //Barcode = product.Barcode ?? string.Empty,
             //Price = product.Price,

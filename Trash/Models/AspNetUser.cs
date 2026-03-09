@@ -45,7 +45,7 @@ public partial class AspNetUser
 
     public virtual Customer? Customer { get; set; }
 
-    public virtual Employee? Employee { get; set; }
+    public virtual Pharmacist? Pharmacist { get; set; }
 
     public virtual ICollection<AspNetRole> Roles { get; set; } = new List<AspNetRole>();
 }

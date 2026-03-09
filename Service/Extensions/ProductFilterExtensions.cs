@@ -26,10 +26,9 @@ public static class ProductFilterExtensions
         //    query = query.Where(p => p.Price <= parameters.MaxPrice.Value);
 
         if (!string.IsNullOrWhiteSpace(parameters.Name))
-            query = query.Where(p => p.Name.Contains(parameters.Name) || p.NameEn.Contains(parameters.Name));
+            query = query.Where(p => p.NameAr.Contains(parameters.Name) || p.NameEn.Contains(parameters.Name));
 
-        if (!string.IsNullOrWhiteSpace(parameters.Barcode))
-            query = query.Where(p => p.Barcode == parameters.Barcode);
+        
 
         if (parameters.CreatedAfter.HasValue)
             query = query.Where(p => p.CreatedAt >= parameters.CreatedAfter.Value);
@@ -57,13 +56,13 @@ public static class ProductFilterExtensions
 
             ProductOrderBy.Name =>
                 parameters.OrderDescending
-                    ? query.OrderByDescending(p => p.Name)
-                    : query.OrderBy(p => p.Name),
+                    ? query.OrderByDescending(p => p.NameAr)
+                    : query.OrderBy(p => p.NameAr),
 
-            ProductOrderBy.Barcode =>
-                parameters.OrderDescending
-                    ? query.OrderByDescending(p => p.Barcode)
-                    : query.OrderBy(p => p.Barcode),
+            //ProductOrderBy.Barcode =>
+            //    parameters.OrderDescending
+            //        ? query.OrderByDescending(p => p.Barcode)
+            //        : query.OrderBy(p => p.Barcode),
 
             _ => // Default: CreatedAt
                 parameters.OrderDescending

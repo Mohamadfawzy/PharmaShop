@@ -16,18 +16,4 @@ public interface IProductService
     Task<AppResponse> SetActiveAsync(int productId, bool isActive, ProductStateChangeDto dto, CancellationToken ct);
     Task<AppResponse> SetDeletedAsync(int productId, bool isDeleted, ProductStateChangeDto dto, CancellationToken ct);
     Task<AppResponse<List<ProductListItemDto>>> GetProductsAsync(ProductListQueryDto query, CancellationToken ct);
-
-
-
-    // Audit
-
-    Task<AppResponse<List<ProductAuditEventDto>>> GetProductAuditAsync(
-      int productId, int skip, int take, CancellationToken ct);
-
-    Task<AppResponse<List<ProductAuditEventDto>>> SearchProductAuditAsync(
-        string? userId, DateTime? fromUtc, DateTime? toUtc, int skip, int take, CancellationToken ct);
-    Task<AppResponse<ProductUnitCreatedDto>> AddProductUnitAsync(int productId, ProductUnitCreateDto dto, CancellationToken ct);
-    Task<AppResponse<OpenBoxResultDto>> OpenBoxAsync(int productId, OpenBoxDto dto, CancellationToken ct);
-    Task<AppResponse<ReceiveStockResultDto>> ReceiveStockAsync(int productId, ReceiveStockDto dto, CancellationToken ct);
-    Task<AppResponse<StockAdjustmentResultDto>> AdjustStockAsync(int productId, StockAdjustmentDto dto, CancellationToken ct);
 }

@@ -14,22 +14,14 @@ public class UnitOfWork : IUnitOfWork
         Customers = new CustomerRepository(_context);
         Products = new ProductRepository(_context);
         Categories = new CategoryRepository(_context);
-        ProductAuditLogs = new GenericRepository<ProductAuditLog>(_context);
         Units = new GenericRepository<Unit>(_context);
-        ProductUnits = new GenericRepository<ProductUnit>(_context);
-
     }
 
     public ICustomerRepository Customers { get; private set; }
     public IProductRepository Products { get; private set; }
     public ICategoryRepository Categories { get; private set; }
-    public IGenericRepository<ProductAuditLog> ProductAuditLogs { get; }
 
     public IGenericRepository<Unit> Units { get; private set; }
-
-    public IGenericRepository<ProductUnit> ProductUnits { get; private set; }
-
-
 
     // METHODS
     public void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class

@@ -3,21 +3,13 @@ using System.Collections.Generic;
 
 namespace Entities.Models;
 
-public partial class Store
+public partial class Company
 {
     public int Id { get; set; }
 
-    public int PharmacyId { get; set; }
-
     public string NameAr { get; set; } = null!;
 
-    public string NameEn { get; set; } = null!;
-
-    public string? Code { get; set; }
-
-    public string? Address { get; set; }
-
-    public bool IsDefault { get; set; }
+    public string? NameEn { get; set; }
 
     public bool IsActive { get; set; }
 
@@ -26,10 +18,6 @@ public partial class Store
     public DateTime? DeletedAt { get; set; }
 
     public string? DeletedBy { get; set; }
-
-    public byte[] RowVersion { get; set; } = null!;
-
-    public virtual Pharmacy Pharmacy { get; set; } = null!;
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

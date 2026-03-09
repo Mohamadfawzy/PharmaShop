@@ -9,9 +9,7 @@ public partial class Store
 
     public int PharmacyId { get; set; }
 
-    public string NameAr { get; set; } = null!;
-
-    public string NameEn { get; set; } = null!;
+    public string Name { get; set; } = null!;
 
     public string? Code { get; set; }
 
@@ -31,5 +29,7 @@ public partial class Store
 
     public virtual Pharmacy Pharmacy { get; set; } = null!;
 
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+    public virtual ICollection<ProductBatch> ProductBatches { get; set; } = new List<ProductBatch>();
+
+    public virtual ICollection<ProductInventory> ProductInventories { get; set; } = new List<ProductInventory>();
 }
