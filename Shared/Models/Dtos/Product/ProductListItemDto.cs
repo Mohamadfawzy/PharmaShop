@@ -6,38 +6,24 @@ using System.Threading.Tasks;
 
 namespace Shared.Models.Dtos.Product;
 
-
 public sealed class ProductListItemDto
 {
-    public int Id { get; init; }
-    public int PharmacyId { get; init; }
+    public int Id { get; set; }
 
-    public int CategoryId { get; init; }
-    public int? BrandId { get; init; }
+    public string NameAr { get; set; } = default!;
+    public string? NameEn { get; set; }
 
-    public string Name { get; init; } = default!;
-    public string NameEn { get; init; } = default!;
+    public decimal OuterUnitPrice { get; set; }
 
-    public string? Barcode { get; init; }
-    public string? InternationalCode { get; init; }
-    public string? StockProductCode { get; init; }
+    public bool HasPromotion { get; set; }
+    public decimal PromotionDiscountPercent { get; set; }
 
-    public bool IsActive { get; init; }
-    public bool RequiresPrescription { get; init; }
-    public bool IsFeatured { get; init; }
-    public bool TrackInventory { get; init; }
-    public bool IsTaxable { get; init; }
-    public decimal VatRate { get; init; }
+    public int Points { get; set; }
 
-    public DateTime CreatedAt { get; init; }
-    public DateTime? UpdatedAt { get; init; }
-    public DateTime? DeletedAt { get; init; }
+    public bool RequiresPrescription { get; set; }
+    public bool IsAvailable { get; set; }
+    public bool IsActive { get; set; }
 
-    // optional (future)
-    public string? PrimaryImageUrl { get; init; }
-
-    // Stock summary (optional)
-    public int? AvailableQty { get; init; }   // QuantityOnHand - ReservedQty (sum)
-    public bool? IsInStock { get; init; }
-    public bool? IsLowStock { get; init; }
+    // Optional: how many tags attached to product
+    public int TagsCount { get; set; }
 }

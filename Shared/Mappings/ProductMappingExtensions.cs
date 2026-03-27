@@ -11,21 +11,62 @@ public static class ProductMappingExtensions
 
         return new Product
         {
-            NameAr = dto.Name,
-            NameEn = dto.NameEn,
-            DescriptionAr = dto.Description,
+            StoreId = dto.StoreId,
+            CategoryId = dto.CategoryId,
+            CompanyId = dto.CompanyId,
+
+            ErpProductId = dto.ErpProductId,
+            ErpStoreId = dto.ErpStoreId,
+            InternationalCode = string.IsNullOrWhiteSpace(dto.InternationalCode) ? null : dto.InternationalCode.Trim(),
+
+            NameAr = dto.NameAr.Trim(),
+            NameEn = string.IsNullOrWhiteSpace(dto.NameEn) ? null : dto.NameEn.Trim(),
+            DescriptionAr = dto.DescriptionAr,
             DescriptionEn = dto.DescriptionEn,
-            //Barcode = dto.Barcode,
-            //Price = dto.Price,
-            //OldPrice = dto.OldPrice,
-            //CategoryId = dto.CategoryId,
-            //IsAvailable = dto.IsAvailable,
-            // It's best to set the domain/DB-related fields in the service (CreatedAt/IsActive).
-            // But if you want to set them here:
-            CreatedAt = DateTime.UtcNow,
-            IsActive = true
+            SearchKeywords = dto.SearchKeywords,
+
+            OuterUnitId = dto.OuterUnitId,
+            InnerUnitId = dto.InnerUnitId,
+            InnerPerOuter = dto.InnerPerOuter,
+
+            OuterUnitPrice = dto.OuterUnitPrice,
+            InnerUnitPrice = dto.InnerUnitPrice,
+
+            MinOrderQty = dto.MinOrderQty,
+            MaxOrderQty = dto.MaxOrderQty,
+            MaxPerDayQty = dto.MaxPerDayQty,
+
+            IsReturnable = dto.IsReturnable,
+            AllowSplitSale = dto.AllowSplitSale,
+
+            Quantity = dto.Quantity,
+            HasExpiry = dto.HasExpiry,
+            NearestExpiryDate = dto.NearestExpiryDate,
+            LastStockSyncAt = dto.LastStockSyncAt,
+
+            HasPromotion = dto.HasPromotion,
+            PromotionDiscountPercent = dto.PromotionDiscountPercent,
+            PromotionStartsAt = dto.PromotionStartsAt,
+            PromotionEndsAt = dto.PromotionEndsAt,
+
+            IsFeatured = dto.IsFeatured,
+
+            // عادة تُدار عبر ERP Sync
+            IsIntegrated = false,
+            IntegratedAt = null,
+
+            Points = dto.Points,
+
+            RequiresPrescription = dto.RequiresPrescription,
+            IsAvailable = dto.IsAvailable,
+            IsActive = dto.IsActive,
+
+            UpdatedAt = null,
+            DeletedAt = null
         };
     }
+
+
 
     // From UpdateDto to Entity
     public static Product ToEntity(this ProductUpdateDto dto)
@@ -35,16 +76,6 @@ public static class ProductMappingExtensions
         return new Product
         {
             NameAr = dto.Name,
-            NameEn = dto.NameEn,
-            DescriptionAr = dto.Description,
-            DescriptionEn = dto.DescriptionEn,
-            //Barcode = dto.Barcode,
-            //Price = dto.Price,
-            //OldPrice = dto.OldPrice,
-            //CategoryId = dto.CategoryId,
-            //SubCategoryId = dto.SubCategoryId,
-            //IsAvailable = dto.IsAvailable,
-            IsActive = true
         };
     }
 
@@ -56,20 +87,6 @@ public static class ProductMappingExtensions
         return new ProductSubDetailsDto
         {
             Id = product.Id,
-            Name = product.NameAr ?? string.Empty,
-            NameEn = product.NameEn ?? string.Empty,
-            Description = product.DescriptionAr ?? string.Empty,
-            DescriptionEn = product.DescriptionEn ?? string.Empty,
-            //Barcode = product.Barcode ?? string.Empty,
-            //Price = product.Price,
-            //IsAvailable = product.IsAvailable,
-            //Points = product.Points,
-            //PromoDisc = product.PromoDisc,
-            //PromoEndDate = product.PromoEndDate,
-            //IsGroupOffer = product.IsGroupOffer,
-            //ImageName = product.ProductImages.FirstOrDefault(pi => pi.IsMain)?.ImageUrl
-            //            ?? product.ProductImages.FirstOrDefault()?.ImageUrl
-            //            ?? string.Empty
         };
     }
 

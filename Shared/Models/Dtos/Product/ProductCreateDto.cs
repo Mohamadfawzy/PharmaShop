@@ -1,72 +1,78 @@
 ﻿namespace Shared.Models.Dtos.Product;
 
-public partial class ProductCreateDto
+using System.ComponentModel.DataAnnotations;
+
+public  class ProductCreateDto
 {
-    public int CategoryId { get; init; }
-    public int? BrandId { get; init; }
+    [Required]
+    public int StoreId { get; set; }
 
-    // Unified codes (optional but unique per pharmacy when provided)
-    public string? Barcode { get; init; }
-    public string? InternationalCode { get; init; }
-    public string? StockProductCode { get; init; }
+    [Required]
+    public int CategoryId { get; set; }
 
-    // Names
-    public string Name { get; init; } = default!;
-    public string NameEn { get; init; } = default!;
+    public int? CompanyId { get; set; }
 
-    // Optional text
-    public string? Slug { get; init; }
-    public string? Description { get; init; }
-    public string? DescriptionEn { get; init; }
+    public decimal? ErpProductId { get; set; }
+    public int? ErpStoreId { get; set; }
 
-    // Search helpers
-    public string? SearchKeywords { get; init; }
+    [StringLength(50)]
+    public string? InternationalCode { get; set; }
 
-    // Packaging info (informational)
-    public string? DosageForm { get; init; }
-    public string? Strength { get; init; }
-    public string? PackSize { get; init; }
-    public string? Unit { get; init; }
+    [Required, StringLength(250)]
+    public string NameAr { get; set; } = default!;
 
-    // Compliance / rules
-    public bool RequiresPrescription { get; init; } = false;
-    public bool EarnPoints { get; init; } = true;
-    public bool HasExpiry { get; init; } = true;
+    [StringLength(250)]
+    public string? NameEn { get; set; }
 
-    public bool AgeRestricted { get; init; } = false;
-    public int? MinAge { get; init; }
+    public string? DescriptionAr { get; set; }
+    public string? DescriptionEn { get; set; }
 
-    public bool RequiresColdChain { get; init; } = false;
-    public bool ControlledSubstance { get; init; } = false;
-    public string? StorageConditions { get; init; }
+    [StringLength(500)]
+    public string? SearchKeywords { get; set; }
 
-    // Taxes
-    public bool IsTaxable { get; init; } = true;
-    public decimal VatRate { get; init; } = 0m;
-    public string? TaxCategoryCode { get; init; }
+    [Required]
+    public int OuterUnitId { get; set; }
 
-    // Order limits
-    public int MinOrderQty { get; init; } = 1;
-    public int? MaxOrderQty { get; init; }
-    public int? MaxPerDayQty { get; init; }
+    public int? InnerUnitId { get; set; }
+    public int? InnerPerOuter { get; set; }
 
-    public bool IsReturnable { get; init; } = true;
-    public int? ReturnWindowDays { get; init; }
+    [Range(0, double.MaxValue)]
+    public decimal OuterUnitPrice { get; set; }
 
-    // Split sale policy
-    public bool AllowSplitSale { get; init; } = false;
-    public byte? SplitLevel { get; init; } // 1=Inner(Strip) | 2=Base(Tablet)
+    [Range(0, double.MaxValue)]
+    public decimal? InnerUnitPrice { get; set; }
 
-    // Shipping / dimensions
-    public int? WeightGrams { get; init; }
-    public int? LengthMm { get; init; }
-    public int? WidthMm { get; init; }
-    public int? HeightMm { get; init; }
+    [Range(1, int.MaxValue)]
+    public int MinOrderQty { get; set; } = 1;
 
-    // Flags
-    public bool TrackInventory { get; init; } = true;
-    public bool IsFeatured { get; init; } = false;
+    public int? MaxOrderQty { get; set; }
+    public int? MaxPerDayQty { get; set; }
 
-    // You can allow create as inactive if you want (optional):
-    public bool IsActive { get; init; } = true;
+    public bool IsReturnable { get; set; } = true;
+    public bool AllowSplitSale { get; set; } = false;
+
+    [Range(0, double.MaxValue)]
+    public decimal Quantity { get; set; } = 0;
+
+    public bool HasExpiry { get; set; } = true;
+    public DateOnly? NearestExpiryDate { get; set; }
+
+    public DateTime? LastStockSyncAt { get; set; }
+
+    public bool HasPromotion { get; set; } = false;
+
+    [Range(0, 100)]
+    public decimal PromotionDiscountPercent { get; set; } = 0;
+
+    public DateTime? PromotionStartsAt { get; set; }
+    public DateTime? PromotionEndsAt { get; set; }
+
+    public bool IsFeatured { get; set; } = false;
+
+    [Range(0, int.MaxValue)]
+    public int Points { get; set; } = 0;
+
+    public bool RequiresPrescription { get; set; } = false;
+    public bool IsAvailable { get; set; } = false;
+    public bool IsActive { get; set; } = true;
 }

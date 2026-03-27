@@ -8,6 +8,7 @@ public interface IUnitOfWork : IDisposable
     IProductRepository Products { get; }
 
     IGenericRepository<Entities.Models.Unit> Units { get; }
+    IGenericRepository<Tag> Tags { get; }
 
     ICategoryRepository Categories { get; }
     void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class;

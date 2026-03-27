@@ -3,78 +3,79 @@ using Shared.Enums;
 using Shared.Models.RequestFeatures;
 
 namespace Service.Extensions;
-public static class ProductFilterExtensions
-{
-    public static IQueryable<Product> ApplyFilters(this IQueryable<Product> query, ProductParameters parameters)
-    {
-        if (parameters.CategoryId.HasValue)
-            query = query.Where(p => p.CategoryId == parameters.CategoryId);
 
-        if (parameters.CategoryId.HasValue)
-            query = query.Where(p => p.CategoryId == parameters.CategoryId);
+//public static class ProductFilterExtensions
+//{
+//    public static IQueryable<Product> ApplyFilters(this IQueryable<Product> query, ProductParameters parameters)
+//    {
+//        if (parameters.CategoryId.HasValue)
+//            query = query.Where(p => p.CategoryId == parameters.CategoryId);
 
-        //if (parameters.IsAvailable.HasValue)
-        //    query = query.Where(p => p.IsAvailable == parameters.IsAvailable);
+//        if (parameters.CategoryId.HasValue)
+//            query = query.Where(p => p.CategoryId == parameters.CategoryId);
 
-        if (parameters.IsActive.HasValue)
-            query = query.Where(p => p.IsActive == parameters.IsActive);
+//        //if (parameters.IsAvailable.HasValue)
+//        //    query = query.Where(p => p.IsAvailable == parameters.IsAvailable);
 
-        //if (parameters.MinPrice.HasValue)
-        //    query = query.Where(p => p.Price >= parameters.MinPrice.Value);
+//        if (parameters.IsActive.HasValue)
+//            query = query.Where(p => p.IsActive == parameters.IsActive);
 
-        //if (parameters.MaxPrice.HasValue)
-        //    query = query.Where(p => p.Price <= parameters.MaxPrice.Value);
+//        //if (parameters.MinPrice.HasValue)
+//        //    query = query.Where(p => p.Price >= parameters.MinPrice.Value);
 
-        if (!string.IsNullOrWhiteSpace(parameters.Name))
-            query = query.Where(p => p.NameAr.Contains(parameters.Name) || p.NameEn.Contains(parameters.Name));
+//        //if (parameters.MaxPrice.HasValue)
+//        //    query = query.Where(p => p.Price <= parameters.MaxPrice.Value);
+
+//        if (!string.IsNullOrWhiteSpace(parameters.Name))
+//            query = query.Where(p => p.NameAr.Contains(parameters.Name) || p.NameEn.Contains(parameters.Name));
 
         
 
-        if (parameters.CreatedAfter.HasValue)
-            query = query.Where(p => p.CreatedAt >= parameters.CreatedAfter.Value);
+//        if (parameters.CreatedAfter.HasValue)
+//            query = query.Where(p => p.CreatedAt >= parameters.CreatedAfter.Value);
 
-        if (parameters.CreatedBefore.HasValue)
-            query = query.Where(p => p.CreatedAt <= parameters.CreatedBefore.Value);
+//        if (parameters.CreatedBefore.HasValue)
+//            query = query.Where(p => p.CreatedAt <= parameters.CreatedBefore.Value);
 
-        return query;
-    }
+//        return query;
+//    }
 
 
-    public static IQueryable<Product> ApplySort(this IQueryable<Product> query, ProductParameters parameters)
-    {
-        return parameters.OrderBy switch
-        {
-            ProductOrderBy.UpdatedAt =>
-                parameters.OrderDescending
-                    ? query.OrderByDescending(p => p.UpdatedAt)
-                    : query.OrderBy(p => p.UpdatedAt),
+//    public static IQueryable<Product> ApplySort(this IQueryable<Product> query, ProductParameters parameters)
+//    {
+//        return parameters.OrderBy switch
+//        {
+//            ProductOrderBy.UpdatedAt =>
+//                parameters.OrderDescending
+//                    ? query.OrderByDescending(p => p.UpdatedAt)
+//                    : query.OrderBy(p => p.UpdatedAt),
 
-            //ProductOrderBy.Price =>
-            //    parameters.OrderDescending
-            //        ? query.OrderByDescending(p => p.Price)
-            //        : query.OrderBy(p => p.Price),
+//            //ProductOrderBy.Price =>
+//            //    parameters.OrderDescending
+//            //        ? query.OrderByDescending(p => p.Price)
+//            //        : query.OrderBy(p => p.Price),
 
-            ProductOrderBy.Name =>
-                parameters.OrderDescending
-                    ? query.OrderByDescending(p => p.NameAr)
-                    : query.OrderBy(p => p.NameAr),
+//            ProductOrderBy.Name =>
+//                parameters.OrderDescending
+//                    ? query.OrderByDescending(p => p.NameAr)
+//                    : query.OrderBy(p => p.NameAr),
 
-            //ProductOrderBy.Barcode =>
-            //    parameters.OrderDescending
-            //        ? query.OrderByDescending(p => p.Barcode)
-            //        : query.OrderBy(p => p.Barcode),
+//            //ProductOrderBy.Barcode =>
+//            //    parameters.OrderDescending
+//            //        ? query.OrderByDescending(p => p.Barcode)
+//            //        : query.OrderBy(p => p.Barcode),
 
-            _ => // Default: CreatedAt
-                parameters.OrderDescending
-                    ? query.OrderByDescending(p => p.CreatedAt)
-                    : query.OrderBy(p => p.CreatedAt),
-        };
-    }
+//            _ => // Default: CreatedAt
+//                parameters.OrderDescending
+//                    ? query.OrderByDescending(p => p.CreatedAt)
+//                    : query.OrderBy(p => p.CreatedAt),
+//        };
+//    }
 
-    public static IQueryable<Product> ApplyPagination(this IQueryable<Product> query, ProductParameters parameters)
-    {
-        return query
-            .Skip((parameters.PageNumber - 1) * parameters.PageSize)
-            .Take(parameters.PageSize);
-    }
-}
+//    public static IQueryable<Product> ApplyPagination(this IQueryable<Product> query, ProductParameters parameters)
+//    {
+//        return query
+//            .Skip((parameters.PageNumber - 1) * parameters.PageSize)
+//            .Take(parameters.PageSize);
+//    }
+//}

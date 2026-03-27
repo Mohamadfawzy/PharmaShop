@@ -2,6 +2,7 @@
 using Contracts.Images.Abstractions;
 using Contracts.Images.Dtos;
 using Contracts.IServices;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +12,9 @@ using Repository.Identity;
 using Service;
 using Service.Auth;
 using Service.Images;
+using Shared.Mappings;
 using System.Text;
 using WebAPI.Notifications;
-
 namespace WebAPI.Extensions;
 
 public static class ServiceExtensions
@@ -33,6 +34,7 @@ public static class ServiceExtensions
         services.AddTransient<ICustomerService, CustomerService>();
         services.AddTransient<IProductService, ProductService>();
         services.AddTransient<ICategoryService, CategoryService>();
+        services.AddTransient<ITagService, TagService>();
 
 
         services.AddScoped<IAuthService, AuthService>();

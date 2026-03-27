@@ -501,18 +501,13 @@ public partial class RepositoryContext : DbContext
 
         modelBuilder.Entity<Tag>(entity =>
         {
-            entity.HasIndex(e => new { e.PharmacyId, e.Name }, "UX_Tags_PharmacyId_Name").IsUnique();
-
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.Name).HasMaxLength(80);
+            entity.Property(e => e.NameAr).HasMaxLength(80);
             entity.Property(e => e.NameEn).HasMaxLength(80);
 
-            entity.HasOne(d => d.Pharmacy).WithMany(p => p.Tags)
-                .HasForeignKey(d => d.PharmacyId)
-                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<Unit>(entity =>

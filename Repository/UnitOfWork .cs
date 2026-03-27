@@ -15,6 +15,7 @@ public class UnitOfWork : IUnitOfWork
         Products = new ProductRepository(_context);
         Categories = new CategoryRepository(_context);
         Units = new GenericRepository<Unit>(_context);
+        Tags = new GenericRepository<Tag>(_context);
     }
 
     public ICustomerRepository Customers { get; private set; }
@@ -22,6 +23,8 @@ public class UnitOfWork : IUnitOfWork
     public ICategoryRepository Categories { get; private set; }
 
     public IGenericRepository<Unit> Units { get; private set; }
+
+    public IGenericRepository<Tag> Tags { get; private set; }
 
     // METHODS
     public void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class

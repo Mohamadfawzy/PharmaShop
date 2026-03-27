@@ -1,10 +1,13 @@
 using Contracts.Images.Dtos;
 using Contracts.IServices;
 using FluentValidation;
+using Mapster;
+using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Service.Validators;
+using Shared.Mappings;
 using Shared.Models.Dtos.Product;
-using Shared.Models.Dtos.Product.Units;
 using Shared.Responses;
 using WebAPI.Extensions;
 using WebAPI.Filters;
@@ -20,9 +23,17 @@ builder.Services.AddScoped<TraceIdResultFilter>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IValidator<ProductUpdateDto>, ProductUpdateDtoValidator>();
 builder.Services.AddScoped<IValidator<ProductCreateDto>, ProductCreateDtoValidator>();
-
-builder.Services.AddScoped<IValidator<ProductUnitCreateDto>, ProductUnitCreateDtoValidator>();
 builder.Services.AddScoped<IValidator<ReceiveStockDto>, ReceiveStockDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<TagCreateDtoValidator>();
+
+
+
+
+var config = TypeAdapterConfig.GlobalSettings;
+config.Scan(typeof(ProductMappingRegister).Assembly);
+builder.Services.AddSingleton(config);
+builder.Services.AddScoped<MapsterMapper.IMapper, ServiceMapper>();
+
 
 
 

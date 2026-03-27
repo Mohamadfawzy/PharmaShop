@@ -35,5 +35,4 @@ public partial class Pharmacy
 
     public virtual Store? Store { get; set; }
 
-    public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 }

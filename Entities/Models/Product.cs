@@ -14,6 +14,7 @@ public partial class Product
     public int? CompanyId { get; set; }
 
     public decimal? ErpProductId { get; set; }
+    public int? ErpStoreId { get; set; }
 
     public string? InternationalCode { get; set; }
 

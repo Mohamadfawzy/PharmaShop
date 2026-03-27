@@ -18,3 +18,33 @@ VALUES
 	N'القاهرة - مدينة نصر - شارع مصطفى النحاس',
     30.0566100,31.3304300
 );
+
+USE [pharma_shope_db]
+GO
+
+INSERT INTO [dbo].[Stores]
+           ([PharmacyId]
+           ,[NameAr]
+           ,[NameEn]
+           ,[Code]
+           ,[Address]
+           ,[IsDefault]
+           ,[IsActive]
+           ,[CreatedAt]
+           ,[DeletedAt]
+           ,[DeletedBy])
+     VALUES
+           (1
+            ,'مخزن 1'
+            ,'store 1'
+            ,'1223'
+            ,'عنوان'
+            ,1
+            ,1
+            ,SYSDATETIME()
+            ,null,null)
+GO
+
+
+
+

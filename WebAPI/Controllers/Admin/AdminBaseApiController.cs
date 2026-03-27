@@ -15,6 +15,10 @@ public abstract class AdminBaseApiController : BaseApiController
         _env = env;
     }
 
+    protected AdminBaseApiController()
+    {
+    }
+
     protected string UploadsRootPath
         => Path.Combine(_env.WebRootPath ?? _env.ContentRootPath, "uploads");
 }
