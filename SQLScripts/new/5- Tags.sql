@@ -3,8 +3,8 @@ use pharma_shope_db;
 
 GO
 
-drop table ProductTags;
-drop table Tags
+--drop table ProductTags;
+--drop table Tags
 go 
 CREATE TABLE [dbo].[Tags] (
     [Id] int NOT NULL IDENTITY(1,1),
