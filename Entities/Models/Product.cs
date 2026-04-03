@@ -14,6 +14,7 @@ public partial class Product
     public int? CompanyId { get; set; }
 
     public decimal? ErpProductId { get; set; }
+
     public int? ErpStoreId { get; set; }
 
     public string? InternationalCode { get; set; }
@@ -84,11 +85,15 @@ public partial class Product
 
     public DateTime? DeletedAt { get; set; }
 
+    public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+
     public virtual Category Category { get; set; } = null!;
 
     public virtual Company? Company { get; set; }
 
     public virtual Unit? InnerUnit { get; set; }
+
+    public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual Unit OuterUnit { get; set; } = null!;
 

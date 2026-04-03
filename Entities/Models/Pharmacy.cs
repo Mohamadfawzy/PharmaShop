@@ -34,5 +34,4 @@ public partial class Pharmacy
     public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 
     public virtual Store? Store { get; set; }
-
 }

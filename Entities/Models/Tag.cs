@@ -1,10 +1,13 @@
-﻿namespace Entities.Models;
+﻿using System;
+using System.Collections.Generic;
+
+namespace Entities.Models;
 
 public partial class Tag
 {
     public int Id { get; set; }
 
-    public string? NameAr { get; set; }
+    public string NameAr { get; set; } = null!;
 
     public string? NameEn { get; set; }
 

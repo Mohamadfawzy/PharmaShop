@@ -28,6 +28,10 @@ public partial class RepositoryContext : DbContext
 
     public virtual DbSet<AspNetUserToken> AspNetUserTokens { get; set; }
 
+    public virtual DbSet<Cart> Carts { get; set; }
+
+    public virtual DbSet<CartItem> CartItems { get; set; }
+
     public virtual DbSet<Category> Categories { get; set; }
 
     public virtual DbSet<Company> Companies { get; set; }
@@ -37,6 +41,10 @@ public partial class RepositoryContext : DbContext
     public virtual DbSet<CustomerAddress> CustomerAddresses { get; set; }
 
     public virtual DbSet<Employee> Employees { get; set; }
+
+    public virtual DbSet<Order> Orders { get; set; }
+
+    public virtual DbSet<OrderItem> OrderItems { get; set; }
 
     public virtual DbSet<Pharmacy> Pharmacies { get; set; }
 
@@ -141,6 +149,65 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(128);
 
             entity.HasOne(d => d.User).WithMany(p => p.AspNetUserTokens).HasForeignKey(d => d.UserId);
+        });
+
+        modelBuilder.Entity<Cart>(entity =>
+        {
+            entity.HasIndex(e => new { e.CustomerId, e.Status, e.StatusUpdatedAt }, "IX_Carts_CustomerId_Status_StatusUpdatedAt").IsDescending(false, false, true);
+
+            entity.HasIndex(e => new { e.StoreId, e.Status, e.StatusUpdatedAt }, "IX_Carts_StoreId_Status_StatusUpdatedAt").IsDescending(false, false, true);
+
+            entity.HasIndex(e => e.CustomerId, "UX_Carts_CustomerId_Active")
+                .IsUnique()
+                .HasFilter("([Status]=(1))");
+
+            entity.Property(e => e.AppInstanceId).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.DeviceId).HasMaxLength(100);
+            entity.Property(e => e.ExpiredReason).HasMaxLength(300);
+            entity.Property(e => e.Status).HasDefaultValue((byte)1);
+            entity.Property(e => e.StatusUpdatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Customer).WithOne(p => p.Cart)
+                .HasForeignKey<Cart>(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.Store).WithMany(p => p.Carts)
+                .HasForeignKey(d => d.StoreId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            entity.HasIndex(e => e.CartId, "IX_CartItems_CartId");
+
+            entity.HasIndex(e => new { e.CartId, e.IsValid }, "IX_CartItems_CartId_IsValid");
+
+            entity.HasIndex(e => e.ProductId, "IX_CartItems_ProductId");
+
+            entity.HasIndex(e => new { e.CartId, e.ProductId, e.UnitLevel }, "UX_CartItems_CartId_ProductId_UnitLevel").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.CurrentUnitPriceSnapshot).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.InvalidReason).HasMaxLength(300);
+            entity.Property(e => e.IsValid).HasDefaultValue(true);
+            entity.Property(e => e.MinOrderQtySnapshot).HasDefaultValue(1);
+            entity.Property(e => e.Quantity).HasColumnType("decimal(18, 3)");
+            entity.Property(e => e.UnitPriceSnapshot).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Cart).WithMany(p => p.CartItems).HasForeignKey(d => d.CartId);
+
+            entity.HasOne(d => d.Product).WithMany(p => p.CartItems)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<Category>(entity =>
@@ -272,9 +339,82 @@ public partial class RepositoryContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.Employee).HasForeignKey<Employee>(d => d.UserId);
         });
 
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasIndex(e => new { e.CustomerId, e.Status, e.CreatedAt }, "IX_Orders_CustomerId_Status_CreatedAt").IsDescending(false, false, true);
+
+            entity.HasIndex(e => new { e.PaymentStatus, e.CreatedAt }, "IX_Orders_PaymentStatus_CreatedAt").IsDescending(false, true);
+
+            entity.HasIndex(e => new { e.StoreId, e.Status, e.StatusUpdatedAt }, "IX_Orders_StoreId_Status_StatusUpdatedAt").IsDescending(false, false, true);
+
+            entity.HasIndex(e => e.OrderNumber, "UX_Orders_OrderNumber").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.DeliveryCity).HasMaxLength(100);
+            entity.Property(e => e.DeliveryFee).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.DeliveryPhone).HasMaxLength(20);
+            entity.Property(e => e.DeliveryRegion).HasMaxLength(100);
+            entity.Property(e => e.DeliveryStreet).HasMaxLength(300);
+            entity.Property(e => e.DeliveryTitle).HasMaxLength(100);
+            entity.Property(e => e.GrandTotal).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ItemsDiscountTotal).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.OrderNumber).HasMaxLength(30);
+            entity.Property(e => e.PaymentMethod).HasDefaultValue((byte)1);
+            entity.Property(e => e.PaymentStatus).HasDefaultValue((byte)1);
+            entity.Property(e => e.RedeemedAmount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
+            entity.Property(e => e.Status).HasDefaultValue((byte)1);
+            entity.Property(e => e.StatusUpdatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.Subtotal).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Address).WithMany(p => p.Orders).HasForeignKey(d => d.AddressId);
+
+            entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.Store).WithMany(p => p.Orders)
+                .HasForeignKey(d => d.StoreId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.HasIndex(e => e.OrderId, "IX_OrderItems_OrderId");
+
+            entity.HasIndex(e => new { e.ProductId, e.CreatedAt }, "IX_OrderItems_ProductId_CreatedAt").IsDescending(false, true);
+
+            entity.HasIndex(e => new { e.OrderId, e.ProductId, e.UnitLevel }, "UX_OrderItems_OrderId_ProductId_UnitLevel").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.DiscountPercentSnapshot).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.FinalUnitPriceSnapshot).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.LineTotal).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Quantity).HasColumnType("decimal(18, 3)");
+            entity.Property(e => e.UnitPriceSnapshot).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.AppliedPromotion).WithMany(p => p.OrderItems).HasForeignKey(d => d.AppliedPromotionId);
+
+            entity.HasOne(d => d.Order).WithMany(p => p.OrderItems).HasForeignKey(d => d.OrderId);
+
+            entity.HasOne(d => d.Product).WithMany(p => p.OrderItems)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
         modelBuilder.Entity<Pharmacy>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC075D621057");
+            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC0709862962");
 
             entity.Property(e => e.Address).HasMaxLength(300);
             entity.Property(e => e.CreatedAt)
@@ -507,7 +647,6 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.NameAr).HasMaxLength(80);
             entity.Property(e => e.NameEn).HasMaxLength(80);
-
         });
 
         modelBuilder.Entity<Unit>(entity =>

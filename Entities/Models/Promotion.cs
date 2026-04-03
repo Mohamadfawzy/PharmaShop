@@ -35,5 +35,7 @@ public partial class Promotion
 
     public byte[] RowVersion { get; set; } = null!;
 
+    public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
     public virtual ICollection<PromotionProduct> PromotionProducts { get; set; } = new List<PromotionProduct>();
 }

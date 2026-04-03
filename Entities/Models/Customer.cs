@@ -37,7 +37,11 @@ public partial class Customer
 
     public bool IsActive { get; set; }
 
+    public virtual Cart? Cart { get; set; }
+
     public virtual CustomerAddress? CustomerAddress { get; set; }
+
+    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     public virtual AspNetUser? User { get; set; }
 }
