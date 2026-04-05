@@ -9,8 +9,10 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Entities.Models.Unit> Units { get; }
     IGenericRepository<Tag> Tags { get; }
+    IGenericRepository<CartItem> CartItems { get; }
 
     ICategoryRepository Categories { get; }
+    ICartRepository Carts { get; }
     void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class;
 
     Task<int> CompleteAsync(CancellationToken ct = default);

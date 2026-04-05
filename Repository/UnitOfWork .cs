@@ -14,15 +14,19 @@ public class UnitOfWork : IUnitOfWork
         Customers = new CustomerRepository(_context);
         Products = new ProductRepository(_context);
         Categories = new CategoryRepository(_context);
+        Carts = new CartRepository(_context);
         Units = new GenericRepository<Unit>(_context);
         Tags = new GenericRepository<Tag>(_context);
+        CartItems = new GenericRepository<CartItem>(_context);
     }
 
     public ICustomerRepository Customers { get; private set; }
     public IProductRepository Products { get; private set; }
     public ICategoryRepository Categories { get; private set; }
+    public ICartRepository Carts { get; private set; }
 
     public IGenericRepository<Unit> Units { get; private set; }
+    public IGenericRepository<CartItem> CartItems { get; private set; }
 
     public IGenericRepository<Tag> Tags { get; private set; }
 
