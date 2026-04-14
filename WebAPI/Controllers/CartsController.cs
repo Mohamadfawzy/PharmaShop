@@ -1,5 +1,6 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
+using Service;
 using Shared.Models.Dtos.Cart;
 using WebAPI.Controllers.Admin;
 
@@ -79,6 +80,18 @@ public class CartsController : AdminBaseApiController
 
         // Future improvement:
         // - Get CustomerId from token claims instead of body
+    }
+
+
+
+    [HttpPost("preview")]
+    public async Task<IActionResult> Preview([FromBody] CartPreviewRequestDto dto, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await cartService.PreviewAsync(dto, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
     }
 
 }

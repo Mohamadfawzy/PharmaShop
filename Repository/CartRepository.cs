@@ -194,4 +194,112 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
         // Future improvement: switch to soft delete if you later need audit/history
     }
 
+    // prview
+
+    public async Task<CartPreviewData?> GetActiveCartDataForPreviewAsync(int cartId, int customerId, CancellationToken ct)
+    {
+        // 1) Load active cart header (must be Active)
+        var cart = await _db.Carts
+            .AsNoTracking()
+            .Where(c => c.Id == cartId && c.CustomerId == customerId && c.Status == 1)
+            .Select(c => new CartPreviewData
+            {
+                CartId = c.Id,
+                Status = c.Status
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (cart is null)
+            return null;
+
+        // 2) Load items + product data + primary image + group promotion membership (hook)
+        var now = DateTime.UtcNow;
+
+        cart.Items = await (
+            from ci in _db.CartItems.AsNoTracking()
+            join p in _db.Products.AsNoTracking() on ci.ProductId equals p.Id
+            where ci.CartId == cartId
+            select new CartPreviewItemData
+            {
+                CartItemId = ci.Id,
+                ProductId = ci.ProductId,
+                UnitLevel = ci.UnitLevel,
+                Quantity = ci.Quantity,
+                CurrentUnitPriceSnapshot = ci.CurrentUnitPriceSnapshot,
+
+                NameAr = p.NameAr,
+                NameEn = p.NameEn,
+
+                PrimaryImageUrl = _db.ProductImages
+                    .AsNoTracking()
+                    .Where(pi => pi.ProductId == p.Id && pi.IsPrimary)
+                    .Select(pi => pi.ImageUrl)
+                    .FirstOrDefault(),
+
+                OuterUnitPrice = p.OuterUnitPrice,
+                InnerUnitPrice = p.InnerUnitPrice,
+                InnerPerOuter = p.InnerPerOuter,
+
+                StockOuterQty = p.Quantity,
+
+                IsActive = p.IsActive,
+                IsAvailable = p.IsAvailable,
+                DeletedAt = p.DeletedAt,
+
+                HasPromotion = p.HasPromotion,
+                PromotionDiscountPercent = p.PromotionDiscountPercent,
+                PromotionStartsAt = p.PromotionStartsAt,
+                PromotionEndsAt = p.PromotionEndsAt,
+
+                Points = p.Points,
+                AllowSplitSale = p.AllowSplitSale,
+
+                // Hook: set true if product is in any active promotion group (basic membership check)
+                IsInGroupPromotion =
+                    _db.PromotionProducts.AsNoTracking()
+                        .Any(pp =>
+                            pp.ProductId == p.Id &&
+                            pp.Promotion.IsActive &&
+                            pp.Promotion.StartAt <= now &&
+                            pp.Promotion.EndAt >= now)
+            }
+        ).ToListAsync(ct);
+
+        return cart;
+
+        // Future improvements:
+        // - Replace image subquery with GroupJoin for better performance
+        // - Materialize group promotion membership in one query instead of Any() per row
+    }
+
+    public async Task<int> RemoveCartItemsByIdsAsync(int cartId, List<int> cartItemIds, CancellationToken ct)
+    {
+        // 1) Load items to delete (simple MVP)
+        var items = await _db.CartItems
+            .Where(x => x.CartId == cartId && cartItemIds.Contains(x.Id))
+            .ToListAsync(ct);
+
+        if (items.Count == 0)
+            return 0;
+
+        // 2) Hard delete
+        _db.CartItems.RemoveRange(items);
+        return items.Count;
+
+        // Future improvements:
+        // - Use ExecuteDeleteAsync (EF Core 7+) to delete without loading
+    }
+
+    public Task<bool> AddressExistsAsync(int addressId, int customerId, CancellationToken ct)
+    {
+        // 1) Validate address ownership (simple)
+        return _db.CustomerAddresses
+            .AsNoTracking()
+            .AnyAsync(a => a.Id == addressId && a.CustomerId == customerId, ct);
+
+        // Future improvements:
+        // - Add address status checks (deleted/disabled)
+    }
+
+
 }
