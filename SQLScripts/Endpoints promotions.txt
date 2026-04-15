@@ -1,0 +1,136 @@
+✅ أولًا: Endpoints للأدمن (Admin)
+1) إدارة العروض نفسها (Promotion CRUD)
+
+GET /api/v1/admin/promotions
+
+قائمة العروض (فلترة: active/expired/date range/search + pagination)
+
+
+GET /api/v1/admin/promotions/{id}
+
+تفاصيل عرض واحد
+
+
+PUT /api/v1/admin/promotions/{id}
+
+تعديل العرض (مع RowVersion لاحقًا)
+
+
+PATCH /api/v1/admin/promotions/{id}/activate
+
+تفعيل/تعطيل العرض (أو PATCH status)
+
+
+DELETE /api/v1/admin/promotions/{id}
+
+Soft delete للعرض
+
+
+
+2) إدارة منتجات العرض (PromotionProducts)
+
+GET /api/v1/admin/promotions/{id}/products
+
+منتجات العرض + pagination
+
+
+POST /api/v1/admin/promotions/{id}/products
+
+إضافة منتجات للعرض (Bulk إضافة قائمة)
+
+
+DELETE /api/v1/admin/promotions/{id}/products/{promotionProductId}
+
+حذف منتج من العرض (Soft delete في PromotionProducts)
+
+
+PUT /api/v1/admin/promotions/{id}/products
+
+استبدال كامل قائمة المنتجات (Replace set) (اختياري لكن عملي للأدمن)
+
+
+
+3) أدوات مساعدة للأدمن (اختياري)
+
+GET /api/v1/admin/promotions/{id}/summary
+
+
+ملخص (عدد المنتجات، نافذة التفعيل، إلخ)
+
+
+POST /api/v1/admin/promotions/{id}/clone
+
+
+نسخ عرض (اختياري)
+
+
+POST /api/v1/admin/promotions/{id}/validate
+
+
+تحقق من صحة إعداد العرض (اختياري)
+
+
+✅ ثانيًا: Endpoints للمستخدمين (Mobile/Public)
+
+الهدف هنا عرض العروض/تأثيرها وليس CRUD.
+
+
+GET /api/v1/promotions/active
+
+قائمة العروض السارية الآن (لإظهارها في واجهة التطبيق)
+
+
+GET /api/v1/promotions/{id}
+
+تفاصيل عرض (للعرض فقط)
+
+
+GET /api/v1/promotions/{id}/products
+
+منتجات العرض (للعرض فقط)
+
+
+GET /api/v1/products/{id}/promotions
+
+هل هذا المنتج ضمن عرض مجموعة؟ (وأي عرض) (اختياري إذا احتجته في صفحة المنتج)
+
+
+POST /api/v1/cart/preview
+
+هذا هو المكان الأساسي لتطبيق العروض فعليًا على سلة المستخدم (موجود عندكم ضمن خطة السلة)
+
+
+نريد الاختصار الوضوح مقترحات التحسين باختصار، لا تعيد كتابة الinterfaces  استخدم PromotionRepository و PromotionService
+اكتب تعليقا في سطر واحد فوق كل امر مهم بالانجليزي، رقم الخطوات داخل الدوال.
+=================
+
+⭐ اقتراح MVP “الأقل” الذي يكفي قبل الطلبات (Orders)
+إذا هدفك الآن هو تجهيز العروض قبل كتابة Endpoints الطلبات، فأقل مجموعة مفيدة:
+Admin MVP
+
+POST /admin/promotions ✅ (كتبناه)
+GET /admin/promotions
+GET /admin/promotions/{id}
+POST /admin/promotions/{id}/products (Bulk)
+GET /admin/promotions/{id}/products
+PATCH /admin/promotions/{id}/activate
+DELETE /admin/promotions/{id} (Soft)
+
+Public MVP
+
+GET /promotions/active
+GET /promotions/{id}/products
+
+
+سؤالان فقط لتحديد ما سننفذه الآن (حتى لا نكتب زيادة)
+
+هل تريد Bulk add للمنتجات داخل العرض عبر:
+
+productIds المحلية فقط
+أم erpProductIds فقط
+أم الاثنين معًا؟
+
+
+هل تريد تعديل العرض يتم بـ PUT كامل، أم PATCH لحقول محددة فقط في الـ MVP؟
+
+بمجرد إجابتك، سأبدأ بكتابة الـ Endpoints التالية بالترتيب الذي يخدمك أسرع قبل الـ Orders.
