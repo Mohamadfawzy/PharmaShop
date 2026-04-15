@@ -496,7 +496,6 @@ public class CartService : ICartService
 
     //------------------------------
     #region CartPreview
-   
 
     public async Task<AppResponse<CartPreviewResponseDto>> PreviewAsync(CartPreviewRequestDto dto, CancellationToken ct)
     {
@@ -835,12 +834,5 @@ public class CartService : ICartService
     private static decimal Round2(decimal value)
         => Math.Round(value, 2, MidpointRounding.AwayFromZero);
     #endregion
-
-
-    // -------- Internal calculation models --------
-
-
-
-
 
 }
