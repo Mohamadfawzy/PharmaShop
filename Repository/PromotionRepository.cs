@@ -119,4 +119,76 @@ public sealed class PromotionRepository : GenericRepository<Promotion>, IPromoti
         // - Add full-text search on Name/Notes if needed
         // - Add filtering by date status (upcoming/expired)
     }
+
+
+
+    public async Task<PromotionDetailsDto?> GetDetailsByIdAsync(int id, CancellationToken ct)
+    {
+        // 1) Load promotion header (ignore soft-deleted)
+        var promo = await _db.Promotions
+            .AsNoTracking()
+            .Where(p => p.Id == id && p.DeletedAt == null)
+            .Select(p => new PromotionDetailsDto
+            {
+                Id = p.Id,
+                ErpPgoId = p.ErpPgoId,
+                Name = p.Name,
+                Notes = p.Notes,
+                StartAt = p.StartAt,
+                EndAt = p.EndAt,
+                TotalAmount = p.TotalAmount,
+                BasicAmount = p.BasicAmount,
+                OfferAmount = p.OfferAmount,
+                DiscountPercent = p.DiscountPercent,
+                IsActive = p.IsActive,
+
+                // Count products (ignore soft-deleted)
+                ProductsCount = p.PromotionProducts.Count(pp => pp.DeletedAt == null),
+
+                // Products list (simple for admin)
+                Products = p.PromotionProducts
+                    .Where(pp => pp.DeletedAt == null)
+                    .OrderBy(pp => pp.Id)
+                    .Select(pp => new PromotionProductItemDto
+                    {
+                        Id = pp.Id,
+                        ProductId = pp.ProductId,
+                        ErpProductId = pp.ErpProductId,
+                        ErpOfferId = pp.ErpOfferId
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(ct);
+
+        // 2) Return DTO (or null)
+        return promo;
+
+        // Future improvements:
+        // - Add product name/image by joining Products/ProductImages for better admin UX
+        // - Add pagination for products when promotion contains many products
+        // - Add filtering/sorting for products list
+
+    }
+
+    public async Task<Promotion?> GetByIdForUpdateAsync(int id, CancellationToken ct)
+    {
+        // 1) Load promotion for update (tracked) and ignore soft-deleted
+        return await _db.Promotions
+            .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null, ct);
+
+        // Future improvement: include related data only when needed (e.g., products count)
+    }
+
+    public async Task<bool> ExistsByErpPgoIdAsync(decimal erpPgoId, int excludeId, CancellationToken ct)
+    {
+        // 1) Check uniqueness ignoring soft-deleted rows
+        return await _db.Promotions
+            .AsNoTracking()
+            .AnyAsync(p => p.ErpPgoId == erpPgoId && p.DeletedAt == null && p.Id != excludeId, ct);
+
+        // Future improvement: normalize ERP ids if needed
+    }
+
+
+
 }
