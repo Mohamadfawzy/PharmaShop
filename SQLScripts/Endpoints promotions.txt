@@ -1,22 +1,31 @@
 
+قم بكتابة end pint
 
 نريد الاختصار الوضوح مقترحات التحسين باختصار، لا تعيد كتابة الinterfaces  استخدم PromotionRepository و PromotionService
 اكتب تعليقا في سطر واحد فوق كل امر مهم بالانجليزي، رقم الخطوات داخل الدوال.
+ترتيب كتابة  ،
+ dtos
+تم الدوال داخل
+, reposetory, 
+service, 
+controler
+json
+
 
 ✅ أولًا: Endpoints للأدمن (Admin)
 1) إدارة العروض نفسها (Promotion CRUD)
 
-GET /api/v1/admin/promotions
+GET /api/v1/admin/promotions✅
 
 قائمة العروض (فلترة: active/expired/date range/search + pagination)
 
 
-GET /api/v1/admin/promotions/{id}
+GET /api/v1/admin/promotions/{id}✅
 
 تفاصيل عرض واحد
 
 
-PUT /api/v1/admin/promotions/{id}
+PUT /api/v1/admin/promotions/{id}✅
 
 تعديل العرض (مع RowVersion لاحقًا)
 
