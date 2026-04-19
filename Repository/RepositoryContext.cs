@@ -48,6 +48,12 @@ public partial class RepositoryContext : DbContext
 
     public virtual DbSet<Pharmacy> Pharmacies { get; set; }
 
+    public virtual DbSet<Prescription> Prescriptions { get; set; }
+
+    public virtual DbSet<PrescriptionImage> PrescriptionImages { get; set; }
+
+    public virtual DbSet<PrescriptionItem> PrescriptionItems { get; set; }
+
     public virtual DbSet<Product> Products { get; set; }
 
     public virtual DbSet<ProductImage> ProductImages { get; set; }
@@ -349,6 +355,10 @@ public partial class RepositoryContext : DbContext
 
             entity.HasIndex(e => e.OrderNumber, "UX_Orders_OrderNumber").IsUnique();
 
+            entity.HasIndex(e => e.PrescriptionId, "UX_Orders_PrescriptionId")
+                .IsUnique()
+                .HasFilter("([PrescriptionId] IS NOT NULL)");
+
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
@@ -380,6 +390,8 @@ public partial class RepositoryContext : DbContext
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.Prescription).WithOne(p => p.Order).HasForeignKey<Order>(d => d.PrescriptionId);
 
             entity.HasOne(d => d.Store).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.StoreId)
@@ -414,7 +426,7 @@ public partial class RepositoryContext : DbContext
 
         modelBuilder.Entity<Pharmacy>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC0709862962");
+            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC0718607DA0");
 
             entity.Property(e => e.Address).HasMaxLength(300);
             entity.Property(e => e.CreatedAt)
@@ -429,6 +441,78 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.NameEn).HasMaxLength(200);
             entity.Property(e => e.OwnerName).HasMaxLength(150);
             entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<Prescription>(entity =>
+        {
+            entity.HasIndex(e => new { e.CustomerId, e.Status, e.CreatedAt }, "IX_Prescriptions_CustomerId_Status_CreatedAt").IsDescending(false, false, true);
+
+            entity.HasIndex(e => new { e.StoreId, e.Status, e.StatusUpdatedAt }, "IX_Prescriptions_StoreId_Status_StatusUpdatedAt").IsDescending(false, false, true);
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.RejectReason).HasMaxLength(300);
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
+            entity.Property(e => e.Status).HasDefaultValue((byte)1);
+            entity.Property(e => e.StatusUpdatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Customer).WithMany(p => p.Prescriptions)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.Store).WithMany(p => p.Prescriptions)
+                .HasForeignKey(d => d.StoreId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<PrescriptionImage>(entity =>
+        {
+            entity.HasIndex(e => e.PrescriptionId, "IX_PrescriptionImages_PrescriptionId");
+
+            entity.HasIndex(e => new { e.PrescriptionId, e.IsPrimary, e.SortOrder, e.Id }, "IX_PrescriptionImages_PrescriptionId_Sort").IsDescending(false, true, false, false);
+
+            entity.HasIndex(e => new { e.PrescriptionId, e.IsPrimary }, "UX_PrescriptionImages_PrescriptionId_Primary")
+                .IsUnique()
+                .HasFilter("([IsPrimary]=(1))");
+
+            entity.Property(e => e.AltText).HasMaxLength(200);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.ImageUrl).HasMaxLength(600);
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
+            entity.Property(e => e.ThumbnailUrl).HasMaxLength(600);
+
+            entity.HasOne(d => d.Prescription).WithMany(p => p.PrescriptionImages).HasForeignKey(d => d.PrescriptionId);
+        });
+
+        modelBuilder.Entity<PrescriptionItem>(entity =>
+        {
+            entity.HasIndex(e => e.PrescriptionId, "IX_PrescriptionItems_PrescriptionId");
+
+            entity.HasIndex(e => e.ProductId, "IX_PrescriptionItems_ProductId").HasFilter("([ProductId] IS NOT NULL)");
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.RequestedName).HasMaxLength(250);
+            entity.Property(e => e.RequestedQuantity).HasColumnType("decimal(18, 3)");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Prescription).WithMany(p => p.PrescriptionItems).HasForeignKey(d => d.PrescriptionId);
+
+            entity.HasOne(d => d.Product).WithMany(p => p.PrescriptionItems).HasForeignKey(d => d.ProductId);
         });
 
         modelBuilder.Entity<Product>(entity =>

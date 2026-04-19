@@ -13,6 +13,8 @@ public partial class Order
 
     public int StoreId { get; set; }
 
+    public int? PrescriptionId { get; set; }
+
     public byte Status { get; set; }
 
     public DateTime StatusUpdatedAt { get; set; }
@@ -64,6 +66,8 @@ public partial class Order
     public virtual Customer Customer { get; set; } = null!;
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+    public virtual Prescription? Prescription { get; set; }
 
     public virtual Store Store { get; set; } = null!;
 }

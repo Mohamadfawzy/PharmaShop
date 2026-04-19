@@ -97,6 +97,8 @@ public partial class Product
 
     public virtual Unit OuterUnit { get; set; } = null!;
 
+    public virtual ICollection<PrescriptionItem> PrescriptionItems { get; set; } = new List<PrescriptionItem>();
+
     public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 
     public virtual ICollection<ProductTag> ProductTags { get; set; } = new List<ProductTag>();

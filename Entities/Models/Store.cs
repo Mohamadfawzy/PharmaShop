@@ -35,5 +35,7 @@ public partial class Store
 
     public virtual Pharmacy Pharmacy { get; set; } = null!;
 
+    public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
+
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

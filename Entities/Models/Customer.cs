@@ -43,5 +43,7 @@ public partial class Customer
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
+    public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
+
     public virtual AspNetUser? User { get; set; }
 }
