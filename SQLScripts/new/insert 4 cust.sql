@@ -57,7 +57,7 @@ INSERT INTO [dbo].[CustomerAddresses]
 )
 VALUES
 (
-    2,                                      -- CustomerId (لازم يكون موجود في جدول Customers)
+    1,                                      -- CustomerId (لازم يكون موجود في جدول Customers)
     N'المنزل',                              -- Title (Home / Work / ...)
     N'القاهرة',                             -- City
     N'مدينة نصر',                           -- Region

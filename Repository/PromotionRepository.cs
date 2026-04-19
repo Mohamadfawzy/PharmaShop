@@ -120,8 +120,6 @@ public sealed class PromotionRepository : GenericRepository<Promotion>, IPromoti
         // - Add filtering by date status (upcoming/expired)
     }
 
-
-
     public async Task<PromotionDetailsDto?> GetDetailsByIdAsync(int id, CancellationToken ct)
     {
         // 1) Load promotion header (ignore soft-deleted)
@@ -189,6 +187,163 @@ public sealed class PromotionRepository : GenericRepository<Promotion>, IPromoti
         // Future improvement: normalize ERP ids if needed
     }
 
+    public async Task<int> SetActiveAsync(int id, bool isActive, DateTime nowUtc, CancellationToken ct)
+    {
+        // 1) Update only non-deleted promotion
+        return await _db.Promotions
+            .Where(p => p.Id == id && p.DeletedAt == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(p => p.IsActive, isActive)
+                .SetProperty(p => p.UpdatedAt, nowUtc),
+                ct);
+
+        // Future improvement: update StatusUpdatedAt-like field if you add it
+    }
 
 
+
+    public async Task<bool> PromotionExistsAsync(int promotionId, CancellationToken ct)
+    {
+        // 1) Check promotion exists (ignore soft-deleted)
+        return await _db.Promotions
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == promotionId && p.DeletedAt == null, ct);
+
+        // Future improvement: check IsActive or date window if required
+    }
+
+    public async Task<HashSet<decimal>> GetActiveErpProductIdsAsync(int promotionId, List<decimal> erpProductIds, CancellationToken ct)
+    {
+        // 1) Load existing active ERP product ids for this promotion
+        var list = await _db.PromotionProducts
+            .AsNoTracking()
+            .Where(pp => pp.PromotionId == promotionId
+                         && pp.DeletedAt == null
+                         && erpProductIds.Contains(pp.ErpProductId))
+            .Select(pp => pp.ErpProductId)
+            .ToListAsync(ct);
+
+        return list.ToHashSet();
+
+        // Future improvement: avoid IN with huge lists by chunking
+    }
+
+    public async Task<List<int>> GetSoftDeletedPromotionProductIdsAsync(int promotionId, List<decimal> erpProductIds, CancellationToken ct)
+    {
+        // 1) Load soft-deleted rows ids to restore
+        return await _db.PromotionProducts
+            .AsNoTracking()
+            .Where(pp => pp.PromotionId == promotionId
+                         && pp.DeletedAt != null
+                         && erpProductIds.Contains(pp.ErpProductId))
+            .Select(pp => pp.Id)
+            .ToListAsync(ct);
+
+        // Future improvement: also return mapping (ErpProductId -> Id) for richer responses
+    }
+
+    public async Task<int> RestorePromotionProductsAsync(List<int> ids, CancellationToken ct)
+    {
+        // 1) Restore soft-deleted rows in one statement
+        if (ids.Count == 0) return 0;
+
+        return await _db.PromotionProducts
+            .Where(pp => ids.Contains(pp.Id))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(pp => pp.DeletedAt, (DateTime?)null),
+                ct);
+
+        // Future improvement: keep audit (who restored) if you add audit columns
+    }
+
+    public async Task AddPromotionProductsRangeAsync(List<PromotionProduct> entities, CancellationToken ct)
+    {
+        // 1) Bulk insert entities
+        await _db.PromotionProducts.AddRangeAsync(entities, ct);
+
+        // Future improvement: use bulk insert tool if list is very large
+    }
+
+
+
+    public async Task<int> SoftDeletePromotionProductAsync(int promotionId, int promotionProductId, DateTime nowUtc, CancellationToken ct)
+    {
+        // 1) Soft delete promotion product row (must belong to promotion and not already deleted)
+        return await _db.PromotionProducts
+            .Where(pp => pp.Id == promotionProductId
+                         && pp.PromotionId == promotionId
+                         && pp.DeletedAt == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(pp => pp.DeletedAt, nowUtc),
+                ct);
+
+        // Future improvements:
+        // - Also update UpdatedAt on PromotionProducts if you add it later
+        // - Use ExecuteDeleteAsync for hard delete if you ever decide to remove history
+    }
+
+    public async Task<int> TouchPromotionUpdatedAtAsync(int promotionId, DateTime nowUtc, CancellationToken ct)
+    {
+        // 1) Update promotion UpdatedAt for tracking changes (ignore soft-deleted promotion)
+        return await _db.Promotions
+            .Where(p => p.Id == promotionId && p.DeletedAt == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(p => p.UpdatedAt, nowUtc),
+                ct);
+
+        // Future improvements:
+        // - Track who updated (audit fields) if you add them
+    }
+
+
+    #region replace list of products
+
+
+    public async Task<List<PromotionProductRow>> GetPromotionProductsRowsAsync(int promotionId, CancellationToken ct)
+    {
+        // 1) Load current rows for promotion (including soft-deleted)
+        return await _db.PromotionProducts
+            .AsNoTracking()
+            .Where(pp => pp.PromotionId == promotionId)
+            .Select(pp => new PromotionProductRow
+            {
+                Id = pp.Id,
+                ErpProductId = pp.ErpProductId,
+                DeletedAt = pp.DeletedAt
+            })
+            .ToListAsync(ct);
+
+        // Future improvement: return more fields if needed for advanced replace logic
+    }
+
+    public async Task<int> SoftDeleteByIdsAsync(List<int> ids, DateTime nowUtc, CancellationToken ct)
+    {
+        // 1) Soft delete rows in one statement
+        if (ids.Count == 0) return 0;
+
+        return await _db.PromotionProducts
+            .Where(pp => ids.Contains(pp.Id) && pp.DeletedAt == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(pp => pp.DeletedAt, nowUtc),
+                ct);
+
+        // Future improvement: audit fields (DeletedBy) if you add them
+    }
+
+    public async Task<int> RestoreByIdsAsync(List<int> ids, CancellationToken ct)
+    {
+        // 1) Restore rows in one statement
+        if (ids.Count == 0) return 0;
+
+        return await _db.PromotionProducts
+            .Where(pp => ids.Contains(pp.Id) && pp.DeletedAt != null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(pp => pp.DeletedAt, (DateTime?)null),
+                ct);
+
+        // Future improvement: also update CreatedAt/UpdatedAt if you add them
+    }
+
+
+    #endregion
 }

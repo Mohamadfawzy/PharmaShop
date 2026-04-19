@@ -1,6 +1,5 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
-using Service;
 using Shared.Models.Dtos.Promotion;
 using WebAPI.Controllers.Admin;
 
@@ -66,6 +65,63 @@ public class PromotionsController : AdminBaseApiController
         // Future improvement: use ETag header for RowVersion instead of body
     }
 
+
+    // PromotionsController
+    [HttpPatch("{id:int}/activate")]
+    public async Task<IActionResult> Activate(int id, [FromBody] PromotionActivateDto dto, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await promotionService.SetPromotionActiveAsync(id, dto, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: enforce admin authorization policy
+    }
+
+    // =============================================== products
+
+
+    [HttpPost("{id:int}/products")]
+    public async Task<IActionResult> AddProducts(int id, [FromBody] PromotionAddProductsDto dto, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await promotionService.AddProductsToPromotionAsync(id, dto, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: admin authorization policy
+    }
+
+
+    // PromotionsController
+    [HttpDelete("{id:int}/products/{promotionProductId:int}")]
+    public async Task<IActionResult> RemoveProduct(int id, int promotionProductId, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await promotionService.RemoveProductFromPromotionAsync(id, promotionProductId, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement:
+        // - Add admin authorization policy
+    }
+
+
+    // PromotionsController
+    [HttpPut("{id:int}/products")]
+    public async Task<IActionResult> ReplaceProducts(int id, [FromBody] PromotionReplaceProductsDto dto, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await promotionService.ReplacePromotionProductsAsync(id, dto, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: add admin authorization policy
+    }
 
 
 }

@@ -1,4 +1,8 @@
-﻿SET IDENTITY_INSERT dbo.Products ON;
+﻿use pharma_shope_db;
+
+--delete from Products where Id = 4
+
+SET IDENTITY_INSERT dbo.Products ON;
 
 INSERT INTO dbo.Products
 (
@@ -6,6 +10,7 @@ INSERT INTO dbo.Products
     StoreId,
     CategoryId,
     CompanyId,
+    ErpProductId,
 
     NameAr,
     NameEn,
@@ -48,7 +53,7 @@ VALUES
 -- المنتج 1
 (
     1,
-    1,1,1,
+    1,1,1,1001,
     N'ديكلوفيناك جل', 'Diclofenac Gel',
     N'مسكن موضعي للآلام العضلية', 'Topical pain relief gel',
     N'ديكلوفيناك,جل,عضلات',
@@ -69,7 +74,7 @@ VALUES
 -- المنتج 2
 (
     2,
-    1,1,1,
+    1,1,1,1002,
     N'أقراص زنك', 'Zinc Tablets',
     N'مكمل غذائي لدعم المناعة', 'Immune support supplement',
     N'زنك,مناعة',
@@ -90,7 +95,7 @@ VALUES
 -- المنتج 3
 (
     3,
-    1,1,1,
+    1,1,1,1003,
     N'محلول ملحي للأنف', 'Nasal Saline Solution',
     N'محلول لتنظيف وترطيب الأنف', 'Nasal cleaning solution',
     N'انف,محلول',
@@ -111,7 +116,7 @@ VALUES
 -- المنتج 4
 (
     4,
-    1,1,1,
+    1,1,1,1004,
     N'كريم مرطب للبشرة', 'Moisturizing Cream',
     N'كريم لترطيب البشرة الجافة', 'Skin moisturizing cream',
     N'كريم,بشرة',
@@ -132,7 +137,7 @@ VALUES
 -- المنتج 5
 (
     5,
-    1,1,1,
+    1,1,1,1005,
     N'لاصق جروح', 'Adhesive Bandage',
     N'لاصق طبي للجروح الصغيرة', 'Medical adhesive bandage',
     N'جروح,لاصق',

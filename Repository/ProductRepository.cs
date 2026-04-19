@@ -1,6 +1,5 @@
 ﻿using Contracts;
 using Entities.Models;
-using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Shared.Enums.Product;
 using Shared.Models.Dtos.Product;
