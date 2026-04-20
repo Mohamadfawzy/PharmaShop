@@ -35,5 +35,7 @@ public partial class Employee
 
     public virtual Pharmacy Pharmacy { get; set; } = null!;
 
+    public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
+
     public virtual AspNetUser? User { get; set; }
 }

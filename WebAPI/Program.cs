@@ -4,7 +4,6 @@ using FluentValidation;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using Service.Validators;
 using Shared.Mappings;
 using Shared.Models.Dtos.Product;

@@ -15,6 +15,10 @@ public partial class Prescription
 
     public DateTime StatusUpdatedAt { get; set; }
 
+    public int? ReviewedBy { get; set; }
+
+    public DateTime? ReadyForCheckoutAt { get; set; }
+
     public string? RejectReason { get; set; }
 
     public string? Notes { get; set; }
@@ -32,6 +36,8 @@ public partial class Prescription
     public virtual ICollection<PrescriptionImage> PrescriptionImages { get; set; } = new List<PrescriptionImage>();
 
     public virtual ICollection<PrescriptionItem> PrescriptionItems { get; set; } = new List<PrescriptionItem>();
+
+    public virtual Employee? ReviewedByNavigation { get; set; }
 
     public virtual Store Store { get; set; } = null!;
 }

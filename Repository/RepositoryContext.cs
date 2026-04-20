@@ -426,7 +426,7 @@ public partial class RepositoryContext : DbContext
 
         modelBuilder.Entity<Pharmacy>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC0718607DA0");
+            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC07AF2A0648");
 
             entity.Property(e => e.Address).HasMaxLength(300);
             entity.Property(e => e.CreatedAt)
@@ -447,12 +447,17 @@ public partial class RepositoryContext : DbContext
         {
             entity.HasIndex(e => new { e.CustomerId, e.Status, e.CreatedAt }, "IX_Prescriptions_CustomerId_Status_CreatedAt").IsDescending(false, false, true);
 
+            entity.HasIndex(e => new { e.ReviewedBy, e.StatusUpdatedAt }, "IX_Prescriptions_ReviewedBy_StatusUpdatedAt")
+                .IsDescending(false, true)
+                .HasFilter("([ReviewedBy] IS NOT NULL)");
+
             entity.HasIndex(e => new { e.StoreId, e.Status, e.StatusUpdatedAt }, "IX_Prescriptions_StoreId_Status_StatusUpdatedAt").IsDescending(false, false, true);
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.ReadyForCheckoutAt).HasPrecision(0);
             entity.Property(e => e.RejectReason).HasMaxLength(300);
             entity.Property(e => e.RowVersion)
                 .IsRowVersion()
@@ -466,6 +471,8 @@ public partial class RepositoryContext : DbContext
             entity.HasOne(d => d.Customer).WithMany(p => p.Prescriptions)
                 .HasForeignKey(d => d.CustomerId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.ReviewedByNavigation).WithMany(p => p.Prescriptions).HasForeignKey(d => d.ReviewedBy);
 
             entity.HasOne(d => d.Store).WithMany(p => p.Prescriptions)
                 .HasForeignKey(d => d.StoreId)
