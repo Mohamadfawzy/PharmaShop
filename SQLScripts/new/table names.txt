@@ -12,3 +12,8 @@ Inventory reservation
 Checkout
 
 Points Ledger: CustomerPointTransactions 
+
+
+العميل يرفع الصور → الصيدلي يراجع ويكتب العناصر → يؤكد جاهزية الوصفة → العميل يعمل Checkout وينشئ الطلب بنفسه.
+
+العميل يختار المنتجات -> يضيفها في السلة -> العميل يعمل checkout

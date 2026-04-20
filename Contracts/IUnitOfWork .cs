@@ -14,6 +14,7 @@ public interface IUnitOfWork : IDisposable
     ICategoryRepository Categories { get; }
     ICartRepository Carts { get; }
     IPromotionRepository Promotions { get; }
+    IOrderRepository Orders { get; }
 
     void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class;
 
