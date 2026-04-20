@@ -37,6 +37,7 @@ public static class ServiceExtensions
         services.AddTransient<ITagService, TagService>();
         services.AddTransient<ICartService, CartService>();
         services.AddTransient<IPromotionService, PromotionService>();
+        services.AddTransient<IOrderService, OrderService>();
 
 
         services.AddScoped<IAuthService, AuthService>();

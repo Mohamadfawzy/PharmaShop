@@ -2,16 +2,18 @@
 use pharma_shope_db;
 
 GO
-
 CREATE TABLE [dbo].[Prescriptions] (
     [Id] int NOT NULL IDENTITY(1,1),
     [CustomerId] int NOT NULL,
     [StoreId] int NOT NULL,
 
-    [Status] tinyint NOT NULL CONSTRAINT [DF_Prescriptions_Status] DEFAULT ((1)), -- 1=Submitted,2=InReview,3=AwaitingApproval,4=Approved,5=Rejected,6=Closed
+    [Status] tinyint NOT NULL CONSTRAINT [DF_Prescriptions_Status] DEFAULT ((1)), -- 1=Submitted,2=InReview,3=ReadyForCheckout,4=Closed,5=Rejected
     [StatusUpdatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Prescriptions_StatusUpdatedAt] DEFAULT (sysdatetime()),
 
-    [RejectReason] nvarchar(300) NULL, -- Reason when status=Rejected
+    [ReviewedBy] int NULL, -- EmployeeId (reviewer)
+    [ReadyForCheckoutAt] datetime2(0) NULL,
+
+    [RejectReason] nvarchar(300) NULL,
     [Notes] nvarchar(500) NULL,
 
     [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Prescriptions_CreatedAt] DEFAULT (sysdatetime()),
@@ -26,8 +28,17 @@ CREATE TABLE [dbo].[Prescriptions] (
     CONSTRAINT [FK_Prescriptions_Stores_StoreId]
         FOREIGN KEY ([StoreId]) REFERENCES [dbo].[Stores] ([Id]) ON DELETE NO ACTION,
 
+    CONSTRAINT [FK_Prescriptions_Employees_ReviewedBy]
+        FOREIGN KEY ([ReviewedBy]) REFERENCES [dbo].[Employees] ([Id]) ON DELETE NO ACTION,
+
     CONSTRAINT [CK_Prescriptions_Status]
-        CHECK ([Status] IN ((1),(2),(3),(4),(5),(6))),
+        CHECK ([Status] IN ((1),(2),(3),(4),(5))),
+
+    CONSTRAINT [CK_Prescriptions_ReadyForCheckoutRule]
+        CHECK (
+            [Status] <> (3)
+            OR ([Status] = (3) AND [ReviewedBy] IS NOT NULL AND [ReadyForCheckoutAt] IS NOT NULL)
+        ),
 
     CONSTRAINT [CK_Prescriptions_RejectReasonRule]
         CHECK (
@@ -37,17 +48,22 @@ CREATE TABLE [dbo].[Prescriptions] (
 );
 GO
 
-
-/* Fast lookup: customer prescriptions by status and date */
+/* Customer view: prescriptions by status and creation time */
 CREATE INDEX [IX_Prescriptions_CustomerId_Status_CreatedAt]
 ON [dbo].[Prescriptions] ([CustomerId], [Status], [CreatedAt] DESC)
-INCLUDE ([StoreId], [StatusUpdatedAt]);
+INCLUDE ([StoreId], [StatusUpdatedAt], [ReviewedBy], [ReadyForCheckoutAt]);
 GO
 
-/* Fast lookup: store dashboard queue */
+/* Store dashboard: queue by status and last status change */
 CREATE INDEX [IX_Prescriptions_StoreId_Status_StatusUpdatedAt]
 ON [dbo].[Prescriptions] ([StoreId], [Status], [StatusUpdatedAt] DESC)
-INCLUDE ([CustomerId]);
+INCLUDE ([CustomerId], [ReviewedBy], [ReadyForCheckoutAt]);
+GO
+
+/* Reviewer workload: prescriptions assigned/reviewed by employee */
+CREATE INDEX [IX_Prescriptions_ReviewedBy_StatusUpdatedAt]
+ON [dbo].[Prescriptions] ([ReviewedBy], [StatusUpdatedAt] DESC)
+WHERE [ReviewedBy] IS NOT NULL;
 GO
 
 -- --------------------------------------------

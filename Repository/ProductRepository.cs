@@ -17,8 +17,6 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         this.context = context;
     }
 
-
-
     public async Task<PagedResult<ProductListItemDto>> SearchAsync(ProductSearchQueryParams q, CancellationToken ct)
     {
         // 1) Normalize inputs

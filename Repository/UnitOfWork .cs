@@ -19,6 +19,7 @@ public class UnitOfWork : IUnitOfWork
         Units = new GenericRepository<Unit>(_context);
         Tags = new GenericRepository<Tag>(_context);
         CartItems = new GenericRepository<CartItem>(_context);
+        Orders = new OrderRepository(_context);
     }
 
     public ICustomerRepository Customers { get; private set; }
@@ -26,6 +27,7 @@ public class UnitOfWork : IUnitOfWork
     public ICategoryRepository Categories { get; private set; }
     public ICartRepository Carts { get; private set; }
     public IPromotionRepository Promotions { get; private set; }
+    public IOrderRepository Orders { get; private set; }
 
     public IGenericRepository<Unit> Units { get; private set; }
     public IGenericRepository<CartItem> CartItems { get; private set; }
@@ -51,7 +53,6 @@ public class UnitOfWork : IUnitOfWork
     {
         return await _context.Database.BeginTransactionAsync();
     }
-
 
     public async Task<ITransaction> BeginTransactionAsync(CancellationToken ct = default)
     {
