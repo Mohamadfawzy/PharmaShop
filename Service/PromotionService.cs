@@ -4,7 +4,6 @@ using Contracts;
 using Contracts.IServices;
 using Entities.Models;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
 using Shared.Models.Dtos.Promotion;
 using Shared.Responses;
 

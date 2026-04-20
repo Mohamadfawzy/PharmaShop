@@ -2,17 +2,10 @@
 using Contracts.IServices;
 using Entities.Models;
 using FluentValidation;
-using Repository;
 using Service.Models.Checkout;
 using Shared.Enums.Order;
 using Shared.Models.Dtos.Order;
-using Shared.Models.Dtos.Promotion;
 using Shared.Responses;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service;
 
@@ -24,7 +17,7 @@ public class OrderService : IOrderService
     private const int ConversionRate = 30;          // 30 points = 1 money unit
     private const int MinimumRedeemPoints = 500;    // minimum points
     private const decimal RedeemCapPercent = 0.20m; // 20% cap
-    private const decimal DeliveryFeeFixed = 20.00m;
+    private const decimal DeliveryFeeFixed = 10.00m;
 
     public OrderService(IUnitOfWork unitOfWork)
     {
