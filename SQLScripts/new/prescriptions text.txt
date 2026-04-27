@@ -1,0 +1,78 @@
+GET /api/v1/prescriptions
+GET /api/v1/prescriptions/{id}
+
+POST /api/v1/prescriptions/{id}/images
+DELETE /api/v1/prescriptions/{id}/images/{imageId}
+PATCH/api/v1/prescriptions/{id}/images/{imageId}/primary
+
+
+
+
+GET /api/v1/admin/prescriptions ✅
+GET /api/v1/admin/prescriptions/{id} 
+PATCH /api/v1/admin/prescriptions/{id}/status
+
+
+GET /api/v1/admin/prescriptions/{id}/items
+POST /api/v1/admin/prescriptions/{id}/items
+PUT /api/v1/admin/prescriptions/{id}/items/{itemId}
+DELETE /api/v1/admin/prescriptions/{id}/items/{itemId}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ثانيًا: Endpoints الصيدلي/الأدمن (Admin/Pharmacist)
+4) طابور الوصفات + التفاصيل
+
+GET /api/v1/admin/prescriptions
+
+
+Queue للوصفات حسب storeId وstatus وdate range + Pagination
+أهم حالات: Submitted(1), InReview(2), ReadyForCheckout(3)
+
+
+GET /api/v1/admin/prescriptions/{id}
+
+
+تفاصيل كاملة: الوصفة + الصور + العناصر + بيانات العميل (إن رغبت)
+
+5) تغيير الحالة (State machine)
+
+PATCH /api/v1/admin/prescriptions/{id}/status
+
+
+انتقالات الحالات (مع قواعد الجدول):
+
+Submitted → InReview
+InReview → ReadyForCheckout (يستلزم ReviewedBy + ReadyForCheckoutAt)
+InReview → Rejected (يستلزم RejectReason)
+ReadyForCheckout → Closed (اختياري، غالبًا تُغلق بعد إنشاء Order)
+
+
+
+6) إدارة عناصر الوصفة (الأدوية التي سجلها الصيدلي)
+
+GET /api/v1/admin/prescriptions/{id}/items
+POST /api/v1/admin/prescriptions/{id}/items
+PUT /api/v1/admin/prescriptions/{id}/items/{itemId}
+DELETE /api/v1/admin/prescriptions/{id}/items/{itemId}
+
+7) إدارة الصور من لوحة التحكم (اختياري)
+
+DELETE /api/v1/admin/prescriptions/{id}/images/{imageId} (اختياري)
+PATCH /api/v1/admin/prescriptions/{id}/images/{imageId}/primary (اختياري)
+PUT /api/v1/admin/prescriptions/{id}/images/reorder (اختياري)
