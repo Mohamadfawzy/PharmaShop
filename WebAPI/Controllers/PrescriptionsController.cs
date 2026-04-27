@@ -1,5 +1,4 @@
 ﻿using Contracts.IServices;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Models.Dtos.Prescription;
 using Shared.Models.ImageDtos;
@@ -69,4 +68,34 @@ public class PrescriptionsController : AdminBaseApiController
 
         // Future improvement: validate file types/sizes before calling service
     }
+
+
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] AdminPrescriptionListQueryDto query, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await _prescriptionService.GetAdminPrescriptionsAsync(query, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: enforce admin authorization policy
+    }
+
+
+
+    [HttpPost("{id:int}/items")]
+    public async Task<IActionResult> AddItem(int id, [FromBody] PrescriptionItemCreateDto dto, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await _prescriptionService.AddPrescriptionItemAsync(id, dto, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: enforce pharmacist/admin authorization policy
+    }
+
+
 }

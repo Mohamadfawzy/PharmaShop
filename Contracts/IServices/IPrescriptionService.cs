@@ -6,5 +6,7 @@ namespace Contracts.IServices;
 
 public interface IPrescriptionService
 {
+    Task<AppResponse<PrescriptionItemCreatedDto>> AddPrescriptionItemAsync(int prescriptionId, PrescriptionItemCreateDto dto, CancellationToken ct);
     Task<AppResponse<PrescriptionCreateResultDto>> CreateWithImagesAsync(PrescriptionCreateRequestDto dto, IReadOnlyList<UploadStreamFile> files, CancellationToken ct);
+    Task<AppResponse<List<AdminPrescriptionListItemDto>>> GetAdminPrescriptionsAsync(AdminPrescriptionListQueryDto query, CancellationToken ct);
 }

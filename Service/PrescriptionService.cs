@@ -56,7 +56,7 @@ public class PrescriptionService: IPrescriptionService
             CustomerId = dto.CustomerId,
             StoreId = dto.StoreId,
 
-            Status = 1, // 1=Submitted
+            Status = 2, // 1=Submitted
             StatusUpdatedAt = now,
 
             ReviewedBy = null,
@@ -172,6 +172,172 @@ public class PrescriptionService: IPrescriptionService
         // - Enforce max images per prescription
         // - Add server-side content-type validation at controller boundary
     }
+
+
+    public async Task<AppResponse<List<AdminPrescriptionListItemDto>>> GetAdminPrescriptionsAsync(
+            AdminPrescriptionListQueryDto query, CancellationToken ct)
+    {
+        // 1) Validate required inputs
+        if (query is null || query.StoreId <= 0)
+        {
+            return AppResponse<List<AdminPrescriptionListItemDto>>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["StoreId"] = new[] { "StoreId is required" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        // 2) Normalize pagination
+        var page = query.Page < 1 ? 1 : query.Page;
+        var pageSize = query.PageSize < 1 ? 20 : query.PageSize;
+        if (pageSize > 200) pageSize = 200;
+
+        query.Page = page;
+        query.PageSize = pageSize;
+
+        // 3) Validate status range (optional)
+        if (query.Status.HasValue && (query.Status.Value < 1 || query.Status.Value > 5))
+        {
+            return AppResponse<List<AdminPrescriptionListItemDto>>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["Status"] = new[] { "Status must be between 1 and 5" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        // 4) Call repository
+        var result = await unitOfWork.Prescriptions.SearchAdminAsync(query, ct);
+
+        // 5) Build pagination info
+        var pagination =  PaginationInfo.Create(page,pageSize,result.TotalCount);
+
+        // 6) Return response
+        return AppResponse<List<AdminPrescriptionListItemDto>>.Ok(
+            result.Items, pagination, title: "Prescriptions retrieved successfully"
+        );
+
+        // Future improvements:
+        // - Add role-based authorization checks (admin/pharmacist only)
+        // - Add caching for common queue views
+    }
+
+
+    public async Task<AppResponse<PrescriptionItemCreatedDto>> AddPrescriptionItemAsync(
+    int prescriptionId, PrescriptionItemCreateDto dto, CancellationToken ct)
+    {
+        // 1) Validate input
+        if (prescriptionId <= 0)
+        {
+            return AppResponse<PrescriptionItemCreatedDto>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["id"] = new[] { "Invalid prescription id" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        if (dto is null)
+            return AppResponse<PrescriptionItemCreatedDto>.ValidationError("Request body is required");
+
+        if (string.IsNullOrWhiteSpace(dto.RequestedName))
+        {
+            return AppResponse<PrescriptionItemCreatedDto>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["RequestedName"] = new[] { "RequestedName is required" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        if (dto.RequestedQuantity.HasValue && dto.RequestedQuantity.Value <= 0)
+        {
+            return AppResponse<PrescriptionItemCreatedDto>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["RequestedQuantity"] = new[] { "RequestedQuantity must be greater than 0" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        // 2) Load prescription (admin)
+        var prescription = await unitOfWork.Prescriptions.GetByIdForAdminAsync(prescriptionId, ct);
+        if (prescription is null)
+            return AppResponse<PrescriptionItemCreatedDto>.NotFound("Prescription not found");
+
+        // 3) Enforce status rule (MVP)
+        // 1=Submitted,2=InReview,3=ReadyForCheckout,4=Closed,5=Rejected
+        if (prescription.Status != 2)
+            return AppResponse<PrescriptionItemCreatedDto>.BusinessRuleViolation("You can add items only when prescription is InReview");
+
+        // 4) Validate ProductId if provided (optional but safe)
+        if (dto.ProductId.HasValue)
+        {
+            // One-line comment: Ensure referenced product exists.
+            var productExists = await unitOfWork.Products.AnyAsync(p => p.Id == dto.ProductId.Value, ct);
+            if (!productExists)
+            {
+                return AppResponse<PrescriptionItemCreatedDto>.ValidationErrors(
+                    new Dictionary<string, string[]>
+                    {
+                        ["ProductId"] = new[] { "Product does not exist" }
+                    },
+                    detail: "Validation failed"
+                );
+            }
+        }
+
+        // 5) Create entity
+        var now = DateTime.UtcNow;
+
+        var item = new PrescriptionItem
+        {
+            PrescriptionId = prescriptionId,
+            ProductId = dto.ProductId,
+            RequestedName = dto.RequestedName.Trim(),
+            RequestedQuantity = dto.RequestedQuantity,
+            Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim(),
+            CreatedAt = now,
+            UpdatedAt = null
+        };
+
+        // 6) Save item
+        await unitOfWork.Prescriptions.AddItemAsync(item, ct);
+        await unitOfWork.CompleteAsync(ct);
+
+        // 7) Return created DTO
+        var created = new PrescriptionItemCreatedDto
+        {
+            Id = item.Id,
+            PrescriptionId = item.PrescriptionId,
+            ProductId = item.ProductId,
+            RequestedName = item.RequestedName,
+            RequestedQuantity = item.RequestedQuantity,
+            Notes = item.Notes,
+            CreatedAt = item.CreatedAt
+        };
+
+        return AppResponse<PrescriptionItemCreatedDto>.Created(
+            created,
+            location: $"/api/v1/admin/prescriptions/{prescriptionId}/items/{item.Id}",
+            title: "Prescription item created successfully"
+        );
+
+        // Future improvements:
+        // - Allow add items in Submitted and auto-switch to InReview
+        // - Add EmployeeId auditing (CreatedBy) if needed
+    }
+
+
+    // ============================== 
+    //  Privates
+    // ============================== 
 
     private async Task RollbackSavedFilesAsync(IReadOnlyList<SavedImageResult> saved, CancellationToken ct)
     {
