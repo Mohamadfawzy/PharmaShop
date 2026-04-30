@@ -1,5 +1,6 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Enums.Prescription;
 using Shared.Models.Dtos.Prescription;
 using Shared.Models.ImageDtos;
 using Shared.Responses;
@@ -97,5 +98,16 @@ public class PrescriptionsController : AdminBaseApiController
         // Future improvement: enforce pharmacist/admin authorization policy
     }
 
+    [HttpPost("{id:int}/items/batch")]
+    public async Task<IActionResult> AddItemsBatch(int id, [FromBody] PrescriptionItemsBatchCreateDto dto, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await _prescriptionService.AddPrescriptionItemsBatchAsync(id, dto, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: enforce pharmacist/admin authorization policy
+    }
 
 }

@@ -65,6 +65,16 @@ public class PrescriptionRepository : GenericRepository<Prescription>, IPrescrip
         // Future improvement: validate prescription exists at repo level if needed
     }
 
+
+    public async Task AddItemsRangeAsync(IEnumerable<PrescriptionItem> items, CancellationToken ct)
+    {
+        // 1) Add items in bulk (tracked)
+        await _db.PrescriptionItems.AddRangeAsync(items, ct);
+
+        // Future improvement: use bulk insert library for very large batches
+    }
+
+
     // ==================================================================
 
     public async Task<PagedResult<AdminPrescriptionListItemDto>> SearchAdminAsync(AdminPrescriptionListQueryDto q, CancellationToken ct)

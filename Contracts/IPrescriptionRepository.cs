@@ -7,6 +7,7 @@ namespace Contracts;
 public interface IPrescriptionRepository
 {
     Task AddItemAsync(PrescriptionItem item, CancellationToken ct);
+    Task AddItemsRangeAsync(IEnumerable<PrescriptionItem> items, CancellationToken ct);
     Task AddPrescriptionAsync(Prescription entity, CancellationToken ct);
     Task AddPrescriptionImagesRangeAsync(IEnumerable<PrescriptionImage> images, CancellationToken ct);
     Task<Prescription?> GetByIdForAdminAsync(int prescriptionId, CancellationToken ct);

@@ -3,6 +3,7 @@ using Contracts.Images.Abstractions;
 using Contracts.Images.Dtos;
 using Contracts.IServices;
 using Entities.Models;
+using Shared.Enums.Prescription;
 using Shared.Models.Dtos.Prescription;
 using Shared.Models.ImageDtos;
 using Shared.Responses;
@@ -334,6 +335,127 @@ public class PrescriptionService: IPrescriptionService
         // - Add EmployeeId auditing (CreatedBy) if needed
     }
 
+    public async Task<AppResponse<PrescriptionItemsBatchCreateResultDto>> AddPrescriptionItemsBatchAsync(
+        int prescriptionId, PrescriptionItemsBatchCreateDto dto, CancellationToken ct)
+    {
+        // 1) Validate input
+        if (prescriptionId <= 0)
+        {
+            return AppResponse<PrescriptionItemsBatchCreateResultDto>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["id"] = new[] { "Invalid prescription id" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        if (dto is null || dto.Items is null || dto.Items.Count == 0)
+        {
+            return AppResponse<PrescriptionItemsBatchCreateResultDto>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["Items"] = new[] { "Items is required" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        // 2) Load prescription (admin)
+        var prescription = await unitOfWork.Prescriptions.GetByIdForAdminAsync(prescriptionId, ct);
+        if (prescription is null)
+            return AppResponse<PrescriptionItemsBatchCreateResultDto>.NotFound("Prescription not found");
+
+        // 3) Enforce status rule (MVP)
+        // 1=Submitted,2=InReview,3=ReadyForCheckout,4=Closed,5=Rejected
+        if (prescription.Status != 2)
+            return AppResponse<PrescriptionItemsBatchCreateResultDto>.BusinessRuleViolation("You can add items only when prescription is InReview");
+
+        // 4) Validate each item (simple)
+        var fieldErrors = new Dictionary<string, string[]>();
+        for (int i = 0; i < dto.Items.Count; i++)
+        {
+            var item = dto.Items[i];
+
+            if (item is null)
+            {
+                fieldErrors[$"Items[{i}]"] = new[] { "Item is required" };
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(item.RequestedName))
+                fieldErrors[$"Items[{i}].RequestedName"] = new[] { "RequestedName is required" };
+
+            if (item.RequestedQuantity.HasValue && item.RequestedQuantity.Value <= 0)
+                fieldErrors[$"Items[{i}].RequestedQuantity"] = new[] { "RequestedQuantity must be greater than 0" };
+        }
+
+        if (fieldErrors.Count > 0)
+            return AppResponse<PrescriptionItemsBatchCreateResultDto>.ValidationErrors(fieldErrors, detail: "Validation failed");
+
+        // 5) Validate ProductIds in one query (optional but safe)
+        var productIds = dto.Items
+            .Where(x => x.ProductId.HasValue)
+            .Select(x => x.ProductId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (productIds.Count > 0)
+        {
+            // One-line comment: Ensure all referenced products exist.
+            var existingIds = await unitOfWork.Products.GetAllAsync(
+                selector: p => p.Id,
+                criteria: p => productIds.Contains(p.Id),
+                asNoTracking: true,
+                ct: ct);
+
+            var missing = productIds.Except(existingIds).ToList();
+            if (missing.Count > 0)
+            {
+                return AppResponse<PrescriptionItemsBatchCreateResultDto>.ValidationErrors(
+                    new Dictionary<string, string[]>
+                    {
+                        ["ProductId"] = new[] { $"Some ProductIds do not exist: {string.Join(",", missing)}" }
+                    },
+                    detail: "Validation failed"
+                );
+            }
+        }
+
+        // 6) Build entities
+        var now = DateTime.UtcNow;
+
+        var entities = dto.Items.Select(x => new PrescriptionItem
+        {
+            PrescriptionId = prescriptionId,
+            ProductId = x.ProductId,
+            RequestedName = x.RequestedName.Trim(),
+            RequestedQuantity = x.RequestedQuantity,
+            Notes = string.IsNullOrWhiteSpace(x.Notes) ? null : x.Notes.Trim(),
+            CreatedAt = now,
+            UpdatedAt = null
+        }).ToList();
+
+        // 7) Save in one DB call
+        await unitOfWork.Prescriptions.AddItemsRangeAsync(entities, ct);
+        await unitOfWork.CompleteAsync(ct);
+
+        // 8) Build response
+        var result = new PrescriptionItemsBatchCreateResultDto
+        {
+            PrescriptionId = prescriptionId,
+            RequestedCount = dto.Items.Count,
+            InsertedCount = entities.Count,
+            CreatedItemIds = entities.Select(e => e.Id).ToList()
+        };
+
+        return AppResponse<PrescriptionItemsBatchCreateResultDto>.Ok(result, "Prescription items saved successfully");
+
+        // Future improvements:
+        // - Support upsert behavior (replace set) instead of only insert
+        // - Add employee auditing (CreatedByEmployeeId) if needed
+        // - Add max items limit to avoid abuse
+    }
 
     // ============================== 
     //  Privates
