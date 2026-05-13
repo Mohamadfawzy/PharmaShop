@@ -457,6 +457,100 @@ public class PrescriptionService: IPrescriptionService
         // - Add max items limit to avoid abuse
     }
 
+    public async Task<AppResponse<List<PrescriptionItemListItemDto>>> GetAdminPrescriptionItemsAsync(
+    int prescriptionId, CancellationToken ct)
+    {
+        // 1) Validate input
+        if (prescriptionId <= 0)
+        {
+            return AppResponse<List<PrescriptionItemListItemDto>>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["id"] = new[] { "Invalid prescription id" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        // 2) Ensure prescription exists
+        var exists = await unitOfWork.Prescriptions.PrescriptionExistsAsync(prescriptionId, ct);
+        if (!exists)
+            return AppResponse<List<PrescriptionItemListItemDto>>.NotFound("Prescription not found");
+
+        // 3) Load items (with product names)
+        var items = await unitOfWork.Prescriptions.GetItemsByPrescriptionIdAsync(prescriptionId, ct);
+
+        // 4) Return response
+        return AppResponse<List<PrescriptionItemListItemDto>>.Ok(
+            items,
+            title: "Prescription items retrieved successfully"
+        );
+
+        // Future improvements:
+        // - Include prescription status in the response header
+        // - Add authorization checks by storeId
+    }
+
+
+
+    public async Task<AppResponse<int>> DeletePrescriptionItemAsync(
+        int prescriptionId, int itemId, CancellationToken ct)
+    {
+        // 1) Validate input
+        if (prescriptionId <= 0)
+        {
+            return AppResponse<int>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["id"] = new[] { "Invalid prescription id" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        if (itemId <= 0)
+        {
+            return AppResponse<int>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["itemId"] = new[] { "Invalid itemId" }
+                },
+                detail: "Validation failed"
+            );
+        }
+
+        // 2) Ensure prescription exists and check status
+        var status = await unitOfWork.Prescriptions.GetStatusAsync(prescriptionId, ct);
+        if (!status.HasValue)
+            return AppResponse<int>.NotFound("Prescription not found");
+
+        // 3) Enforce status rule (MVP)
+        // 1=Submitted,2=InReview,3=ReadyForCheckout,4=Closed,5=Rejected
+        if (status.Value != 2)
+            return AppResponse<int>.BusinessRuleViolation("You can delete items only when prescription is InReview");
+
+        // 4) Load item
+        var item = await unitOfWork.Prescriptions.GetItemForDeleteAsync(prescriptionId, itemId, ct);
+        if (item is null)
+            return AppResponse<int>.NotFound("Prescription item not found");
+
+        // 5) Delete item
+        unitOfWork.Prescriptions.RemoveItem(item);
+
+        // 6) Persist changes
+        await unitOfWork.CompleteAsync(ct);
+
+        // 7) Return success
+        return AppResponse<int>.Ok(itemId, "Prescription item deleted successfully");
+
+        // Future improvements:
+        // - Allow delete in Submitted as well (if you decide)
+        // - Update prescription UpdatedAt/StatusUpdatedAt when items change
+        // - Add audit logging (who deleted the item)
+    }
+
+
+
     // ============================== 
     //  Privates
     // ============================== 

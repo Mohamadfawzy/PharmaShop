@@ -145,6 +145,86 @@ public class PrescriptionRepository : GenericRepository<Prescription>, IPrescrip
         // - Add search term (by customer phone/name) via join if needed
         // - Add PrimaryImageUrl in list using left join + IsPrimary
     }
+
+
+
+    public async Task<List<PrescriptionItemListItemDto>> GetItemsByPrescriptionIdAsync(int prescriptionId, CancellationToken ct)
+    {
+        // 1) Load items with optional product names (left join)
+        var query =
+            from i in _db.PrescriptionItems.AsNoTracking()
+            join p in _db.Products.AsNoTracking()
+                on i.ProductId equals p.Id into pj
+            from p in pj.DefaultIfEmpty()
+            where i.PrescriptionId == prescriptionId
+            orderby i.Id
+            select new PrescriptionItemListItemDto
+            {
+                Id = i.Id,
+                PrescriptionId = i.PrescriptionId,
+
+                ProductId = i.ProductId,
+                RequestedName = i.RequestedName,
+                RequestedQuantity = i.RequestedQuantity,
+                Notes = i.Notes,
+
+                ProductNameAr = p != null ? p.NameAr : null,
+                ProductNameEn = p != null ? p.NameEn : null,
+
+                CreatedAt = i.CreatedAt,
+                UpdatedAt = i.UpdatedAt
+            };
+
+        // 2) Execute query
+        return await query.ToListAsync(ct);
+
+        // Future improvements:
+        // - Add pagination for large prescriptions
+        // - Add product image url (primary) if admin UI needs it
+    }
+
+    public Task<bool> PrescriptionExistsAsync(int prescriptionId, CancellationToken ct)
+    {
+        // 3) Check prescription exists (read-only)
+        return _db.Prescriptions
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == prescriptionId, ct);
+
+        // Future improvement: validate store scope/permissions for admin
+    }
+
+
+
+    public async Task<byte?> GetStatusAsync(int prescriptionId, CancellationToken ct)
+    {
+        // 1) Load prescription status (read-only)
+        return await _db.Prescriptions
+            .AsNoTracking()
+            .Where(p => p.Id == prescriptionId)
+            .Select(p => (byte?)p.Status)
+            .FirstOrDefaultAsync(ct);
+
+        // Future improvement: scope by StoreId for admin authorization
+    }
+
+    public async Task<PrescriptionItem?> GetItemForDeleteAsync(int prescriptionId, int itemId, CancellationToken ct)
+    {
+        // 2) Load item for delete (tracked)
+        return await _db.PrescriptionItems
+            .FirstOrDefaultAsync(i => i.Id == itemId && i.PrescriptionId == prescriptionId, ct);
+
+        // Future improvement: use ExecuteDeleteAsync when EF Core version allows it
+    }
+
+    public void RemoveItem(PrescriptionItem item)
+    {
+        // 3) Remove item (hard delete)
+        _db.PrescriptionItems.Remove(item);
+
+        // Future improvement: add soft delete if you later need audit/history
+    }
+
+
 }
 
 

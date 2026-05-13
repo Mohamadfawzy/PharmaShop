@@ -12,6 +12,11 @@ public interface IPrescriptionRepository
     Task AddPrescriptionImagesRangeAsync(IEnumerable<PrescriptionImage> images, CancellationToken ct);
     Task<Prescription?> GetByIdForAdminAsync(int prescriptionId, CancellationToken ct);
     Task<Prescription?> GetForDeleteAsync(int id, CancellationToken ct);
+    Task<PrescriptionItem?> GetItemForDeleteAsync(int prescriptionId, int itemId, CancellationToken ct);
+    Task<List<PrescriptionItemListItemDto>> GetItemsByPrescriptionIdAsync(int prescriptionId, CancellationToken ct);
+    Task<byte?> GetStatusAsync(int prescriptionId, CancellationToken ct);
+    Task<bool> PrescriptionExistsAsync(int prescriptionId, CancellationToken ct);
+    void RemoveItem(PrescriptionItem item);
     void RemovePrescription(Prescription entity);
     Task<PagedResult<AdminPrescriptionListItemDto>> SearchAdminAsync(AdminPrescriptionListQueryDto q, CancellationToken ct);
 }

@@ -110,4 +110,33 @@ public class PrescriptionsController : AdminBaseApiController
         // Future improvement: enforce pharmacist/admin authorization policy
     }
 
+
+    [HttpGet("{id:int}/items")]
+    public async Task<IActionResult> GetItems(int id, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await _prescriptionService.GetAdminPrescriptionItemsAsync(id, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: add admin authorization policy
+    }
+
+
+
+    [HttpDelete("{id:int}/items/{itemId:int}")]
+    public async Task<IActionResult> DeleteItem(int id, int itemId, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await _prescriptionService.DeletePrescriptionItemAsync(id, itemId, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: enforce pharmacist/admin authorization policy
+    }
+
+
+
 }
