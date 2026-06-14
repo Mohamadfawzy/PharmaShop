@@ -5,6 +5,7 @@ using FluentValidation;
 using Service.Models.Checkout;
 using Shared.Enums.Order;
 using Shared.Models.Dtos.Order;
+using Shared.Models.Dtos.Order.order;
 using Shared.Responses;
 
 namespace Service;
@@ -17,7 +18,7 @@ public class OrderService : IOrderService
     private const int ConversionRate = 30;          // 30 points = 1 money unit
     private const int MinimumRedeemPoints = 500;    // minimum points
     private const decimal RedeemCapPercent = 0.20m; // 20% cap
-    private const decimal DeliveryFeeFixed = 10.00m;
+    private const decimal DeliveryFeeFixed = 0.00m;
 
     public OrderService(IUnitOfWork unitOfWork)
     {
@@ -111,6 +112,43 @@ public class OrderService : IOrderService
         // - Add stock validation blocking if you decide to enforce it at preview
     }
 
+
+    public async Task<AppResponse<List<AdminOrderListItemDto>>> GetAdminOrdersAsync(
+    AdminOrderListQueryDto query, CancellationToken ct)
+    {
+        // 1) Validate required fields
+        if (query is null || query.StoreId <= 0)
+        {
+            return AppResponse<List<AdminOrderListItemDto>>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["StoreId"] = new[] { "StoreId is required" }
+                },
+                detail: "Validation failed");
+        }
+
+        // 2) Normalize pagination
+        if (query.Page < 1) query.Page = 1;
+        if (query.PageSize < 1) query.PageSize = 20;
+        if (query.PageSize > 200) query.PageSize = 200;
+
+        // 3) Call repository
+        var result = await unitOfWork.Orders.SearchAdminAsync(query, ct);
+
+        // 4) Build pagination
+        var pagination = PaginationInfo.Create(query.Page, query.PageSize, result.TotalCount);
+        
+
+        // 5) Return response
+        return AppResponse<List<AdminOrderListItemDto>>.Ok(
+            result.Items,
+            pagination,
+            "Orders retrieved successfully");
+
+        // Future improvements:
+        // - Add caching for frequently accessed queries
+        // - Add role-based authorization
+    }
 
 
     // -------------------------

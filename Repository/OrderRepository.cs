@@ -2,6 +2,8 @@
 using Entities.Models;
 using Microsoft.EntityFrameworkCore;
 using Shared.Models.Dtos.Order;
+using Shared.Models.Dtos.Order.order;
+using Shared.Responses;
 
 namespace Repository;
 
@@ -122,9 +124,77 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
     }
 
 
+
+    public async Task<PagedResult<AdminOrderListItemDto>> SearchAdminAsync( AdminOrderListQueryDto q, CancellationToken ct)
+    {
+        // 1) Base query
+        IQueryable<Order> query = _db.Orders.AsNoTracking();
+
+        // 2) Required Store filter
+        query = query.Where(o => o.StoreId == q.StoreId);
+
+        // 3) Optional filters
+        if (q.Status.HasValue)
+            query = query.Where(o => o.Status == q.Status.Value);
+
+        if (q.PaymentStatus.HasValue)
+            query = query.Where(o => o.PaymentStatus == q.PaymentStatus.Value);
+
+        if (q.CustomerId.HasValue)
+            query = query.Where(o => o.CustomerId == q.CustomerId.Value);
+
+        if (!string.IsNullOrWhiteSpace(q.OrderNumber))
+            query = query.Where(o => o.OrderNumber.Contains(q.OrderNumber));
+
+        if (q.From.HasValue)
+            query = query.Where(o => o.CreatedAt >= q.From.Value);
+
+        if (q.To.HasValue)
+            query = query.Where(o => o.CreatedAt <= q.To.Value);
+
+        // 4) Count total
+        var total = await query.CountAsync(ct);
+
+        // 5) Sorting (latest status update)
+        query = query.OrderByDescending(o => o.StatusUpdatedAt);
+
+        // 6) Pagination
+        var skip = (q.Page - 1) * q.PageSize;
+
+        var items = await query
+            .Skip(skip)
+            .Take(q.PageSize)
+            .Select(o => new AdminOrderListItemDto
+            {
+                Id = o.Id,
+                OrderNumber = o.OrderNumber,
+                CustomerId = o.CustomerId,
+                StoreId = o.StoreId,
+                Status = o.Status,
+                StatusUpdatedAt = o.StatusUpdatedAt,
+                PaymentStatus = o.PaymentStatus,
+                GrandTotal = o.GrandTotal,
+                PrescriptionId = o.PrescriptionId,
+                CreatedAt = o.CreatedAt
+            })
+            .ToListAsync(ct);
+
+        // 7) Return paged result
+        return new PagedResult<AdminOrderListItemDto>
+        {
+            Items = items,
+            TotalCount = total
+        };
+
+        // Future improvements:
+        // - Add join with Customer to return name/phone
+        // - Add index-based filtering optimizations
+    }
+
+
     //================== 2
     public async Task<Dictionary<int, ActiveGroupPromotionHit>> GetActiveGroupPromotionsByProductAsync(
-    List<int> productIds, CancellationToken ct)
+        List<int> productIds, CancellationToken ct)
     {
         // 1) Load active group promotions for products (choose highest discount per product)
         var now = DateTime.UtcNow;

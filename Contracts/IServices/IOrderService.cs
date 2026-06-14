@@ -1,4 +1,5 @@
 ﻿using Shared.Models.Dtos.Order;
+using Shared.Models.Dtos.Order.order;
 using Shared.Responses;
 using System;
 using System.Collections.Generic;
@@ -11,5 +12,6 @@ namespace Contracts.IServices;
 public interface IOrderService
 {
     Task<AppResponse<CheckoutResultDto>> CheckoutAsync(CheckoutRequestDto dto, CancellationToken ct);
+    Task<AppResponse<List<AdminOrderListItemDto>>> GetAdminOrdersAsync(AdminOrderListQueryDto query, CancellationToken ct);
     Task<AppResponse<CheckoutPreviewResponseDto>> PreviewAsync(CheckoutPreviewRequestDto dto, CancellationToken ct);
 }

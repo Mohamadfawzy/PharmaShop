@@ -1,6 +1,8 @@
 ﻿
 using Entities.Models;
 using Shared.Models.Dtos.Order;
+using Shared.Models.Dtos.Order.order;
+using Shared.Responses;
 
 namespace Contracts;
 
@@ -15,4 +17,5 @@ public interface IOrderRepository
     Task<List<CheckoutLineData>> GetLinesFromCartAsync(int cartId, int customerId, CancellationToken ct);
     Task<List<CheckoutLineData>> GetLinesFromPrescriptionAsync(int prescriptionId, int customerId, CancellationToken ct);
     Task MarkCartCheckedOutAsync(int cartId, CancellationToken ct);
+    Task<PagedResult<AdminOrderListItemDto>> SearchAdminAsync(AdminOrderListQueryDto q, CancellationToken ct);
 }

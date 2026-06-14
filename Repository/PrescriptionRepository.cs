@@ -75,6 +75,21 @@ public class PrescriptionRepository : GenericRepository<Prescription>, IPrescrip
     }
 
 
+    public Task<Prescription?> GetForStatusUpdateAsync(int id, CancellationToken ct)
+    {
+        // 1) Load prescription for update (tracked)
+        return _db.Prescriptions.FirstOrDefaultAsync(p => p.Id == id, ct);
+    }
+
+    public void UpdatePrescription(Prescription entity)
+    {
+        // 2) Mark entity as updated
+        _db.Prescriptions.Update(entity);
+    }
+
+
+
+
     // ==================================================================
 
     public async Task<PagedResult<AdminPrescriptionListItemDto>> SearchAdminAsync(AdminPrescriptionListQueryDto q, CancellationToken ct)

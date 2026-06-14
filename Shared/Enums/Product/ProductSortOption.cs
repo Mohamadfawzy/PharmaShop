@@ -9,6 +9,7 @@ namespace Shared.Enums.Product;
 public enum ProductSortOption
 {
     // Name sorting
+    Id = 6,
     NameAsc = 0,
     NameDesc = 1,
 
@@ -18,5 +19,6 @@ public enum ProductSortOption
 
     // Date sorting
     Newest = 4,
-    Oldest = 5
+    Oldest = 5,
+    
 }

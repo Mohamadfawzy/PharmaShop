@@ -111,6 +111,7 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
 
             ProductSortOption.Newest => query.OrderByDescending(p => p.CreatedAt),
             ProductSortOption.Oldest => query.OrderBy(p => p.CreatedAt),
+            ProductSortOption.Id => query.OrderBy(p => p.Id),
 
             _ => query.OrderBy(p => p.NameAr)
         };

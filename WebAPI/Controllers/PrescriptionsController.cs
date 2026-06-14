@@ -71,7 +71,6 @@ public class PrescriptionsController : AdminBaseApiController
     }
 
 
-
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] AdminPrescriptionListQueryDto query, CancellationToken ct)
     {
@@ -83,7 +82,6 @@ public class PrescriptionsController : AdminBaseApiController
 
         // Future improvement: enforce admin authorization policy
     }
-
 
 
     [HttpPost("{id:int}/items")]
@@ -123,8 +121,6 @@ public class PrescriptionsController : AdminBaseApiController
         // Future improvement: add admin authorization policy
     }
 
-
-
     [HttpDelete("{id:int}/items/{itemId:int}")]
     public async Task<IActionResult> DeleteItem(int id, int itemId, CancellationToken ct)
     {
@@ -138,5 +134,16 @@ public class PrescriptionsController : AdminBaseApiController
     }
 
 
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateStatus(int id, [FromBody] PrescriptionStatusUpdateDto dto, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await _prescriptionService.UpdatePrescriptionStatusAsync(id, dto, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: extract ReviewedBy from token instead of body
+    }
 
 }

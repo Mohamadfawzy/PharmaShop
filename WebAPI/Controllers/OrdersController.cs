@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service;
 using Shared.Models.Dtos.Order;
+using Shared.Models.Dtos.Order.order;
 using WebAPI.Controllers.Admin;
 
 namespace WebAPI.Controllers;
@@ -42,4 +43,17 @@ public class OrdersController : AdminBaseApiController
 
 
 
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] AdminOrderListQueryDto query, CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await orderService.GetAdminOrdersAsync(query, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement:
+        // - enforce admin/store authorization
+    }
 }

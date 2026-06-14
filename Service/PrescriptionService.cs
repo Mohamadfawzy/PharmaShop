@@ -17,6 +17,9 @@ public class PrescriptionService: IPrescriptionService
 
     private const string RootPath = "prescriptions";
 
+    // 1=Submitted, 2=InReview, 3=ReadyForCheckout, 4=Closed, 5=Rejected
+
+
     public PrescriptionService(IUnitOfWork unitOfWork, IImageService imageService)
     {
         this.unitOfWork = unitOfWork;
@@ -549,6 +552,113 @@ public class PrescriptionService: IPrescriptionService
         // - Add audit logging (who deleted the item)
     }
 
+
+    public async Task<AppResponse<int>> UpdatePrescriptionStatusAsync(
+    int prescriptionId,
+    PrescriptionStatusUpdateDto dto,
+    CancellationToken ct)
+    {
+        // 1) Validate input
+        if (prescriptionId <= 0)
+        {
+            return AppResponse<int>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["id"] = new[] { "Invalid prescription id" }
+                },
+                detail: "Validation failed");
+        }
+
+        if (dto is null || dto.Status < 1 || dto.Status > 5)
+        {
+            return AppResponse<int>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["Status"] = new[] { "Status must be between 1 and 5" }
+                },
+                detail: "Validation failed");
+        }
+
+        // 2) Load prescription
+        var prescription = await unitOfWork.Prescriptions.GetForStatusUpdateAsync(prescriptionId, ct);
+        if (prescription is null)
+            return AppResponse<int>.NotFound("Prescription not found");
+
+        // 3) Validate state transition
+        if (!IsTransitionAllowed(prescription.Status, dto.Status))
+            return AppResponse<int>.BusinessRuleViolation("Invalid status transition");
+
+        // 4) Validate ReadyForCheckout requirements
+        if (dto.Status == 3)
+        {
+            if (!dto.ReviewedBy.HasValue || dto.ReviewedBy.Value <= 0)
+                return AppResponse<int>.ValidationErrors(
+                    new Dictionary<string, string[]>
+                    {
+                        ["ReviewedBy"] = new[] { "ReviewedBy is required for ReadyForCheckout" }
+                    },
+                    detail: "Validation failed");
+        }
+
+        // 5) Validate Rejected requirements
+        if (dto.Status == 5)
+        {
+            if (string.IsNullOrWhiteSpace(dto.RejectReason))
+                return AppResponse<int>.ValidationErrors(
+                    new Dictionary<string, string[]>
+                    {
+                        ["RejectReason"] = new[] { "RejectReason is required for Rejected" }
+                    },
+                    detail: "Validation failed");
+        }
+
+        // 6) Apply changes
+        var now = DateTime.UtcNow;
+
+        prescription.Status = dto.Status;
+        prescription.StatusUpdatedAt = now;
+        prescription.UpdatedAt = now;
+
+        // 7) Set reviewer fields
+        if (dto.ReviewedBy.HasValue)
+            prescription.ReviewedBy = dto.ReviewedBy;
+
+        if (dto.Status == 3)
+            prescription.ReadyForCheckoutAt = now;
+
+        // 8) Apply reject rule
+        prescription.RejectReason = dto.Status == 5
+            ? dto.RejectReason!.Trim()
+            : null;
+
+        // 9) Apply notes
+        if (!string.IsNullOrWhiteSpace(dto.Notes))
+            prescription.Notes = dto.Notes.Trim();
+
+        // 10) Save changes
+        unitOfWork.Prescriptions.UpdatePrescription(prescription);
+        await unitOfWork.CompleteAsync(ct);
+
+        // 11) Return success
+        return AppResponse<int>.Ok(prescriptionId, "Prescription status updated successfully");
+
+        // Future improvements:
+        // - Add RowVersion for concurrency
+        // - Log status changes (history table)
+    }
+
+    private static bool IsTransitionAllowed(byte current, byte next)
+    {
+        // 1) Define allowed transitions
+        return (current, next) switch
+        {
+            (1, 2) => true, // Submitted → InReview
+            (2, 3) => true, // InReview → ReadyForCheckout
+            (2, 5) => true, // InReview → Rejected
+            (3, 4) => true, // Ready → Closed
+            _ => false
+        };
+    }
 
 
     // ============================== 
