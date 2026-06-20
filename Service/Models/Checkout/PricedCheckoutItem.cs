@@ -22,6 +22,7 @@ internal sealed class PricedCheckoutItem
     public decimal LineSubtotal { get; set; }
 
     public decimal DiscountPercent { get; set; }
+    public decimal DiscountAmount { get; set; }
     public decimal FinalUnitPrice { get; set; }
     public decimal LineTotal { get; set; }
 

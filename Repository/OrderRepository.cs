@@ -289,8 +289,112 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
 
 
 
+    public async Task<List<CheckoutLineData>> GetLinesFromPointsRedemptionCartAsync(
+    int cartId,
+    int customerId,
+    CancellationToken ct)
+    {
+        // 1) Load points redemption cart lines only
+        return await (
+            from c in _db.Carts.AsNoTracking()
+            join ci in _db.CartItems.AsNoTracking() on c.Id equals ci.CartId
+            join p in _db.Products.AsNoTracking() on ci.ProductId equals p.Id
+            where c.Id == cartId
+                  && c.CustomerId == customerId
+                  && c.Status == 1
+                  && ci.SourceType == 2
+            select new CheckoutLineData
+            {
+                CartId = c.Id,
+                StoreId = c.StoreId,
+                PrescriptionId = null,
+
+                ProductId = ci.ProductId,
+                UnitLevel = ci.UnitLevel,
+                Quantity = ci.Quantity,
+
+                OuterUnitPrice = p.OuterUnitPrice,
+                InnerUnitPrice = p.InnerUnitPrice,
+
+                OuterUnitId = p.OuterUnitId,
+                InnerUnitId = p.InnerUnitId,
+                InnerPerOuter = p.InnerPerOuter,
+
+                AllowSplitSale = p.AllowSplitSale,
+                Points = p.Points,
+
+                IsRedeemableByPoints = p.IsRedeemableByPoints,
+                CartItemSourceType = ci.SourceType
+            }
+        ).ToListAsync(ct);
+
+        // Future improvement: validate product availability here if needed
+    }
 
 
+    public async Task<int> GetCustomerPointsAsync(int customerId, CancellationToken ct)
+    {
+        // 1) Read fast points balance
+        return await _db.Customers
+            .AsNoTracking()
+            .Where(c => c.Id == customerId)
+            .Select(c => c.Points)
+            .FirstOrDefaultAsync(ct);
+
+        // Future improvement: compare periodically with lots sum for reconciliation
+    }
+
+
+    public async Task<List<CustomerPointLot>> GetAvailablePointLotsForUpdateAsync(
+    int customerId,
+    DateTime nowUtc,
+    CancellationToken ct)
+    {
+        // 1) Load available point lots using FEFO order
+        return await _db.CustomerPointLots
+            .Where(x =>
+                x.CustomerId == customerId &&
+                x.Status == 2 &&
+                x.RemainingPoints > 0 &&
+                x.ExpiresAt > nowUtc)
+            .OrderBy(x => x.ExpiresAt)
+            .ThenBy(x => x.Id)
+            .ToListAsync(ct);
+
+        // Future improvement: use UPDLOCK query for stronger SQL Server concurrency protection
+    }
+
+
+    public async Task AddPointTransactionsRangeAsync(
+    IEnumerable<CustomerPointTransaction> transactions,
+    CancellationToken ct)
+    {
+        // 1) Add point ledger transactions
+        await _db.CustomerPointTransactions.AddRangeAsync(transactions, ct);
+
+        // Future improvement: add idempotency key per order
+    }
+
+
+    public async Task AddCustomerPointLotAsync(CustomerPointLot lot, CancellationToken ct)
+    {
+        // 1) Add customer point lot
+        await _db.CustomerPointLots.AddAsync(lot, ct);
+
+        // Future improvement: split lots by order item if needed
+    }
+
+    public async Task<int> DecreaseCustomerPointsAsync(int customerId, int points, CancellationToken ct)
+    {
+        // 1) Decrease customer points safely
+        return await _db.Customers
+            .Where(c => c.Id == customerId && c.Points >= points)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(c => c.Points, c => c.Points - points),
+                ct);
+
+        // Future improvement: use rowversion on Customers for concurrency
+    }
 
 
 }

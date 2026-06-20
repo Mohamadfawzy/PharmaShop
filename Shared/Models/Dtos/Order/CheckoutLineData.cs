@@ -25,4 +25,7 @@ public sealed class CheckoutLineData
 
     public bool AllowSplitSale { get; set; }
     public int Points { get; set; }                  // 0 => excluded from points
+
+    public bool IsRedeemableByPoints { get; set; }
+    public byte? CartItemSourceType { get; set; }
 }
