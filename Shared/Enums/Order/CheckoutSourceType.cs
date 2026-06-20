@@ -10,5 +10,6 @@ namespace Shared.Enums.Order;
 public enum CheckoutSourceType : byte
 {
     Cart = 1,
-    Prescription = 2
+    Prescription = 2,
+    PointsRedemption = 3
 }

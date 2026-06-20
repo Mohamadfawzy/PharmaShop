@@ -59,6 +59,7 @@ CREATE TABLE [dbo].[CartItems] (
     [Id] int NOT NULL IDENTITY(1,1),
     [CartId] int NOT NULL,
     [ProductId] int NOT NULL,
+    [SourceType] tinyint NOT NULL CONSTRAINT [DF_CartItems_SourceType] DEFAULT ((1)), -- 1=Normal,2=PointsRedemption
 
     [UnitLevel] tinyint NOT NULL, -- 1=Outer,2=Inner
     [Quantity] decimal(18,3) NOT NULL,
@@ -83,6 +84,10 @@ CREATE TABLE [dbo].[CartItems] (
 
     CONSTRAINT [FK_CartItems_Products_ProductId]
         FOREIGN KEY ([ProductId]) REFERENCES [dbo].[Products] ([Id]) ON DELETE NO ACTION,
+
+        
+    CONSTRAINT [CK_CartItems_SourceType]
+    CHECK ([SourceType] IN ((1),(2))),
 
     CONSTRAINT [CK_CartItems_UnitLevel]
         CHECK ([UnitLevel] IN ((1),(2))),

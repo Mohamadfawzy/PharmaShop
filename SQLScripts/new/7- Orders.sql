@@ -7,6 +7,7 @@ CREATE TABLE [dbo].[Orders] (
     [OrderNumber] nvarchar(30) NOT NULL, -- Human-readable order number
     [CustomerId] int NOT NULL,
     [StoreId] int NOT NULL,
+    [OrderSource] tinyint NOT NULL CONSTRAINT [DF_Orders_OrderSource] DEFAULT ((1)), -- 1=Cart,2=Prescription,3=PointsRedemption
 
     [PrescriptionId] int NULL, -- FK to Prescriptions (nullable)
 
@@ -52,6 +53,10 @@ CREATE TABLE [dbo].[Orders] (
 
     CONSTRAINT [FK_Orders_Prescriptions_PrescriptionId]
         FOREIGN KEY ([PrescriptionId]) REFERENCES [dbo].[Prescriptions] ([Id]) ON DELETE NO ACTION,
+
+    
+    CONSTRAINT [CK_Orders_OrderSource]
+    CHECK ([OrderSource] IN ((1),(2),(3))),
 
     CONSTRAINT [CK_Orders_Status]
         CHECK ([Status] IN ((1),(2),(3),(4),(5),(6),(7),(8))),

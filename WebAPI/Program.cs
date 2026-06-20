@@ -47,6 +47,12 @@ builder.Services.AddControllers(options =>
     //  TraceId filter globally
     options.Filters.Add<TraceIdResultFilter>();
 })
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter(allowIntegerValues: true)
+    );
+})
 .ConfigureApiBehaviorOptions(options =>
 {
     // Unified validation response -> AppResponse

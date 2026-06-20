@@ -201,6 +201,8 @@ CREATE TABLE [dbo].[Products] (
     [MaxOrderQty] int NULL,
     [MaxPerDayQty] int NULL,
 
+
+    [IsRedeemableByPoints] bit NOT NULL CONSTRAINT [DF_Products_IsRedeemableByPoints] DEFAULT ((0)),
     [IsReturnable] bit NOT NULL CONSTRAINT [DF_Products_IsReturnable] DEFAULT ((1)),
     [AllowSplitSale] bit NOT NULL CONSTRAINT [DF_Products_AllowSplitSale] DEFAULT ((0)),
 
