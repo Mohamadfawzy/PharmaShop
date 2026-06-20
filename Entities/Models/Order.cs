@@ -13,6 +13,8 @@ public partial class Order
 
     public int StoreId { get; set; }
 
+    public byte OrderSource { get; set; }
+
     public int? PrescriptionId { get; set; }
 
     public byte Status { get; set; }
@@ -64,6 +66,10 @@ public partial class Order
     public virtual CustomerAddress? Address { get; set; }
 
     public virtual Customer Customer { get; set; } = null!;
+
+    public virtual ICollection<CustomerPointLot> CustomerPointLots { get; set; } = new List<CustomerPointLot>();
+
+    public virtual ICollection<CustomerPointTransaction> CustomerPointTransactions { get; set; } = new List<CustomerPointTransaction>();
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 

@@ -33,6 +33,8 @@ public partial class Employee
 
     public DateTime? DeletedAt { get; set; }
 
+    public virtual ICollection<CustomerPointTransaction> CustomerPointTransactions { get; set; } = new List<CustomerPointTransaction>();
+
     public virtual Pharmacy Pharmacy { get; set; } = null!;
 
     public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();

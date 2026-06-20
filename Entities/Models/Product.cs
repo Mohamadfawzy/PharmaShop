@@ -45,6 +45,8 @@ public partial class Product
 
     public int? MaxPerDayQty { get; set; }
 
+    public bool IsRedeemableByPoints { get; set; }
+
     public bool IsReturnable { get; set; }
 
     public bool AllowSplitSale { get; set; }

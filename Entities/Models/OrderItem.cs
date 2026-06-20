@@ -39,6 +39,10 @@ public partial class OrderItem
 
     public virtual Promotion? AppliedPromotion { get; set; }
 
+    public virtual ICollection<CustomerPointLot> CustomerPointLots { get; set; } = new List<CustomerPointLot>();
+
+    public virtual ICollection<CustomerPointTransaction> CustomerPointTransactions { get; set; } = new List<CustomerPointTransaction>();
+
     public virtual Order Order { get; set; } = null!;
 
     public virtual Product Product { get; set; } = null!;

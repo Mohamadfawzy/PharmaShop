@@ -40,6 +40,10 @@ public partial class RepositoryContext : DbContext
 
     public virtual DbSet<CustomerAddress> CustomerAddresses { get; set; }
 
+    public virtual DbSet<CustomerPointLot> CustomerPointLots { get; set; }
+
+    public virtual DbSet<CustomerPointTransaction> CustomerPointTransactions { get; set; }
+
     public virtual DbSet<Employee> Employees { get; set; }
 
     public virtual DbSet<Order> Orders { get; set; }
@@ -206,6 +210,7 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.IsValid).HasDefaultValue(true);
             entity.Property(e => e.MinOrderQtySnapshot).HasDefaultValue(1);
             entity.Property(e => e.Quantity).HasColumnType("decimal(18, 3)");
+            entity.Property(e => e.SourceType).HasDefaultValue((byte)1);
             entity.Property(e => e.UnitPriceSnapshot).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
@@ -310,6 +315,74 @@ public partial class RepositoryContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
+        modelBuilder.Entity<CustomerPointLot>(entity =>
+        {
+            entity.HasIndex(e => new { e.CustomerId, e.Status, e.ExpiresAt }, "IX_CustomerPointLots_CustomerId_Status_ExpiresAt").HasFilter("([RemainingPoints]>(0))");
+
+            entity.HasIndex(e => e.OrderId, "IX_CustomerPointLots_OrderId").HasFilter("([OrderId] IS NOT NULL)");
+
+            entity.HasIndex(e => new { e.Status, e.ExpiresAt }, "IX_CustomerPointLots_Status_ExpiresAt").HasFilter("([Status]=(2) AND [RemainingPoints]>(0))");
+
+            entity.Property(e => e.AvailableAt).HasPrecision(0);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.EarnedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.ExpiresAt).HasPrecision(0);
+            entity.Property(e => e.Status).HasDefaultValue((byte)1);
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Customer).WithMany(p => p.CustomerPointLots)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.Order).WithMany(p => p.CustomerPointLots).HasForeignKey(d => d.OrderId);
+
+            entity.HasOne(d => d.OrderItem).WithMany(p => p.CustomerPointLots).HasForeignKey(d => d.OrderItemId);
+        });
+
+        modelBuilder.Entity<CustomerPointTransaction>(entity =>
+        {
+            entity.HasIndex(e => new { e.CustomerId, e.CreatedAt }, "IX_CustomerPointTransactions_CustomerId_CreatedAt").IsDescending(false, true);
+
+            entity.HasIndex(e => new { e.CustomerId, e.ExpiresAt }, "IX_CustomerPointTransactions_CustomerId_ExpiresAt").HasFilter("([ExpiresAt] IS NOT NULL)");
+
+            entity.HasIndex(e => e.LotId, "IX_CustomerPointTransactions_LotId").HasFilter("([LotId] IS NOT NULL)");
+
+            entity.HasIndex(e => e.OrderId, "IX_CustomerPointTransactions_OrderId").HasFilter("([OrderId] IS NOT NULL)");
+
+            entity.HasIndex(e => new { e.TransactionType, e.ReferenceType, e.ReferenceId }, "UX_CustomerPointTransactions_Type_Reference")
+                .IsUnique()
+                .HasFilter("([ReferenceType] IS NOT NULL AND [ReferenceId] IS NOT NULL)");
+
+            entity.Property(e => e.AmountEGP).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.ExpiresAt).HasPrecision(0);
+            entity.Property(e => e.Notes).HasMaxLength(500);
+
+            entity.HasOne(d => d.CreatedByEmployee).WithMany(p => p.CustomerPointTransactions).HasForeignKey(d => d.CreatedByEmployeeId);
+
+            entity.HasOne(d => d.Customer).WithMany(p => p.CustomerPointTransactions)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.Lot).WithMany(p => p.CustomerPointTransactions)
+                .HasForeignKey(d => d.LotId)
+                .HasConstraintName("FK_CustomerPointTransactions_Lots_LotId");
+
+            entity.HasOne(d => d.Order).WithMany(p => p.CustomerPointTransactions).HasForeignKey(d => d.OrderId);
+
+            entity.HasOne(d => d.OrderItem).WithMany(p => p.CustomerPointTransactions).HasForeignKey(d => d.OrderItemId);
+
+            entity.HasOne(d => d.SourceTransaction).WithMany(p => p.InverseSourceTransaction)
+                .HasForeignKey(d => d.SourceTransactionId)
+                .HasConstraintName("FK_CustomerPointTransactions_SourceTransactionId");
+        });
+
         modelBuilder.Entity<Employee>(entity =>
         {
             entity.HasIndex(e => e.Email, "IX_Employees_Email").HasFilter("([Email] IS NOT NULL AND [DeletedAt] IS NULL)");
@@ -372,6 +445,7 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.ItemsDiscountTotal).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Notes).HasMaxLength(500);
             entity.Property(e => e.OrderNumber).HasMaxLength(30);
+            entity.Property(e => e.OrderSource).HasDefaultValue((byte)1);
             entity.Property(e => e.PaymentMethod).HasDefaultValue((byte)1);
             entity.Property(e => e.PaymentStatus).HasDefaultValue((byte)1);
             entity.Property(e => e.RedeemedAmount).HasColumnType("decimal(18, 2)");
@@ -426,7 +500,7 @@ public partial class RepositoryContext : DbContext
 
         modelBuilder.Entity<Pharmacy>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC07AF2A0648");
+            entity.HasKey(e => e.Id).HasName("PK__Pharmaci__3214EC07AECE0961");
 
             entity.Property(e => e.Address).HasMaxLength(300);
             entity.Property(e => e.CreatedAt)

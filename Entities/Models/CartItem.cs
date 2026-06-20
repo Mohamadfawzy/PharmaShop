@@ -11,6 +11,8 @@ public partial class CartItem
 
     public int ProductId { get; set; }
 
+    public byte SourceType { get; set; }
+
     public byte UnitLevel { get; set; }
 
     public decimal Quantity { get; set; }

@@ -41,6 +41,10 @@ public partial class Customer
 
     public virtual CustomerAddress? CustomerAddress { get; set; }
 
+    public virtual ICollection<CustomerPointLot> CustomerPointLots { get; set; } = new List<CustomerPointLot>();
+
+    public virtual ICollection<CustomerPointTransaction> CustomerPointTransactions { get; set; } = new List<CustomerPointTransaction>();
+
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
