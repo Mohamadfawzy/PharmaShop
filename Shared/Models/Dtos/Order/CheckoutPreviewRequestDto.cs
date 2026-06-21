@@ -49,6 +49,7 @@ public sealed class CheckoutPreviewItemDto
 
     public decimal UnitPrice { get; set; }        // Current unit price
     public decimal DiscountPercent { get; set; }  // 0..100
+    public decimal DiscountAmount { get; set; }
     public decimal FinalUnitPrice { get; set; }
     public decimal LineTotal { get; set; }
 

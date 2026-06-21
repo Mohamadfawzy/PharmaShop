@@ -321,6 +321,7 @@ public class OrderService : IOrderService
 
                 UnitPrice = Round2(unitPrice),
                 DiscountPercent = 0m,
+                DiscountAmount = 0m,
                 AppliedPromotionId = null,
 
                 PointsPerUnit = l.Points
@@ -347,32 +348,39 @@ public class OrderService : IOrderService
         // 2) Load product-level promo percent
         var productPromoPerc = await unitOfWork.Orders.GetActiveProductPromotionPercentAsync(productIds, ct);
 
-        // 3) Apply group promo priority (mark items in group)
+        // 3) Mark group promotion items
         foreach (var i in items)
         {
             if (groupByProduct.TryGetValue(i.ProductId, out var gp))
             {
-                i.AppliedPromotionId = gp.PromotionId;
                 i.GroupPromotion = gp;
+                i.AppliedPromotionId = gp.PromotionId;
             }
         }
 
-        // 4) Calculate group promotion discount (cheapest items discounted)
+        // 4) Calculate exact group discount distribution
         var groupDiscount = CalculateGroupPromotionDiscount(items);
 
-        // 5) Calculate product promotion discount only when not in group promo
+        // 5) Apply product promotion only when not in group promotion
         var productDiscount = 0m;
+
         foreach (var i in items)
         {
-            if (i.GroupPromotion != null) continue;
+            if (i.GroupPromotion != null)
+                continue;
 
             if (productPromoPerc.TryGetValue(i.ProductId, out var percent) && percent > 0)
             {
-                productDiscount += i.LineSubtotal * (percent / 100m);
+                var discount = Round2(i.LineSubtotal * (percent / 100m));
+
                 i.DiscountPercent = percent;
+                i.DiscountAmount += discount;
+
+                productDiscount += discount;
             }
         }
 
+        // 6) Return total discount
         var total = Round2(groupDiscount + productDiscount);
 
         return new PromotionCalcResult
@@ -382,57 +390,79 @@ public class OrderService : IOrderService
         };
 
         // Future improvements:
-        // - Choose best group promotion across cart (not best per product)
-        // - Support multi-rule promotions (buy X from list, discount Y from another list)
+        // - Support allow points with promotion flag
+        // - Support multiple group promotions selection by best discount
     }
 
     private static decimal CalculateGroupPromotionDiscount(List<PricedCheckoutItem> items)
     {
         // 1) Group items by applied group promotion id
-        var groups = items.Where(x => x.GroupPromotion != null)
-                          .GroupBy(x => x.GroupPromotion!.PromotionId);
+        var groups = items
+            .Where(x => x.GroupPromotion != null)
+            .GroupBy(x => x.GroupPromotion!.PromotionId);
 
         var totalDiscount = 0m;
 
-        foreach (var g in groups)
+        foreach (var group in groups)
         {
-            var promo = g.First().GroupPromotion!;
+            var promo = group.First().GroupPromotion!;
             var basic = promo.BasicAmount;
             var offer = promo.OfferAmount;
 
-            if (basic <= 0 || offer <= 0) continue;
+            if (basic <= 0 || offer <= 0)
+                continue;
 
             var bundleSize = basic + offer;
-            var totalQty = g.Sum(x => x.Quantity);
+            var totalQty = group.Sum(x => x.Quantity);
 
-            // 2) Compute how many discounted units apply
+            // 2) Calculate discounted units count
             var times = (int)Math.Floor(totalQty / bundleSize);
             var discountedUnits = times * offer;
 
-            if (discountedUnits <= 0) continue;
+            if (discountedUnits <= 0)
+                continue;
 
-            // 3) Build unit-price list to discount cheapest units first
-            var unitPrices = ExpandUnitPrices(g.ToList());
+            // 3) Expand units and sort by cheapest first
+            var unitRefs = ExpandUnitRefs(group.ToList());
 
-            // 4) Apply discount on cheapest units
-            foreach (var price in unitPrices.Take(discountedUnits))
+            // 4) Apply discount to cheapest units only
+            foreach (var unit in unitRefs.Take(discountedUnits))
             {
-                totalDiscount += price * (promo.DiscountPercent / 100m);
-            }
+                var discount = Round2(unit.Item.UnitPrice * (promo.DiscountPercent / 100m));
 
-            // 5) Mark discount percent for UI snapshots (optional, keep 0 for now)
-            foreach (var i in g)
-            {
-                i.DiscountPercent = Math.Max(i.DiscountPercent, promo.DiscountPercent);
+                unit.Item.DiscountAmount += discount;
+                unit.Item.AppliedPromotionId = promo.PromotionId;
+
+                totalDiscount += discount;
             }
         }
 
         return Round2(totalDiscount);
 
         // Future improvements:
-        // - Handle fractional quantities if you allow decimals (currently quantities can be decimal)
-        // - Decide whether inner unit counts as 1 unit or needs conversion rules
+        // - Support fractional quantities if business requires it
+        // - Support choosing best promotion across entire cart
     }
+
+    private static List<(PricedCheckoutItem Item, decimal UnitPrice)> ExpandUnitRefs(List<PricedCheckoutItem> items)
+    {
+        // 1) Expand units as item references for discount distribution
+        var list = new List<(PricedCheckoutItem Item, decimal UnitPrice)>();
+
+        foreach (var item in items)
+        {
+            var count = (int)Math.Floor(item.Quantity);
+
+            for (var i = 0; i < count; i++)
+                list.Add((item, item.UnitPrice));
+        }
+
+        // 2) Sort by cheapest unit first
+        return list
+            .OrderBy(x => x.UnitPrice)
+            .ToList();
+    }
+
 
     private static List<decimal> ExpandUnitPrices(List<PricedCheckoutItem> items)
     {
@@ -453,18 +483,25 @@ public class OrderService : IOrderService
 
     private static void ApplyDiscounts(List<PricedCheckoutItem> items, PromotionCalcResult promo)
     {
-        // 1) Apply discount percent (product promo or group promo marker)
+        // 1) Apply total discount amount per line
         foreach (var i in items)
         {
-            var discount = i.DiscountPercent / 100m;
-            i.FinalUnitPrice = Round2(i.UnitPrice * (1m - discount));
-            if (i.FinalUnitPrice < 0) i.FinalUnitPrice = 0;
+            if (i.DiscountAmount < 0)
+                i.DiscountAmount = 0;
 
-            i.LineTotal = Round2(i.Quantity * i.FinalUnitPrice);
+            if (i.DiscountAmount > i.LineSubtotal)
+                i.DiscountAmount = i.LineSubtotal;
+
+            i.LineTotal = Round2(i.LineSubtotal - i.DiscountAmount);
+
+            // 2) Compute effective final unit price
+            i.FinalUnitPrice = i.Quantity > 0
+                ? Round2(i.LineTotal / i.Quantity)
+                : 0m;
         }
 
         // Future improvements:
-        // - Apply exact group discount distribution per line rather than percent marker
+        // - Return DiscountAmount in response DTO for clearer UI
     }
 
     private static PointsCalcResult CalculatePoints(List<PricedCheckoutItem> items, decimal promotionDiscountTotal)
@@ -669,6 +706,7 @@ public class OrderService : IOrderService
                 Quantity = i.Quantity,
                 UnitPrice = i.UnitPrice,
                 DiscountPercent = i.DiscountPercent,
+                DiscountAmount = i.DiscountAmount,
                 FinalUnitPrice = i.FinalUnitPrice,
                 LineTotal = i.LineTotal,
                 AppliedPromotionId = i.GroupPromotion?.PromotionId
@@ -876,6 +914,7 @@ public class OrderService : IOrderService
                 Quantity = i.Quantity,
                 UnitPrice = i.UnitPrice,
                 DiscountPercent = i.DiscountPercent,
+                DiscountAmount = i.DiscountAmount,
                 FinalUnitPrice = i.FinalUnitPrice,
                 LineTotal = i.LineTotal,
                 AppliedPromotionId = i.GroupPromotion?.PromotionId,

@@ -18,6 +18,7 @@ public sealed class CheckoutResultDto
 
     public int RedeemedPoints { get; set; }
     public decimal RedeemedAmount { get; set; }
+    public decimal DiscountAmount { get; set; }
 
     public decimal DeliveryFee { get; set; }
     public decimal GrandTotal { get; set; }
