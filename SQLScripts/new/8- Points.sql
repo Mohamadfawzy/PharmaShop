@@ -43,11 +43,21 @@ CREATE TABLE [dbo].[CustomerPointLots] (
     CONSTRAINT [CK_CustomerPointLots_ExpiresAt]
         CHECK ([ExpiresAt] > [EarnedAt]),
 
+    --CONSTRAINT [CK_CustomerPointLots_AvailableRule]
+    --    CHECK (
+    --        ([Status] <> (2) AND [AvailableAt] IS NULL)
+    --        OR ([Status] = (2) AND [AvailableAt] IS NOT NULL)
+    --    )
+    
     CONSTRAINT [CK_CustomerPointLots_AvailableRule]
         CHECK (
-            ([Status] <> (2) AND [AvailableAt] IS NULL)
+            ([Status] = (1) AND [AvailableAt] IS NULL)
             OR ([Status] = (2) AND [AvailableAt] IS NOT NULL)
+            OR ([Status] = (3) AND [AvailableAt] IS NOT NULL)
+            OR ([Status] = (4) AND [AvailableAt] IS NOT NULL)
+            OR ([Status] = (5) AND [AvailableAt] IS NULL)
         )
+
 );
 GO
 
@@ -178,10 +188,20 @@ WHERE [LotId] IS NOT NULL;
 GO
 
 /* Prevent duplicate transaction per reference and type */
-CREATE UNIQUE INDEX [UX_CustomerPointTransactions_Type_Reference]
-ON [dbo].[CustomerPointTransactions] ([TransactionType], [ReferenceType], [ReferenceId])
-WHERE [ReferenceType] IS NOT NULL AND [ReferenceId] IS NOT NULL;
+--CREATE UNIQUE INDEX [UX_CustomerPointTransactions_Type_Reference]
+--ON [dbo].[CustomerPointTransactions] ([TransactionType], [ReferenceType], [ReferenceId])
+--WHERE [ReferenceType] IS NOT NULL AND [ReferenceId] IS NOT NULL;
+--GO
+
+
+/* Prevent duplicate point transaction per type, reference, and lot */
+CREATE UNIQUE INDEX [UX_CustomerPointTransactions_Type_Reference_Lot]
+ON [dbo].[CustomerPointTransactions] ([TransactionType], [ReferenceType], [ReferenceId], [LotId])
+WHERE [ReferenceType] IS NOT NULL
+  AND [ReferenceId] IS NOT NULL
+  AND [LotId] IS NOT NULL;
 GO
+
 
 /* Fast lookup: earn transactions with expiry */
 CREATE INDEX [IX_CustomerPointTransactions_CustomerId_ExpiresAt]

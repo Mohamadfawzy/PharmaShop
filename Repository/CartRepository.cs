@@ -20,7 +20,6 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
             .FirstOrDefaultAsync(x => x.CustomerId == customerId && x.Status == (byte)CartStatus.Active, ct);
     }
 
-
     public Task<CartItem?> GetByCartProductUnitAsync(int cartId, int productId, UnitLevel unitLevel, CancellationToken ct)
     {
         // One line per product+unit level (unique by UX_CartItems_CartId_ProductId_UnitLevel)
@@ -30,7 +29,6 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
                 x.ProductId == productId &&
                 x.UnitLevel == (byte)unitLevel, ct);
     }
-
 
 
     public async Task<CartViewDto> GetMyCartAsync(int customerId, CancellationToken ct)
@@ -107,11 +105,13 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
                     ? (x.i.Quantity > x.p.Quantity)
                     : (x.p.InnerPerOuter.HasValue ? (x.i.Quantity > x.p.Quantity * x.p.InnerPerOuter.Value) : true),
 
+                IsRedeemableByPoints = x.p.IsRedeemableByPoints,
+
                 // Product status
                 IsActive = x.p.IsActive,
                 IsAvailable = x.p.IsAvailable,
                 DeletedAt = x.p.DeletedAt,
-
+                
                 // Stored validity (read-only)
                 IsValid = x.i.IsValid,
                 InvalidReason = x.i.InvalidReason
@@ -134,7 +134,6 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
             Items = items
         };
     }
-
 
 
     public async Task<CartItem?> GetCartItemForUpdateAsync(int cartItemId, int customerId, CancellationToken ct)
@@ -176,6 +175,7 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
             .ThenByDescending(c => c.CreatedAt)
             .FirstOrDefaultAsync(c => c.CustomerId == customerId, ct);
     }
+
 
     public async Task<List<CartItem>> GetCartItemsByCartIdAsync(int cartId, CancellationToken ct)
     {
@@ -301,5 +301,89 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
         // - Add address status checks (deleted/disabled)
     }
 
+
+
+    public async Task<CartItem?> GetByCartProductUnitSourceAsync(
+    int cartId,
+    int productId,
+    UnitLevel unitLevel,
+    CartItemSourceType sourceType,
+    CancellationToken ct)
+    {
+        // 1) Load cart item by product, unit, and source
+        return await _db.CartItems
+            .FirstOrDefaultAsync(i =>
+                i.CartId == cartId &&
+                i.ProductId == productId &&
+                i.UnitLevel == (byte)unitLevel &&
+                i.SourceType == (byte)sourceType,
+                ct);
+
+        // Future improvement: update unique index to include SourceType if mixing becomes allowed
+    }
+
+    public async Task<bool> HasDifferentSourceTypeAsync(
+    int cartId,
+    CartItemSourceType sourceType,
+    CancellationToken ct)
+    {
+        // 1) Check if cart has items from another source type
+        return await _db.CartItems
+            .AsNoTracking()
+            .AnyAsync(i =>
+                i.CartId == cartId &&
+                i.SourceType != (byte)sourceType,
+                ct);
+
+        // Future improvement: return the existing source type for better error messages
+    }
+
+    public async Task AddCartItemAsync(CartItem item, CancellationToken ct)
+    {
+        // 1) Add cart item
+        await _db.CartItems.AddAsync(item, ct);
+
+        // Future improvement: use bulk insert if needed
+    }
+
+    public void UpdateCartItem(CartItem item)
+    {
+        // 1) Update cart item
+        _db.CartItems.Update(item);
+
+        // Future improvement: use tracked entity only without explicit Update if loaded tracked
+    }
+
+
+    public async Task<bool> IsProductInActiveGroupPromotionAsync(int productId, CancellationToken ct)
+    {
+        // 1) Check if product belongs to any active group promotion
+        var now = DateTime.UtcNow;
+
+        return await (
+            from pp in _db.PromotionProducts.AsNoTracking()
+            join p in _db.Promotions.AsNoTracking() on pp.PromotionId equals p.Id
+            where pp.ProductId == productId
+                  && pp.DeletedAt == null
+                  && p.DeletedAt == null
+                  && p.IsActive
+                  && p.StartAt != null
+                  && p.EndAt != null
+                  && p.StartAt <= now
+                  && p.EndAt >= now
+            select pp.Id
+        ).AnyAsync(ct);
+
+        // Future improvement: return promotion id if UI needs it
+    }
+
+
+    public async Task AddCartAsync(Cart cart, CancellationToken ct)
+    {
+        // 1) Add cart
+        await _db.Carts.AddAsync(cart, ct);
+
+        // Future improvement: handle unique active cart conflict here
+    }
 
 }

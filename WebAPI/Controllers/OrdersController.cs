@@ -56,4 +56,18 @@ public class OrdersController : AdminBaseApiController
         // Future improvement:
         // - enforce admin/store authorization
     }
+
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateStatus(int id,[FromBody] OrderStatusUpdateDto dto,CancellationToken ct)
+    {
+        // 1) Delegate to service
+        var result = await orderService.UpdateOrderStatusAsync(id, dto, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+
+        // Future improvement: get employee id from token and store in status history
+    }
+
+
 }

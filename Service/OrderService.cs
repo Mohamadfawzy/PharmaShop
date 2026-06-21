@@ -36,6 +36,20 @@ public class OrderService : IOrderService
         if (!addressOk)
             return AppResponse<CheckoutPreviewResponseDto>.ValidationError("Invalid address");
 
+
+
+        // 3) Validate cart source type
+        var sourceValidation = await ValidateCartSourceTypeAsync<CheckoutPreviewResponseDto>(
+            dto.CustomerId,
+            dto.SourceType,
+            dto.SourceId,
+            ct);
+
+        if (sourceValidation is not null)
+            return sourceValidation;
+
+
+
         // 3) Load checkout lines from source
         var lines = await LoadCheckoutLinesAsync(dto.CustomerId, dto.SourceType, dto.SourceId, ct);
         if (lines.Count == 0)
@@ -92,134 +106,164 @@ public class OrderService : IOrderService
         // - Show customer point balance in normal checkout
         // - Add stock validation if required
     }
+    
 
-    public async Task<AppResponse<CheckoutResultDto>> CheckoutAsync(CheckoutRequestDto dto,CancellationToken ct)
+    public async Task<AppResponse<CheckoutResultDto>> CheckoutAsync(CheckoutRequestDto dto, CancellationToken ct)
     {
-        // 1) Validate request
+        // 1) Validate request before opening transaction
         var validation = ValidateCheckoutRequest(dto);
-        if (validation is not null) return validation;
+        if (validation is not null)
+            return validation;
 
-        // 2) Load address snapshot
-        var (addressOk, addressSnap) = await unitOfWork.Orders.GetAddressSnapshotAsync(dto.AddressId, dto.CustomerId, ct);
-        if (!addressOk)
-            return AppResponse<CheckoutResultDto>.ValidationError("Invalid address");
+        // 2) Open transaction
+        await using var tx = await unitOfWork.BeginTransactionAsync(ct);
 
-        // 3) Load checkout lines from source
-        var lines = await LoadCheckoutLinesAsync(dto, ct);
-        if (lines.Count == 0)
-            return AppResponse<CheckoutResultDto>.BusinessRuleViolation("Source has no items");
-
-        // 4) Build priced items
-        var priced = BuildPricedItems(lines);
-
-        // 5) Handle points redemption checkout
-        if (dto.SourceType == CheckoutSourceType.PointsRedemption)
+        try
         {
-            var redeemValidation = ValidatePointsRedemptionLinesForCheckout(lines);
-            if (redeemValidation is not null)
-                return redeemValidation;
+            // 3) Load address snapshot
+            var (addressOk, addressSnap) = await unitOfWork.Orders.GetAddressSnapshotAsync(dto.AddressId, dto.CustomerId, ct);
+            if (!addressOk)
+                return AppResponse<CheckoutResultDto>.ValidationError("Invalid address");
 
-            var subtotal = Round2(priced.Sum(x => x.LineSubtotal));
 
-            var availablePoints = await unitOfWork.Orders.GetCustomerPointsAsync(dto.CustomerId, ct);
-            var redeemPreview = CalculateRedeemPreview(subtotal, availablePoints);
+            // 3) Validate cart source type
+            var sourceValidation = await ValidateCartSourceTypeAsync<CheckoutResultDto>(
+                dto.CustomerId,
+                dto.SourceType,
+                dto.SourceId,
+                ct);
 
-            if (redeemPreview.RedeemedPoints <= 0)
-                return AppResponse<CheckoutResultDto>.BusinessRuleViolation("Customer does not have enough points to redeem");
+            if (sourceValidation is not null)
+                return sourceValidation;
 
-            var totals = CalculateTotals(priced, promoDiscountTotal: 0m, redeemedAmount: redeemPreview.RedeemedAmount);
 
-            var points = new PointsCalcResult
+            // 4) Load checkout lines from source
+            var lines = await LoadCheckoutLinesAsync(dto, ct);
+            if (lines.Count == 0)
+                return AppResponse<CheckoutResultDto>.BusinessRuleViolation("Source has no items");
+
+            // 5) Build priced items
+            var priced = BuildPricedItems(lines);
+
+            // 6) Handle points redemption checkout
+            if (dto.SourceType == CheckoutSourceType.PointsRedemption)
             {
-                MaxRedeemablePoints = redeemPreview.MaxRedeemablePoints,
-                RedeemedPoints = redeemPreview.RedeemedPoints,
-                RedeemedAmount = redeemPreview.RedeemedAmount
+                var redeemValidation = ValidatePointsRedemptionLinesForCheckout(lines);
+                if (redeemValidation is not null)
+                    return redeemValidation;
+
+                var subtotal = Round2(priced.Sum(x => x.LineSubtotal));
+
+                var availablePoints = await unitOfWork.Orders.GetCustomerPointsAsync(dto.CustomerId, ct);
+                var redeemPreview = CalculateRedeemPreview(subtotal, availablePoints);
+
+                if (redeemPreview.RedeemedPoints <= 0)
+                    return AppResponse<CheckoutResultDto>.BusinessRuleViolation("Customer does not have enough points to redeem");
+
+                var totals = CalculateTotals(priced, promoDiscountTotal: 0m, redeemedAmount: redeemPreview.RedeemedAmount);
+
+                var points = new PointsCalcResult
+                {
+                    MaxRedeemablePoints = redeemPreview.MaxRedeemablePoints,
+                    RedeemedPoints = redeemPreview.RedeemedPoints,
+                    RedeemedAmount = redeemPreview.RedeemedAmount
+                };
+
+                var promo = new PromotionCalcResult
+                {
+                    PromotionDiscountTotal = 0m,
+                    AnyPromotionApplied = false
+                };
+
+                var order = await CreateOrderAsync(
+                    dto,
+                    lines,
+                    priced,
+                    totals,
+                    points,
+                    addressSnap,
+                    promo,
+                    earnedPoints: 0,
+                    ct);
+
+                await ConsumePointsForOrderAsync(dto.CustomerId, order.Id, points.RedeemedPoints, ct);
+
+                await UpdateSourceAfterCheckoutAsync(dto, lines, ct);
+
+                // 7) Save all pending changes
+                await unitOfWork.CompleteAsync(ct);
+
+                // 8) Commit transaction before returning
+                await tx.CommitAsync(ct);
+
+                // 9) Build response after commit
+                var response = BuildCheckoutResponse(order, priced, totals, promo, points);
+
+                return AppResponse<CheckoutResultDto>.Created(
+                    response,
+                    location: $"/api/v1/orders/{order.Id}",
+                    title: "Order created successfully");
+            }
+
+            // 10) Calculate promotions for normal checkout
+            var normalPromo = await CalculatePromotionsAsync(priced, ct);
+
+            // 11) Apply promotions
+            ApplyDiscounts(priced, normalPromo);
+
+            // 12) Calculate earned points
+            var earned = CalculateEarnedPoints(priced);
+
+            // 13) Build normal points result
+            var normalPoints = new PointsCalcResult
+            {
+                MaxRedeemablePoints = 0,
+                RedeemedPoints = 0,
+                RedeemedAmount = 0m
             };
 
-            var promo = new PromotionCalcResult
-            {
-                PromotionDiscountTotal = 0m,
-                AnyPromotionApplied = false
-            };
+            // 14) Calculate totals
+            var normalTotals = CalculateTotals(priced, normalPromo.PromotionDiscountTotal, redeemedAmount: 0m);
 
-            var order = await CreateOrderAsync(
+            // 15) Create normal order
+            var normalOrder = await CreateOrderAsync(
                 dto,
                 lines,
                 priced,
-                totals,
-                points,
+                normalTotals,
+                normalPoints,
                 addressSnap,
-                promo,
-                earnedPoints: 0,
+                normalPromo,
+                earnedPoints: earned,
                 ct);
 
-            await ConsumePointsForOrderAsync(dto.CustomerId, order.Id, points.RedeemedPoints, ct);
+            // 16) Create pending earned point lot
+            await CreatePendingEarnLotIfNeededAsync(dto.CustomerId, normalOrder.Id, earned, ct);
 
+            // 17) Update source state
             await UpdateSourceAfterCheckoutAsync(dto, lines, ct);
 
+            // 18) Save all pending changes
             await unitOfWork.CompleteAsync(ct);
 
-            var response = BuildCheckoutResponse(order, priced, totals, promo, points);
+            // 19) Commit transaction before returning
+            await tx.CommitAsync(ct);
+
+            // 20) Build response after commit
+            var normalResult = BuildCheckoutResponse(normalOrder, priced, normalTotals, normalPromo, normalPoints);
 
             return AppResponse<CheckoutResultDto>.Created(
-                response,
-                location: $"/api/v1/orders/{order.Id}",
+                normalResult,
+                location: $"/api/v1/orders/{normalOrder.Id}",
                 title: "Order created successfully");
         }
-
-        // 6) Calculate promotions for normal checkout
-        var normalPromo = await CalculatePromotionsAsync(priced, ct);
-
-        // 7) Apply promotions
-        ApplyDiscounts(priced, normalPromo);
-
-        // 8) Calculate earned points
-        var earned = CalculateEarnedPoints(priced);
-
-        // 9) Calculate totals without redeem points
-        var normalPoints = new PointsCalcResult
+        catch
         {
-            MaxRedeemablePoints = 0,
-            RedeemedPoints = 0,
-            RedeemedAmount = 0m
-        };
-
-        var normalTotals = CalculateTotals(priced, normalPromo.PromotionDiscountTotal, redeemedAmount: 0m);
-
-        // 10) Create normal order
-        var normalOrder = await CreateOrderAsync(
-            dto,
-            lines,
-            priced,
-            normalTotals,
-            normalPoints,
-            addressSnap,
-            normalPromo,
-            earnedPoints: earned,
-            ct);
-
-        // 11) Create pending earned point lot
-        await CreatePendingEarnLotIfNeededAsync(dto.CustomerId, normalOrder.Id, earned, ct);
-
-        // 12) Update source state
-        await UpdateSourceAfterCheckoutAsync(dto, lines, ct);
-
-        // 13) Persist changes
-        await unitOfWork.CompleteAsync(ct);
-
-        // 14) Build response
-        var normalResult = BuildCheckoutResponse(normalOrder, priced, normalTotals, normalPromo, normalPoints);
-
-        return AppResponse<CheckoutResultDto>.Created(
-            normalResult,
-            location: $"/api/v1/orders/{normalOrder.Id}",
-            title: "Order created successfully");
-
-        // Future improvements:
-        // - Wrap all steps in a database transaction
-        // - Add idempotency key to avoid duplicate orders
+            // 21) Rollback transaction on any failure
+            await tx.RollbackAsync(ct);
+            throw;
+        }
     }
-
 
     public async Task<AppResponse<List<AdminOrderListItemDto>>> GetAdminOrdersAsync(
     AdminOrderListQueryDto query, CancellationToken ct)
@@ -875,7 +919,36 @@ public class OrderService : IOrderService
         // Future improvement: add BalanceAfter after final customer balance is known
     }
 
+    private async Task<AppResponse<T>?> ValidateCartSourceTypeAsync<T>(int customerId,CheckoutSourceType checkoutSourceType,int cartId,CancellationToken ct)
+    {
+        // 1) Skip validation for prescription source
+        if (checkoutSourceType == CheckoutSourceType.Prescription)
+            return null;
 
+        // 2) Load cart source types
+        var sourceTypes = await unitOfWork.Orders.GetCartItemSourceTypesAsync(cartId, customerId, ct);
+
+        if (sourceTypes.Count == 0)
+            return AppResponse<T>.BusinessRuleViolation("Cart has no items");
+
+        // 3) Validate normal cart checkout
+        if (checkoutSourceType == CheckoutSourceType.Cart)
+        {
+            if (sourceTypes.Any(x => x != 1))
+                return AppResponse<T>.BusinessRuleViolation(
+                    "This cart contains points redemption items. Use PointsRedemption checkout source.");
+        }
+
+        // 4) Validate points redemption checkout
+        if (checkoutSourceType == CheckoutSourceType.PointsRedemption)
+        {
+            if (sourceTypes.Any(x => x != 2))
+                return AppResponse<T>.BusinessRuleViolation(
+                    "This cart contains normal items. Use Cart checkout source.");
+        }
+
+        return null;
+    }
 
     private static CheckoutPreviewResponseDto BuildNormalPreviewResponse(
         CheckoutPreviewRequestDto dto,
@@ -1044,6 +1117,168 @@ public class OrderService : IOrderService
             RedeemedPoints = redeemedPoints,
             RedeemedAmount = Round2(redeemedPoints / (decimal)ConversionRate)
         };
+    }
+
+    // order status
+    public async Task<AppResponse<int>> UpdateOrderStatusAsync(int orderId,OrderStatusUpdateDto dto,CancellationToken ct)
+    {
+        // 1) Validate input
+        if (orderId <= 0)
+        {
+            return AppResponse<int>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["id"] = new[] { "Invalid order id" }
+                },
+                detail: "Validation failed");
+        }
+
+        if (dto is null || dto.Status < 1 || dto.Status > 8)
+        {
+            return AppResponse<int>.ValidationErrors(
+                new Dictionary<string, string[]>
+                {
+                    ["Status"] = new[] { "Status must be between 1 and 8" }
+                },
+                detail: "Validation failed");
+        }
+
+        // 2) Load order
+        var order = await unitOfWork.Orders.GetOrderForStatusUpdateAsync(orderId, ct);
+        if (order is null)
+            return AppResponse<int>.NotFound("Order not found");
+
+        // 3) Ignore if order already has the requested status
+        if (order.Status == dto.Status)
+            return AppResponse<int>.Ok(order.Id, "Order status is already updated");
+
+        // 4) Validate status transition
+        if (!IsOrderTransitionAllowed(order.Status, dto.Status))
+            return AppResponse<int>.BusinessRuleViolation("Invalid order status transition");
+
+        // 5) Apply status update
+        var now = DateTime.UtcNow;
+
+        order.Status = dto.Status;
+        order.StatusUpdatedAt = now;
+        order.UpdatedAt = now;
+
+        if (!string.IsNullOrWhiteSpace(dto.Notes))
+            order.Notes = dto.Notes.Trim();
+
+        // 6) Make earned points available when order is delivered
+        if (dto.Status == 5) // 5=Delivered
+        {
+            var pointsResult = await MakeOrderPointsAvailableAsync(order, now, ct);
+            if (pointsResult is not null)
+                return pointsResult;
+        }
+
+        // 7) Save changes
+        unitOfWork.Orders.UpdateOrder(order);
+        await unitOfWork.CompleteAsync(ct);
+
+        // 8) Return success
+        return AppResponse<int>.Ok(order.Id, "Order status updated successfully");
+
+        // Future improvements:
+        // - Wrap this method in a database transaction
+        // - Add order status history table
+        // - Send notification after status update
+    }
+
+    private static bool IsOrderTransitionAllowed(byte current, byte next)
+    {
+        // 1) Define simple order state machine
+        return (current, next) switch
+        {
+            (1, 2) => true, // Pending -> Confirmed
+            (2, 3) => true, // Confirmed -> Preparing
+            (3, 4) => true, // Preparing -> OutForDelivery
+            (4, 5) => true, // OutForDelivery -> Delivered
+
+            (1, 6) => true, // Pending -> Cancelled
+            (2, 6) => true, // Confirmed -> Cancelled
+            (3, 6) => true, // Preparing -> Cancelled
+
+            (5, 7) => true, // Delivered -> Returned
+
+            (8, 2) => true, // PendingApproval -> Confirmed
+
+            _ => false
+        };
+
+        // Future improvement: make transitions configurable from database
+    }
+
+    private async Task<AppResponse<int>?> MakeOrderPointsAvailableAsync(Order order,DateTime nowUtc,CancellationToken ct)
+    {
+        // 1) Skip points for points redemption orders
+        if (order.OrderSource == 3) // 3=PointsRedemption
+            return null;
+
+        // 2) Load pending lots for this order
+        var lots = await unitOfWork.Orders.GetPendingPointLotsByOrderAsync(order.Id, ct);
+
+        // 3) Skip if no pending earned points
+        if (lots.Count == 0)
+            return null;
+
+        // 4) Calculate total points to activate
+        var totalPoints = lots.Sum(x => x.RemainingPoints);
+
+        if (totalPoints <= 0)
+            return null;
+
+        // 5) Load customer for points update
+        var customer = await unitOfWork.Orders.GetCustomerForPointsUpdateAsync(order.CustomerId, ct);
+        if (customer is null)
+            return AppResponse<int>.NotFound("Customer not found");
+
+        // 6) Mark lots as available
+        foreach (var lot in lots)
+        {
+            lot.Status = 2; // 2=Available
+            lot.AvailableAt = nowUtc;
+            lot.UpdatedAt = nowUtc;
+        }
+
+        // 7) Increase customer fast balance
+        customer.Points += totalPoints;
+
+        // 8) Create EarnAvailable transactions
+        var transactions = lots.Select(lot => new CustomerPointTransaction
+        {
+            CustomerId = order.CustomerId,
+            LotId = lot.Id,
+            OrderId = order.Id,
+            OrderItemId = lot.OrderItemId,
+
+            TransactionType = 2, // 2=EarnAvailable
+            PointsDelta = lot.RemainingPoints,
+            BalanceAfter = null,
+
+            PointsPerEGP = null,
+            AmountEGP = null,
+
+            ExpiresAt = lot.ExpiresAt,
+            ReferenceType = 1, // 1=Order
+            ReferenceId = order.Id,
+
+            SourceTransactionId = null,
+            CreatedByEmployeeId = null,
+            Notes = "Earned points became available after delivery",
+
+            CreatedAt = nowUtc
+        }).ToList();
+
+        await unitOfWork.Orders.AddPointTransactionsRangeAsync(transactions, ct);
+
+        return null;
+
+        // Future improvements:
+        // - Fill BalanceAfter after computing final customer balance
+        // - If you create multiple lots per order, adjust unique transaction index to avoid conflicts
     }
 
 }

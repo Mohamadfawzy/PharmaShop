@@ -27,213 +27,65 @@ public class CartService : ICartService
     }
 
 
-    public async Task<AppResponse<AddToCartResponseDto>> AddItemAsync(CartAddItemDto dto, CancellationToken ct)
+
+    public async Task<AppResponse<AddToCartResponseDto>> AddItemAsync(
+    CartAddItemDto dto,
+    CartItemSourceType sourceType,
+    CancellationToken ct)
     {
-        // 1) Basic validation
-        if (dto.CustomerId <= 0)
-            return AppResponse<AddToCartResponseDto>.ValidationErrors(
-                new Dictionary<string, string[]> { ["CustomerId"] = new[] { "CustomerId is required" } },
-                detail: "Validation failed"
-            );
+        // 1) Validate request
+        var validation = ValidateAddItemRequest(dto);
+        if (validation is not null)
+            return validation;
 
-        if (dto.StoreId <= 0)
-            return AppResponse<AddToCartResponseDto>.ValidationErrors(
-                new Dictionary<string, string[]> { ["StoreId"] = new[] { "StoreId is required" } },
-                detail: "Validation failed"
-            );
-
-        if (dto.ProductId <= 0)
-            return AppResponse<AddToCartResponseDto>.ValidationErrors(
-                new Dictionary<string, string[]> { ["ProductId"] = new[] { "ProductId is required" } },
-                detail: "Validation failed"
-            );
-
-        if (dto.Quantity <= 0)
-            return AppResponse<AddToCartResponseDto>.ValidationErrors(
-                new Dictionary<string, string[]> { ["Quantity"] = new[] { "Quantity must be greater than 0" } },
-                detail: "Validation failed"
-            );
-
-        // 2) Load product (current state)
+        // 2) Load product
         var product = await unitOfWork.Products.GetByIdNoTrackingAsync(dto.ProductId, ct);
         if (product is null)
-        {
             return AppResponse<AddToCartResponseDto>.NotFound("Product not found");
-        }
 
-        // 3) Validate unit level rules (outer/inner)
-        if (dto.UnitLevel == UnitLevel.Inner)
-        {
-            // Inner sale must be allowed and have inner price
-            if (!product.AllowSplitSale || product.InnerUnitPrice is null || product.InnerPerOuter is null || product.InnerPerOuter < 1)
-            {
-                return AppResponse<AddToCartResponseDto>.BusinessRuleViolation(
-                    "Inner unit sale is not allowed for this product"
-                );
-            }
-        }
+        // 3) Validate unit level rules
+        var unitValidation = ValidateUnitLevelRules(dto, product);
+        if (unitValidation is not null)
+            return unitValidation;
 
-        // 4) Compute current unit price based on UnitLevel
-        var currentUnitPrice = dto.UnitLevel == UnitLevel.Outer
-            ? product.OuterUnitPrice
-            : product.InnerUnitPrice!.Value;
+        // 4) Validate source-specific rules
+        var sourceValidation = await ValidateSourceRulesAsync(product, sourceType, ct);
+        if (sourceValidation is not null)
+            return sourceValidation;
 
-        // 5) Compute available qty based on stored outer qty
-        // Quantity in Products is stored in OUTER units
-        var availableQty = dto.UnitLevel == UnitLevel.Outer
-            ? product.Quantity
-            : product.Quantity * product.InnerPerOuter!.Value;
+        // 5) Compute pricing and availability
+        var pricing = BuildCartPricing(dto, product);
 
         // 6) Get or create active cart
-        // Note: We keep it simple; in rare concurrent calls, unique index may throw; we handle below.
-        Cart cart;
-        cart = await unitOfWork.Carts.GetActiveByCustomerAsync(dto.CustomerId, ct)
-               ?? await CreateActiveCartAsync(dto, ct);
+        var cart = await GetOrCreateActiveCartAsync(dto, ct);
 
-        // 7) Upsert cart item (same product + same unit level)
-        var cartItem = await unitOfWork.Carts.GetByCartProductUnitAsync(cart.Id, dto.ProductId, dto.UnitLevel, ct);
+        // 7) Prevent mixing normal and redemption items
+        var mixingValidation = await ValidateCartMixingAsync(cart.Id, sourceType, ct);
+        if (mixingValidation is not null)
+            return mixingValidation;
 
-        var now = DateTime.UtcNow;
+        // 8) Upsert cart item
+        var upsert = await UpsertCartItemAsync(cart, dto, product, sourceType, pricing.CurrentUnitPrice, ct);
 
-        bool requiresRefresh = false;
-        string? refreshReason = null;
-        ItemPriceChangeDto? priceChange = null;
+        // 9) Persist changes
+        await unitOfWork.CompleteAsync(ct);
 
-        if (cartItem is null)
-        {
-            // 7.1 Create new line
-            cartItem = new CartItem
-            {
-                CartId = cart.Id,
-                ProductId = dto.ProductId,
-                UnitLevel = (byte)dto.UnitLevel,
-                Quantity = dto.Quantity,
-
-                // Snapshot logic:
-                // UnitPriceSnapshot = old price reference (initially same as current)
-                // CurrentUnitPriceSnapshot = last acknowledged current price
-                UnitPriceSnapshot = currentUnitPrice,
-                CurrentUnitPriceSnapshot = currentUnitPrice,
-
-                // Limit snapshots
-                MinOrderQtySnapshot = product.MinOrderQty,
-                MaxOrderQtySnapshot = product.MaxOrderQty,
-                MaxPerDayQtySnapshot = product.MaxPerDayQty,
-
-                // Validity flags (product can be added, but may block next step)
-                IsValid = true,
-                InvalidReason = null,
-
-                CreatedAt = now
-            };
-
-            // If product is inactive/unavailable/deleted => mark invalid and block next step
-            MarkInvalidIfNeeded(cart, cartItem, product, now);
-
-            await unitOfWork.CartItems.AddAsync(cartItem, ct);
-        }
-        else
-        {
-            // 7.2 Increase qty automatically
-            var newQty = cartItem.Quantity + dto.Quantity;
-            cartItem.Quantity = newQty;
-            cartItem.UpdatedAt = now;
-
-            // 7.3 Detect price change compared to last known current snapshot
-            if (cartItem.CurrentUnitPriceSnapshot != currentUnitPrice)
-            {
-                // Move last known current price to old snapshot
-                cartItem.UnitPriceSnapshot = cartItem.CurrentUnitPriceSnapshot;
-                cartItem.CurrentUnitPriceSnapshot = currentUnitPrice;
-
-                // Mark cart as invalid and require refresh before checkout
-                requiresRefresh = true;
-                refreshReason = "Price changed. Refresh cart before checkout.";
-
-                priceChange = new ItemPriceChangeDto
-                {
-                    OldPrice = cartItem.UnitPriceSnapshot,
-                    NewPrice = cartItem.CurrentUnitPriceSnapshot,
-                    ChangedAtUtc = now
-                };
-
-                SetCartStatus(cart, CartStatus.Invalid, refreshReason, now);
-            }
-
-            // 7.4 Update limit snapshots to latest product values
-            cartItem.MinOrderQtySnapshot = product.MinOrderQty;
-            cartItem.MaxOrderQtySnapshot = product.MaxOrderQty;
-            cartItem.MaxPerDayQtySnapshot = product.MaxPerDayQty;
-
-            // 7.5 Re-check validity (product may become invalid)
-            MarkInvalidIfNeeded(cart, cartItem, product, now);
-
-            unitOfWork.CartItems.Update(cartItem);
-        }
-
-        // 8) Persist changes
-        try
-        {
-            await unitOfWork.CompleteAsync(ct);
-        }
-        catch (DbUpdateException ex)
-        {
-            // 8.1 Handle rare concurrency for creating active cart (unique index)
-            // If another request created an active cart at the same time, re-fetch it and retry once.
-            // Keep it simple for MVP.
-            var activeCart = await unitOfWork.Carts.GetActiveByCustomerAsync(dto.CustomerId, ct);
-            if (activeCart is not null && activeCart.Id != cart.Id)
-            {
-                cart = activeCart;
-
-                // Re-run minimal insert into the correct cart
-                var retryItem = await unitOfWork.Carts.GetByCartProductUnitAsync(cart.Id, dto.ProductId, dto.UnitLevel, ct);
-                if (retryItem is null)
-                {
-                    cartItem.CartId = cart.Id;
-                    await unitOfWork.CartItems.AddAsync(cartItem, ct);
-                }
-                else
-                {
-                    retryItem.Quantity += dto.Quantity;
-                    retryItem.UpdatedAt = now;
-                    unitOfWork.CartItems.Update(retryItem);
-                    cartItem = retryItem;
-                }
-
-                await unitOfWork.CompleteAsync(ct);
-            }
-            else
-            {
-                throw; // Let middleware handle unexpected DB errors
-            }
-        }
-
-        // 9) Build response
-        var exceeds = cartItem.Quantity > availableQty;
-
-        var response = new AddToCartResponseDto
-        {
-            CartId = cart.Id,
-            CartStatus = (CartStatus)cart.Status,
-
-            CartItemId = cartItem.Id,
-            ProductId = cartItem.ProductId,
-            UnitLevel = (UnitLevel)cartItem.UnitLevel,
-            Quantity = cartItem.Quantity,
-
-            AvailableQty = availableQty,
-            ExceedsAvailableQty = exceeds,
-
-            RequiresRefresh = requiresRefresh || (CartStatus)cart.Status == CartStatus.Invalid,
-            RefreshReason = refreshReason,
-
-            PriceChange = priceChange
-        };
+        // 10) Build response
+        var response = BuildAddItemResponse(
+            cart,
+            upsert.CartItem,
+            sourceType,
+            pricing.AvailableQty,
+            upsert.RequiresRefresh,
+            upsert.RefreshReason,
+            upsert.PriceChange);
 
         return AppResponse<AddToCartResponseDto>.Ok(response, "Item added to cart successfully");
-    }
 
+        // Future improvements:
+        // - Add transaction or retry policy for active cart race conditions
+        // - Replace CustomerId with token claims
+    }
 
     // -------------------------
     // Get My Cart Async
@@ -427,74 +279,6 @@ public class CartService : ICartService
         // - Use transaction if you later add more side effects (events/logs)
     }
 
-    // -------------------------
-    // Helpers (private methods)
-    // -------------------------
-
-    private async Task<Cart> CreateActiveCartAsync(CartAddItemDto dto, CancellationToken ct)
-    {
-        // Create a new active cart for customer
-        var now = DateTime.UtcNow;
-
-        var cart = new Cart
-        {
-            CustomerId = dto.CustomerId,
-            StoreId = dto.StoreId,
-
-            Status = (byte)CartStatus.Active,
-            StatusUpdatedAt = now,
-            ExpiredReason = null,
-
-            DeviceId = string.IsNullOrWhiteSpace(dto.DeviceId) ? null : dto.DeviceId.Trim(),
-            AppInstanceId = string.IsNullOrWhiteSpace(dto.AppInstanceId) ? null : dto.AppInstanceId.Trim(),
-
-            CreatedAt = now
-        };
-
-        await unitOfWork.Carts.AddAsync(cart, ct);
-        await unitOfWork.CompleteAsync(ct); // Persist to get CartId
-
-        return cart;
-    }
-
-    private static void SetCartStatus(Cart cart, CartStatus status, string? reason, DateTime nowUtc)
-    {
-        // Set cart status and reason
-        cart.Status = (byte)status;
-        cart.StatusUpdatedAt = nowUtc;
-        cart.ExpiredReason = string.IsNullOrWhiteSpace(reason) ? null : reason;
-        cart.UpdatedAt = nowUtc;
-    }
-
-    private static void MarkInvalidIfNeeded(Cart cart, CartItem item, Product product, DateTime nowUtc)
-    {
-        // Product can remain in cart, but invalid products block next step
-        var isInvalidProduct =
-            product.DeletedAt != null ||
-            product.IsActive == false ||
-            product.IsAvailable == false;
-
-        if (!isInvalidProduct)
-        {
-            item.IsValid = true;
-            item.InvalidReason = null;
-            return;
-        }
-
-        item.IsValid = false;
-        item.InvalidReason = product.DeletedAt != null
-            ? "Product was deleted"
-            : (product.IsActive == false ? "Product is inactive" : "Product is unavailable");
-
-        item.UpdatedAt = nowUtc;
-
-        // Cart becomes invalid until user removes invalid items
-        SetCartStatus(cart, CartStatus.Invalid, "Cart contains invalid items. Remove them to continue.", nowUtc);
-    }
-
-
-
-    //------------------------------
     #region CartPreview
 
     public async Task<AppResponse<CartPreviewResponseDto>> PreviewAsync(CartPreviewRequestDto dto, CancellationToken ct)
@@ -834,5 +618,321 @@ public class CartService : ICartService
     private static decimal Round2(decimal value)
         => Math.Round(value, 2, MidpointRounding.AwayFromZero);
     #endregion
+
+
+
+    // -------------------------
+    // Helpers (private methods)
+    // -------------------------
+    private static AppResponse<AddToCartResponseDto>? ValidateAddItemRequest(CartAddItemDto dto)
+    {
+        // 1) Validate basic input
+        if (dto is null)
+            return AppResponse<AddToCartResponseDto>.ValidationError("Request body is required");
+
+        if (dto.CustomerId <= 0)
+            return AppResponse<AddToCartResponseDto>.ValidationErrors(
+                new Dictionary<string, string[]> { ["CustomerId"] = new[] { "CustomerId is required" } },
+                detail: "Validation failed");
+
+        if (dto.StoreId <= 0)
+            return AppResponse<AddToCartResponseDto>.ValidationErrors(
+                new Dictionary<string, string[]> { ["StoreId"] = new[] { "StoreId is required" } },
+                detail: "Validation failed");
+
+        if (dto.ProductId <= 0)
+            return AppResponse<AddToCartResponseDto>.ValidationErrors(
+                new Dictionary<string, string[]> { ["ProductId"] = new[] { "ProductId is required" } },
+                detail: "Validation failed");
+
+        if (dto.Quantity <= 0)
+            return AppResponse<AddToCartResponseDto>.ValidationErrors(
+                new Dictionary<string, string[]> { ["Quantity"] = new[] { "Quantity must be greater than 0" } },
+                detail: "Validation failed");
+
+        return null;
+    }
+
+    private static AppResponse<AddToCartResponseDto>? ValidateUnitLevelRules(CartAddItemDto dto, Product product)
+    {
+        // 1) Validate inner unit rules
+        if (dto.UnitLevel == UnitLevel.Inner)
+        {
+            if (!product.AllowSplitSale ||
+                product.InnerUnitPrice is null ||
+                product.InnerPerOuter is null ||
+                product.InnerPerOuter < 1)
+            {
+                return AppResponse<AddToCartResponseDto>.BusinessRuleViolation(
+                    "Inner unit sale is not allowed for this product");
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<AppResponse<AddToCartResponseDto>?> ValidateSourceRulesAsync(Product product,CartItemSourceType sourceType,CancellationToken ct)
+    {
+        // 1) Normal items do not need redemption checks
+        if (sourceType == CartItemSourceType.Normal)
+            return null;
+
+        // 2) Product must be redeemable by points
+        if (!product.IsRedeemableByPoints)
+            return AppResponse<AddToCartResponseDto>.BusinessRuleViolation(
+                "Product is not redeemable by points");
+
+        // 3) Product must not have an active direct promotion
+        if (HasActiveProductPromotion(product))
+            return AppResponse<AddToCartResponseDto>.BusinessRuleViolation(
+                "Redeemable product cannot have an active promotion");
+
+        // 4) Product must not be in an active group promotion
+        var inGroupPromotion = await unitOfWork.Carts.IsProductInActiveGroupPromotionAsync(product.Id, ct);
+        if (inGroupPromotion)
+            return AppResponse<AddToCartResponseDto>.BusinessRuleViolation(
+                "Redeemable product cannot be in an active group promotion");
+
+        return null;
+    }
+
+    private static bool HasActiveProductPromotion(Product product)
+    {
+        // 1) Check product-level promotion window
+        if (!product.HasPromotion)
+            return false;
+
+        if (product.PromotionStartsAt is null || product.PromotionEndsAt is null)
+            return false;
+
+        var now = DateTime.UtcNow;
+
+        return product.PromotionStartsAt <= now && product.PromotionEndsAt >= now;
+    }
+
+    private static CartPricingInfo BuildCartPricing(CartAddItemDto dto, Product product)
+    {
+        // 1) Compute current unit price
+        var currentUnitPrice = dto.UnitLevel == UnitLevel.Outer
+            ? product.OuterUnitPrice
+            : product.InnerUnitPrice!.Value;
+
+        // 2) Compute available quantity in selected unit
+        var availableQty = dto.UnitLevel == UnitLevel.Outer
+            ? product.Quantity
+            : product.Quantity * product.InnerPerOuter!.Value;
+
+        return new CartPricingInfo
+        {
+            CurrentUnitPrice = currentUnitPrice,
+            AvailableQty = availableQty
+        };
+    }
+
+    private async Task<Cart> GetOrCreateActiveCartAsync(CartAddItemDto dto, CancellationToken ct)
+    {
+        // 1) Load active cart
+        var cart = await unitOfWork.Carts.GetActiveByCustomerAsync(dto.CustomerId, ct);
+        if (cart is not null)
+            return cart;
+
+        // 2) Create active cart
+        var now = DateTime.UtcNow;
+
+        cart = new Cart
+        {
+            CustomerId = dto.CustomerId,
+            StoreId = dto.StoreId,
+            Status = (byte)CartStatus.Active,
+            StatusUpdatedAt = now,
+            ExpiredReason = null,
+            DeviceId = string.IsNullOrWhiteSpace(dto.DeviceId) ? null : dto.DeviceId.Trim(),
+            AppInstanceId = string.IsNullOrWhiteSpace(dto.AppInstanceId) ? null : dto.AppInstanceId.Trim(),
+            CreatedAt = now
+        };
+
+        await unitOfWork.Carts.AddCartAsync(cart, ct);
+        await unitOfWork.CompleteAsync(ct);
+
+        return cart;
+
+        // Future improvement:
+        // - Handle unique active cart race condition with retry
+    }
+
+    private async Task<AppResponse<AddToCartResponseDto>?> ValidateCartMixingAsync(int cartId,CartItemSourceType sourceType,CancellationToken ct)
+    {
+        // 1) Prevent mixing normal and points redemption items
+        var hasDifferent = await unitOfWork.Carts.HasDifferentSourceTypeAsync(cartId, sourceType, ct);
+
+        if (hasDifferent)
+        {
+            return AppResponse<AddToCartResponseDto>.BusinessRuleViolation(
+                "Cart cannot contain normal items and points redemption items together");
+        }
+
+        return null;
+    }
+
+
+    private async Task<CartItemUpsertResult> UpsertCartItemAsync(
+        Cart cart,
+        CartAddItemDto dto,
+        Product product,
+        CartItemSourceType sourceType,
+        decimal currentUnitPrice,
+        CancellationToken ct)
+    {
+        // 1) Load existing item by product, unit, and source
+        var cartItem = await unitOfWork.Carts.GetByCartProductUnitSourceAsync(
+            cart.Id,
+            dto.ProductId,
+            dto.UnitLevel,
+            sourceType,
+            ct);
+
+        var now = DateTime.UtcNow;
+
+        var result = new CartItemUpsertResult();
+
+        if (cartItem is null)
+        {
+            // 2) Create new cart item
+            cartItem = new CartItem
+            {
+                CartId = cart.Id,
+                ProductId = dto.ProductId,
+                UnitLevel = (byte)dto.UnitLevel,
+                SourceType = (byte)sourceType,
+
+                Quantity = dto.Quantity,
+
+                UnitPriceSnapshot = currentUnitPrice,
+                CurrentUnitPriceSnapshot = currentUnitPrice,
+
+                MinOrderQtySnapshot = product.MinOrderQty,
+                MaxOrderQtySnapshot = product.MaxOrderQty,
+                MaxPerDayQtySnapshot = product.MaxPerDayQty,
+
+                IsValid = true,
+                InvalidReason = null,
+
+                CreatedAt = now
+            };
+
+            // 3) Mark item invalid if product state requires it
+            MarkInvalidIfNeeded(cart, cartItem, product, now);
+
+            await unitOfWork.Carts.AddCartItemAsync(cartItem, ct);
+
+            result.CartItem = cartItem;
+            return result;
+        }
+
+        // 4) Increase existing quantity
+        cartItem.Quantity += dto.Quantity;
+        cartItem.UpdatedAt = now;
+
+        // 5) Detect price changes
+        if (cartItem.CurrentUnitPriceSnapshot != currentUnitPrice)
+        {
+            cartItem.UnitPriceSnapshot = cartItem.CurrentUnitPriceSnapshot;
+            cartItem.CurrentUnitPriceSnapshot = currentUnitPrice;
+
+            result.RequiresRefresh = true;
+            result.RefreshReason = "Price changed. Refresh cart before checkout.";
+            result.PriceChange = new ItemPriceChangeDto
+            {
+                OldPrice = cartItem.UnitPriceSnapshot,
+                NewPrice = cartItem.CurrentUnitPriceSnapshot,
+                ChangedAtUtc = now
+            };
+
+            SetCartStatus(cart, CartStatus.Invalid, result.RefreshReason, now);
+        }
+
+        // 6) Update snapshots
+        cartItem.MinOrderQtySnapshot = product.MinOrderQty;
+        cartItem.MaxOrderQtySnapshot = product.MaxOrderQty;
+        cartItem.MaxPerDayQtySnapshot = product.MaxPerDayQty;
+
+        // 7) Re-check item validity
+        MarkInvalidIfNeeded(cart, cartItem, product, now);
+
+        unitOfWork.Carts.UpdateCartItem(cartItem);
+
+        result.CartItem = cartItem;
+        return result;
+    }
+
+    private static void MarkInvalidIfNeeded(Cart cart, CartItem item, Product product, DateTime nowUtc)
+    {
+        // 1) Check product invalid states
+        var isInvalid =
+            product.DeletedAt != null ||
+            product.IsActive == false ||
+            product.IsAvailable == false;
+
+        if (!isInvalid)
+        {
+            item.IsValid = true;
+            item.InvalidReason = null;
+            return;
+        }
+
+        item.IsValid = false;
+        item.InvalidReason = product.DeletedAt != null
+            ? "Product was deleted"
+            : product.IsActive == false
+                ? "Product is inactive"
+                : "Product is unavailable";
+
+        item.UpdatedAt = nowUtc;
+
+        SetCartStatus(cart, CartStatus.Invalid, "Cart contains invalid items. Remove them to continue.", nowUtc);
+    }
+
+    private static void SetCartStatus(Cart cart, CartStatus status, string? reason, DateTime nowUtc)
+    {
+        // 1) Set cart status
+        cart.Status = (byte)status;
+        cart.StatusUpdatedAt = nowUtc;
+        cart.ExpiredReason = string.IsNullOrWhiteSpace(reason) ? null : reason;
+        cart.UpdatedAt = nowUtc;
+    }
+
+    private static AddToCartResponseDto BuildAddItemResponse(
+        Cart cart,
+        CartItem cartItem,
+        CartItemSourceType sourceType,
+        decimal availableQty,
+        bool requiresRefresh,
+        string? refreshReason,
+        ItemPriceChangeDto? priceChange)
+    {
+        // 1) Build response DTO
+        return new AddToCartResponseDto
+        {
+            CartId = cart.Id,
+            CartStatus = (CartStatus)cart.Status,
+
+            CartItemId = cartItem.Id,
+            ProductId = cartItem.ProductId,
+
+            UnitLevel = (UnitLevel)cartItem.UnitLevel,
+            SourceType = sourceType,
+
+            Quantity = cartItem.Quantity,
+
+            AvailableQty = availableQty,
+            ExceedsAvailableQty = cartItem.Quantity > availableQty,
+
+            RequiresRefresh = requiresRefresh || (CartStatus)cart.Status == CartStatus.Invalid,
+            RefreshReason = refreshReason,
+
+            PriceChange = priceChange
+        };
+    }
+
 
 }

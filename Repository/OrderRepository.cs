@@ -32,15 +32,17 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         // Future improvement: consider bulk insert for large orders
     }
 
-
-    public async Task<List<CheckoutLineData>> GetLinesFromCartAsync(int cartId, int customerId, CancellationToken ct)
+    public async Task<List<CheckoutLineData>> GetLinesFromCartAsync(int cartId,int customerId,CancellationToken ct)
     {
-        // 1) Load cart lines (cart must be Active and owned by customer)
+        // 1) Load normal cart lines only
         return await (
             from c in _db.Carts.AsNoTracking()
             join ci in _db.CartItems.AsNoTracking() on c.Id equals ci.CartId
             join p in _db.Products.AsNoTracking() on ci.ProductId equals p.Id
-            where c.Id == cartId && c.CustomerId == customerId && c.Status == 1
+            where c.Id == cartId
+                  && c.CustomerId == customerId
+                  && c.Status == 1
+                  && ci.SourceType == 1 // Normal only
             select new CheckoutLineData
             {
                 CartId = c.Id,
@@ -59,11 +61,14 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
                 InnerPerOuter = p.InnerPerOuter,
 
                 AllowSplitSale = p.AllowSplitSale,
-                Points = p.Points
+                Points = p.Points,
+
+                IsRedeemableByPoints = p.IsRedeemableByPoints,
+                CartItemSourceType = ci.SourceType
             }
         ).ToListAsync(ct);
 
-        // Future improvement: validate product state (IsActive/IsAvailable) here if needed
+        // Future improvement: validate product availability here if needed
     }
 
     public async Task<List<CheckoutLineData>> GetLinesFromPrescriptionAsync(int prescriptionId, int customerId, CancellationToken ct)
@@ -102,6 +107,45 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         // Future improvement: allow pharmacist to set unit level per item
     }
 
+    public async Task<List<CheckoutLineData>> GetLinesFromPointsRedemptionCartAsync(int cartId, int customerId, CancellationToken ct)
+    {
+        // 1) Load points redemption cart lines only
+        return await (
+            from c in _db.Carts.AsNoTracking()
+            join ci in _db.CartItems.AsNoTracking() on c.Id equals ci.CartId
+            join p in _db.Products.AsNoTracking() on ci.ProductId equals p.Id
+            where c.Id == cartId
+                  && c.CustomerId == customerId
+                  && c.Status == 1
+                  && ci.SourceType == 2 // PointsRedemption only
+            select new CheckoutLineData
+            {
+                CartId = c.Id,
+                StoreId = c.StoreId,
+                PrescriptionId = null,
+
+                ProductId = ci.ProductId,
+                UnitLevel = ci.UnitLevel,
+                Quantity = ci.Quantity,
+
+                OuterUnitPrice = p.OuterUnitPrice,
+                InnerUnitPrice = p.InnerUnitPrice,
+
+                OuterUnitId = p.OuterUnitId,
+                InnerUnitId = p.InnerUnitId,
+                InnerPerOuter = p.InnerPerOuter,
+
+                AllowSplitSale = p.AllowSplitSale,
+                Points = p.Points,
+
+                IsRedeemableByPoints = p.IsRedeemableByPoints,
+                CartItemSourceType = ci.SourceType
+            }
+        ).ToListAsync(ct);
+
+        // Future improvement: block products with active promotions here if needed
+    }
+
     public async Task<(bool ok, CustomerAddressSnapshot snap)> GetAddressSnapshotAsync(int addressId, int customerId, CancellationToken ct)
     {
         // 1) Load address and validate ownership
@@ -122,8 +166,6 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
 
         return (addr != null, addr ?? new CustomerAddressSnapshot());
     }
-
-
 
     public async Task<PagedResult<AdminOrderListItemDto>> SearchAdminAsync( AdminOrderListQueryDto q, CancellationToken ct)
     {
@@ -191,10 +233,8 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         // - Add index-based filtering optimizations
     }
 
-
     //================== 2
-    public async Task<Dictionary<int, ActiveGroupPromotionHit>> GetActiveGroupPromotionsByProductAsync(
-        List<int> productIds, CancellationToken ct)
+    public async Task<Dictionary<int, ActiveGroupPromotionHit>> GetActiveGroupPromotionsByProductAsync(List<int> productIds, CancellationToken ct)
     {
         // 1) Load active group promotions for products (choose highest discount per product)
         var now = DateTime.UtcNow;
@@ -287,51 +327,6 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         // Future improvement: prevent closing if no order created
     }
 
-
-
-    public async Task<List<CheckoutLineData>> GetLinesFromPointsRedemptionCartAsync(
-    int cartId,
-    int customerId,
-    CancellationToken ct)
-    {
-        // 1) Load points redemption cart lines only
-        return await (
-            from c in _db.Carts.AsNoTracking()
-            join ci in _db.CartItems.AsNoTracking() on c.Id equals ci.CartId
-            join p in _db.Products.AsNoTracking() on ci.ProductId equals p.Id
-            where c.Id == cartId
-                  && c.CustomerId == customerId
-                  && c.Status == 1
-                  && ci.SourceType == 2
-            select new CheckoutLineData
-            {
-                CartId = c.Id,
-                StoreId = c.StoreId,
-                PrescriptionId = null,
-
-                ProductId = ci.ProductId,
-                UnitLevel = ci.UnitLevel,
-                Quantity = ci.Quantity,
-
-                OuterUnitPrice = p.OuterUnitPrice,
-                InnerUnitPrice = p.InnerUnitPrice,
-
-                OuterUnitId = p.OuterUnitId,
-                InnerUnitId = p.InnerUnitId,
-                InnerPerOuter = p.InnerPerOuter,
-
-                AllowSplitSale = p.AllowSplitSale,
-                Points = p.Points,
-
-                IsRedeemableByPoints = p.IsRedeemableByPoints,
-                CartItemSourceType = ci.SourceType
-            }
-        ).ToListAsync(ct);
-
-        // Future improvement: validate product availability here if needed
-    }
-
-
     public async Task<int> GetCustomerPointsAsync(int customerId, CancellationToken ct)
     {
         // 1) Read fast points balance
@@ -344,11 +339,7 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         // Future improvement: compare periodically with lots sum for reconciliation
     }
 
-
-    public async Task<List<CustomerPointLot>> GetAvailablePointLotsForUpdateAsync(
-    int customerId,
-    DateTime nowUtc,
-    CancellationToken ct)
+    public async Task<List<CustomerPointLot>> GetAvailablePointLotsForUpdateAsync(int customerId,DateTime nowUtc,CancellationToken ct)
     {
         // 1) Load available point lots using FEFO order
         return await _db.CustomerPointLots
@@ -363,7 +354,6 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
 
         // Future improvement: use UPDLOCK query for stronger SQL Server concurrency protection
     }
-
 
     public async Task AddPointTransactionsRangeAsync(
     IEnumerable<CustomerPointTransaction> transactions,
@@ -394,6 +384,66 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
                 ct);
 
         // Future improvement: use rowversion on Customers for concurrency
+    }
+
+    public async Task<HashSet<byte>> GetCartItemSourceTypesAsync(int cartId,int customerId,CancellationToken ct)
+    {
+        // 1) Load distinct cart item source types
+        var sourceTypes = await (
+            from c in _db.Carts.AsNoTracking()
+            join ci in _db.CartItems.AsNoTracking() on c.Id equals ci.CartId
+            where c.Id == cartId
+                  && c.CustomerId == customerId
+                  && c.Status == 1
+            select ci.SourceType
+        )
+        .Distinct()
+        .ToListAsync(ct);
+
+        return sourceTypes.ToHashSet();
+
+        // Future improvement: return cart status too for better messages
+    }
+
+    // order status
+
+    public async Task<Order?> GetOrderForStatusUpdateAsync(int orderId, CancellationToken ct)
+    {
+        // 1) Load order for update (tracked)
+        return await _db.Orders
+            .FirstOrDefaultAsync(o => o.Id == orderId, ct);
+
+        // Future improvement: add StoreId scope for admin authorization
+    }
+
+    public async Task<List<CustomerPointLot>> GetPendingPointLotsByOrderAsync(int orderId, CancellationToken ct)
+    {
+        // 1) Load pending point lots for this order (tracked)
+        return await _db.CustomerPointLots
+            .Where(x =>
+                x.OrderId == orderId &&
+                x.Status == 1 &&              // 1=Pending
+                x.RemainingPoints > 0)
+            .ToListAsync(ct);
+
+        // Future improvement: add CustomerId filter for extra safety
+    }
+
+    public async Task<Customer?> GetCustomerForPointsUpdateAsync(int customerId, CancellationToken ct)
+    {
+        // 1) Load customer for points update (tracked)
+        return await _db.Customers
+            .FirstOrDefaultAsync(c => c.Id == customerId, ct);
+
+        // Future improvement: use rowversion/concurrency token on Customers
+    }
+
+    public void UpdateOrder(Order order)
+    {
+        // 1) Mark order as updated
+        _db.Orders.Update(order);
+
+        // Future improvement: tracked entity may not need explicit Update
     }
 
 

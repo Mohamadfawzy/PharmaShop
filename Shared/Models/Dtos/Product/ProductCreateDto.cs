@@ -49,6 +49,8 @@ public  class ProductCreateDto
     public int? MaxPerDayQty { get; set; }
 
     public bool IsReturnable { get; set; } = true;
+    public bool IsRedeemableByPoints { get; set; }
+
     public bool AllowSplitSale { get; set; } = false;
 
     [Range(0, double.MaxValue)]

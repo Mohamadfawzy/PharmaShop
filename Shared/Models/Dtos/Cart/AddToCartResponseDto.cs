@@ -16,6 +16,10 @@ public sealed class AddToCartResponseDto
     public int CartItemId { get; set; }
     public int ProductId { get; set; }
     public UnitLevel UnitLevel { get; set; }
+
+    public CartItemSourceType SourceType { get; set; }
+
+
     public decimal Quantity { get; set; }
 
     public decimal AvailableQty { get; set; }           // Current available qty in the same unit level

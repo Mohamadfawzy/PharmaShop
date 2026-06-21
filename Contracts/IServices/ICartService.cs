@@ -1,4 +1,5 @@
-﻿using Shared.Models.Dtos.Cart;
+﻿using Shared.Enums.Cart;
+using Shared.Models.Dtos.Cart;
 using Shared.Responses;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,9 @@ namespace Contracts.IServices;
 
 public interface ICartService
 {
-    Task<AppResponse<AddToCartResponseDto>> AddItemAsync(CartAddItemDto dto, CancellationToken ct);
+    Task<AppResponse<AddToCartResponseDto>> AddItemAsync(CartAddItemDto dto, CartItemSourceType sourceType, CancellationToken ct);
+
+    //Task<AppResponse<AddToCartResponseDto>> AddItemAsync(CartAddItemDto dto, CancellationToken ct);
     Task<AppResponse<int>> ClearCartAsync(int customerId, CancellationToken ct);
     Task<AppResponse<CartViewDto>> GetMyCartAsync(int customerId, CancellationToken ct);
     Task<AppResponse<CartPreviewResponseDto>> PreviewAsync(CartPreviewRequestDto dto, CancellationToken ct);

@@ -25,6 +25,7 @@ public sealed class CartItemViewDto
     public decimal AvailableQty { get; set; }               // In the same UnitLevel
     public bool ExceedsAvailableQty { get; set; }           // qty > available
 
+    public bool IsRedeemableByPoints { get; set; }
     public bool IsActive { get; set; }
     public bool IsAvailable { get; set; }
     public DateTime? DeletedAt { get; set; }

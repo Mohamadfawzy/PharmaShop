@@ -1,6 +1,7 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
 using Service;
+using Shared.Enums.Cart;
 using Shared.Models.Dtos.Cart;
 using WebAPI.Controllers.Admin;
 
@@ -17,16 +18,30 @@ public class CartsController : AdminBaseApiController
         this.cartService = cartService;
     }
 
-
     [HttpPost("items")]
-    public async Task<IActionResult> AddItem([FromBody] CartAddItemDto dto, CancellationToken ct)
+    public async Task<IActionResult> AddNormalItem(
+            [FromBody] CartAddItemDto dto,
+            CancellationToken ct)
     {
-        // 1) Delegate to service
-        var result = await cartService.AddItemAsync(dto, ct);
+        // 1) Add normal item
+        var result = await cartService.AddItemAsync(dto, CartItemSourceType.Normal, ct);
 
         // 2) Unified response
         return FromAppResponse(result);
     }
+
+    [HttpPost("redeem/items")]
+    public async Task<IActionResult> AddRedeemItem(
+        [FromBody] CartAddItemDto dto,
+        CancellationToken ct)
+    {
+        // 1) Add points redemption item
+        var result = await cartService.AddItemAsync(dto, CartItemSourceType.PointsRedemption, ct);
+
+        // 2) Unified response
+        return FromAppResponse(result);
+    }
+
 
 
     [HttpGet]
