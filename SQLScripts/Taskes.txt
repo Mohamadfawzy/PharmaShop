@@ -1,0 +1,24 @@
+بعد مقارنة المتطلبات المرفقة بالكود، أرى أن أساس السلة والطلبات والنقاط موجود، لكن المشروع ما زال يحتاج عدة أجزاء مهمة قبل أن يحقق تدفق العمل المطلوب بالكامل.
+النواقص الأعلى أولوية
+1. صلاحيات الـAPI تعيق تدفق العميل، وفيها مسار إداري مكشوف.
+   وحدات السلة والطلبات والوصفات ترث من AdminBaseApiController، الذي يشترط دور Admin؛ وهذا يشمل رفع العميل لوصفته وإتمامه للشراء. وفي المقابل، مسارات تعديل أدوار المستخدمين لا تفرض هذا الشرط حالياً لأن [Authorize] معلّق.
+   [AdminBaseApiController.cs](D:/MoSoft_Projets/PharmaShop/WebAPI/Controllers/Admin/AdminBaseApiController.cs) · [CartsController.cs](D:/MoSoft_Projets/PharmaShop/WebAPI/Controllers/CartsController.cs) · [AdminUsersRolesController.cs](D:/MoSoft_Projets/PharmaShop/WebAPI/Controllers/Auth/AdminUsersRolesController.cs)
+2. رسوم التوصيل تختلف بين المعاينة وإتمام الطلب.
+   معاينة السلة تستخدم رسماً ثابتاً قدره 20 جنيهاً، بينما خدمة الطلبات تستخدم صفراً. لذلك قد يرى العميل إجمالياً مختلفاً عند تأكيد الشراء. كما أن مناطق التوصيل والعناوين المرتبطة بها غير مطبقة بعد، وهو جزء مذكور في الملف على أنه قيد التصميم.
+   [CartService.cs](D:/MoSoft_Projets/PharmaShop/Service/CartService.cs) · [OrderService.cs](D:/MoSoft_Projets/PharmaShop/Service/OrderService.cs)
+3. إدارة المخزون ودورة حياة المخزون غير مكتملتين.
+   توجد نماذج وDTOs لاستلام المخزون وتسويته، لكن واجهة المنتجات الحالية تعرض الإنشاء والبحث فقط. كما أن إتمام الطلب لا يخصم المخزون ولا يتحقق من توفر الكمية بشكل كافٍ.
+   [ProductsController.cs](D:/MoSoft_Projets/PharmaShop/WebAPI/Controllers/ProductsController.cs) · [IProductService.cs](D:/MoSoft_Projets/PharmaShop/Contracts/IServices/IProductService.cs) · [OrderRepository.cs](D:/MoSoft_Projets/PharmaShop/Repository/OrderRepository.cs)
+4. انتهاء صلاحية النقاط والاسترجاع غير منفذين كعمليات كاملة.
+   توجد تواريخ انتهاء وسجل للحركات، لكن لم أجد عملية مجدولة تنقل الدفعات المنتهية إلى Expired وتخصمها من رصيد العميل وتسجل حركة انتهاء. كذلك لا يظهر تنفيذ حركتي RefundRedeem أو Expire، رغم وجودهما في قواعد النظام. و`BalanceAfter` يُسجل حالياً كقيمة فارغة في بعض الحركات.
+   [CustomerPointLot.cs](D:/MoSoft_Projets/PharmaShop/Entities/Models/CustomerPointLot.cs) · [OrderService.cs](D:/MoSoft_Projets/PharmaShop/Service/OrderService.cs)
+5. التحقق من عروض منتجات الاستبدال لا يعاد بالكامل عند إتمام الشراء.
+   الإضافة للسلة تتحقق من أن المنتج قابل للاستبدال ولا يخضع لعرض، لكن مسار الـCheckout يعيد التحقق من قابلية الاستبدال ونوع السلة فقط. إذا تغير العرض بعد الإضافة، قد لا يرفض الـCheckout المنتج وفق القاعدة المطلوبة.
+   [CartService.cs](D:/MoSoft_Projets/PharmaShop/Service/CartService.cs) · [OrderService.cs](D:/MoSoft_Projets/PharmaShop/Service/OrderService.cs)
+6. استراتيجية Snapshot مطبقة جزئياً.
+   الطلب يحفظ السعر والوحدة والخصم والعنوان ورسوم التوصيل وقت الشراء، وهذا جيد. لكن بيانات المنتج التعريفية مثل الاسم والكود لا تظهر كنسخ محفوظة في OrderItem؛ لذا قد تعتمد شاشة الطلب القديم على بيانات المنتج الحالية بعد تعديل اسمه أو حذفه.
+7. واجهات العميل غير مكتملة حول الحساب والعنوان والمتابعة.
+   يوجد نموذج للعناوين، لكن لا تظهر واجهات لإضافة عنوان العميل أو تعديله أو حذفه. كما لا تظهر واجهات عميل واضحة لعرض طلباته ووصفاته ومتابعة حالاتها؛ والواجهات الموجودة لهذه التدفقات مقيدة بدور المدير.
+8. بعض التكاملات ما زالت تجريبية أو غير موجودة.
+   إرسال البريد يسجل الرسالة في السجل فقط، وليس عبر مزود بريد فعلي. ولا تظهر طبقة تكامل ERP أو بوابة دفع منفذة؛ الموجودة حالياً قيم لأنواع الدفع فقط.
+أقترح أن يبدأ ترتيب العمل بإصلاح صلاحيات الـAPI، ثم توحيد حساب إجمالي الطلب ورسوم التوصيل، ثم استكمال المخزون والنقاط المنتهية والاسترجاعات. هذه العناصر تؤثر مباشرة على إمكانية استخدام التطبيق وعلى صحة الأموال والأرصدة.

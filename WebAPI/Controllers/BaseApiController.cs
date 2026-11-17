@@ -23,7 +23,7 @@ public abstract class BaseApiController : ControllerBase
             ? Ok(response)
             : StatusCode((int)response.StatusCode, response);
 
-    // مساعد شائع عشان  لو احتجته في كنترولرز أخرى
+    // مساعد شائع عشان  لو اناا احتجته في كنترولرز أخرى
     protected IActionResult ValidationError(string message)
         => BadRequest(AppResponse.Fail(message, AppErrorCode.ValidationError));
 }
