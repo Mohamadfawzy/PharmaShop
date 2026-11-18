@@ -12,7 +12,7 @@ using Shared.Responses;
 namespace Service.Auth;
 public sealed class AuthService : IAuthService
 {
-    private const string DefaultCustomerRole = "Customer";
+    private const string DefaultCustomerRole = AppRoles.Customer;
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;

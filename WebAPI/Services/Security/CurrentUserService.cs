@@ -1,5 +1,6 @@
 ﻿using Contracts.IServices;
 using System.Security.Claims;
+using Shared.Constants;
 
 namespace WebAPI.Services.Security;
 
@@ -33,6 +34,13 @@ public sealed class CurrentUserService : ICurrentUserService
 
     public IReadOnlyList<string> Roles =>
         User?.FindAll(ClaimTypes.Role)
+             .Select(c => c.Value)
+             .Distinct(StringComparer.OrdinalIgnoreCase)
+             .ToList()
+        ?? new List<string>();
+
+    public IReadOnlyList<string> Permissions =>
+        User?.FindAll(AppPermissions.ClaimType)
              .Select(c => c.Value)
              .Distinct(StringComparer.OrdinalIgnoreCase)
              .ToList()

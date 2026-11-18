@@ -29,6 +29,8 @@ public interface ICurrentUserService
     /// </summary>
     IReadOnlyList<string> Roles { get; }
 
+    IReadOnlyList<string> Permissions { get; }
+
     /// <summary>
     /// True if the request is authenticated
     /// </summary>

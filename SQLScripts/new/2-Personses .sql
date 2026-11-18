@@ -112,6 +112,47 @@ WHERE [IsDefault] = (1);
 GO
 GO
 
+--=======================================
+-- Governorates and their areas
+--=======================================
+
+CREATE TABLE [dbo].[Governorates] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [NameAr] nvarchar(100) NOT NULL,
+    [NameEn] nvarchar(100) NOT NULL,
+    [IsActive] bit NOT NULL CONSTRAINT [DF_Governorates_IsActive] DEFAULT ((1)),
+    [DisplayOrder] int NOT NULL CONSTRAINT [DF_Governorates_DisplayOrder] DEFAULT ((0)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_Governorates_CreatedAt] DEFAULT (sysdatetime()),
+    CONSTRAINT [PK_Governorates] PRIMARY KEY ([Id])
+);
+GO
+
+CREATE UNIQUE INDEX [UX_Governorates_NameAr]
+ON [dbo].[Governorates] ([NameAr]);
+GO
+
+CREATE TABLE [dbo].[GovernorateAreas] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [GovernorateId] int NOT NULL,
+    [NameAr] nvarchar(100) NOT NULL,
+    [NameEn] nvarchar(100) NOT NULL,
+    [IsActive] bit NOT NULL CONSTRAINT [DF_GovernorateAreas_IsActive] DEFAULT ((1)),
+    [DisplayOrder] int NOT NULL CONSTRAINT [DF_GovernorateAreas_DisplayOrder] DEFAULT ((0)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_GovernorateAreas_CreatedAt] DEFAULT (sysdatetime()),
+    CONSTRAINT [PK_GovernorateAreas] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_GovernorateAreas_Governorates_GovernorateId]
+        FOREIGN KEY ([GovernorateId]) REFERENCES [dbo].[Governorates] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+CREATE UNIQUE INDEX [UX_GovernorateAreas_GovernorateId_NameAr]
+ON [dbo].[GovernorateAreas] ([GovernorateId], [NameAr]);
+GO
+
+CREATE INDEX [IX_GovernorateAreas_GovernorateId_IsActive_DisplayOrder]
+ON [dbo].[GovernorateAreas] ([GovernorateId], [IsActive], [DisplayOrder]);
+GO
+
 -- =======================================
 -- Employees
 -- =======================================

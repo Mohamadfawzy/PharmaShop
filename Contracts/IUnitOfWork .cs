@@ -5,6 +5,11 @@ namespace Contracts;
 public interface IUnitOfWork : IDisposable
 {
     ICustomerRepository Customers { get; }
+    IGenericRepository<Pharmacy> Pharmacies { get; }
+    IGenericRepository<Store> Stores { get; }
+    IGenericRepository<Employee> Employees { get; }
+    IGenericRepository<Governorate> Governorates { get; }
+    IGenericRepository<GovernorateArea> GovernorateAreas { get; }
     IProductRepository Products { get; }
 
     IGenericRepository<Entities.Models.Unit> Units { get; }

@@ -46,6 +46,10 @@ public partial class RepositoryContext : DbContext
 
     public virtual DbSet<Employee> Employees { get; set; }
 
+    public virtual DbSet<Governorate> Governorates { get; set; }
+
+    public virtual DbSet<GovernorateArea> GovernorateAreas { get; set; }
+
     public virtual DbSet<Order> Orders { get; set; }
 
     public virtual DbSet<OrderItem> OrderItems { get; set; }
@@ -416,6 +420,30 @@ public partial class RepositoryContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
             entity.HasOne(d => d.User).WithOne(p => p.Employee).HasForeignKey<Employee>(d => d.UserId);
+        });
+
+        modelBuilder.Entity<Governorate>(entity =>
+        {
+            entity.HasIndex(e => e.NameAr, "UX_Governorates_NameAr").IsUnique();
+            entity.Property(e => e.NameAr).HasMaxLength(100);
+            entity.Property(e => e.NameEn).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysdatetime())");
+        });
+
+        modelBuilder.Entity<GovernorateArea>(entity =>
+        {
+            entity.HasIndex(e => new { e.GovernorateId, e.NameAr }, "UX_GovernorateAreas_GovernorateId_NameAr").IsUnique();
+            entity.HasIndex(e => new { e.GovernorateId, e.IsActive, e.DisplayOrder }, "IX_GovernorateAreas_GovernorateId_IsActive_DisplayOrder");
+            entity.Property(e => e.NameAr).HasMaxLength(100);
+            entity.Property(e => e.NameEn).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysdatetime())");
+            entity.HasOne(d => d.Governorate).WithMany(p => p.Areas)
+                .HasForeignKey(d => d.GovernorateId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<Order>(entity =>
@@ -799,8 +827,8 @@ public partial class RepositoryContext : DbContext
                 .IsRowVersion()
                 .IsConcurrencyToken();
 
-            entity.HasOne(d => d.Pharmacy).WithOne(p => p.Store)
-                .HasForeignKey<Store>(d => d.PharmacyId)
+            entity.HasOne(d => d.Pharmacy).WithMany(p => p.Stores)
+                .HasForeignKey(d => d.PharmacyId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
         });
 

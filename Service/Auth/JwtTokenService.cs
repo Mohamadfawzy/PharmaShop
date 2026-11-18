@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Repository.Identity;
+using Shared.Constants;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -26,6 +27,7 @@ public sealed class JwtTokenService
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var roles = await _userManager.GetRolesAsync(user);
+        var userClaims = await _userManager.GetClaimsAsync(user);
 
         var claims = new List<Claim>
         {
@@ -35,6 +37,10 @@ public sealed class JwtTokenService
             new("email_verified", user.EmailConfirmed ? "true" : "false"),
             new("pharmacy_id", pharmacyId.ToString())
         };
+
+        claims.AddRange(userClaims
+            .Where(c => c.Type == AppPermissions.ClaimType && AppPermissions.IsKnown(c.Value))
+            .Select(c => new Claim(AppPermissions.ClaimType, c.Value)));
 
         foreach (var r in roles)
             claims.Add(new Claim(ClaimTypes.Role, r));

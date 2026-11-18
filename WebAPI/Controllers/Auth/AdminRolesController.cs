@@ -1,13 +1,14 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Constants;
 
 namespace WebAPI.Controllers.Auth;
 
 
 [Route("api/admin")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = AppPolicies.Admin)]
 public sealed class AdminRolesController : ControllerBase
 {
     private readonly IUserRoleService _query;

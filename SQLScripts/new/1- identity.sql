@@ -135,14 +135,51 @@ GO
 
 MERGE dbo.AspNetRoles AS target
 USING (VALUES
-    (N'Admin',      N'ADMIN',      N'Admin',      N'Full access'),
-    (N'Support',    N'SUPPORT',    N'Support',    N'Support staff'),
-    (N'Viewer',     N'VIEWER',     N'Viewer',     N'Read-only access'),
-    (N'Customer',   N'CUSTOMER',   N'Customer',   N'Customer account'),
-    (N'Pharmacist', N'PHARMACIST', N'Pharmacist', N'Pharmacist account')
+    (N'Admin',         N'ADMIN',         N'Admin',         N'Full access'),
+    (N'Support',       N'SUPPORT',       N'Support',       N'Support staff'),
+    (N'Viewer',        N'VIEWER',        N'Viewer',        N'Read-only access'),
+    (N'Customer',      N'CUSTOMER',      N'Customer',      N'Customer account'),
+    (N'Employee',      N'EMPLOYEE',      N'Employee',      N'Employee account'),
+    (N'DeliveryAgent', N'DELIVERYAGENT', N'Delivery Agent',N'Delivery agent account')
 ) AS source ([Name], [NormalizedName], [NameEn], [Description])
 ON target.NormalizedName = source.NormalizedName
 WHEN NOT MATCHED BY TARGET THEN
     INSERT ([Name], [NormalizedName], [ConcurrencyStamp], [NameEn], [Description])
     VALUES (source.[Name], source.[NormalizedName], NEWID(), source.[NameEn], source.[Description]);
+GO
+
+-- Move legacy pharmacist accounts to Employee with prescription-review permission.
+DECLARE @PharmacistRoleId int = (SELECT [Id] FROM dbo.AspNetRoles WHERE [NormalizedName] = N'PHARMACIST');
+DECLARE @EmployeeRoleId int = (SELECT [Id] FROM dbo.AspNetRoles WHERE [NormalizedName] = N'EMPLOYEE');
+
+IF @PharmacistRoleId IS NOT NULL AND @EmployeeRoleId IS NOT NULL
+BEGIN
+    INSERT INTO dbo.AspNetUserRoles ([UserId], [RoleId])
+    SELECT oldRole.[UserId], @EmployeeRoleId
+    FROM dbo.AspNetUserRoles AS oldRole
+    WHERE oldRole.[RoleId] = @PharmacistRoleId
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM dbo.AspNetUserRoles AS employeeRole
+          WHERE employeeRole.[UserId] = oldRole.[UserId]
+            AND employeeRole.[RoleId] = @EmployeeRoleId
+      );
+
+    INSERT INTO dbo.AspNetUserClaims ([UserId], [ClaimType], [ClaimValue])
+    SELECT oldRole.[UserId], N'permission', N'CanReviewPrescriptions'
+    FROM dbo.AspNetUserRoles AS oldRole
+    WHERE oldRole.[RoleId] = @PharmacistRoleId
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM dbo.AspNetUserClaims AS permissionClaim
+          WHERE permissionClaim.[UserId] = oldRole.[UserId]
+            AND permissionClaim.[ClaimType] = N'permission'
+            AND permissionClaim.[ClaimValue] = N'CanReviewPrescriptions'
+      );
+
+    DELETE FROM dbo.AspNetUserRoles WHERE [RoleId] = @PharmacistRoleId;
+    DELETE FROM dbo.AspNetRoles WHERE [Id] = @PharmacistRoleId;
+END
 GO

@@ -12,8 +12,10 @@ using Repository.Identity;
 using Service;
 using Service.Auth;
 using Service.Images;
+using Shared.Constants;
 using Shared.Mappings;
 using System.Text;
+using System.Security.Claims;
 using WebAPI.Notifications;
 namespace WebAPI.Extensions;
 
@@ -27,6 +29,7 @@ public static class ServiceExtensions
         services.AddScoped<JwtTokenService>();
         services.AddScoped<ILoginAuditService, LoginAuditService>();
         services.AddScoped<IUserRoleService, UserRoleService>();
+        services.AddScoped<IUserPermissionService, UserPermissionService>();
 
         //services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
@@ -39,6 +42,10 @@ public static class ServiceExtensions
         services.AddTransient<IPromotionService, PromotionService>();
         services.AddTransient<IOrderService, OrderService>();
         services.AddTransient<IPrescriptionService, PrescriptionService>();
+        services.AddTransient<IPharmacyService, PharmacyService>();
+        services.AddTransient<IStoreService, StoreService>();
+        services.AddTransient<IEmployeeService, EmployeeService>();
+        services.AddTransient<ILocationService, LocationService>();
 
 
         services.AddScoped<IAuthService, AuthService>();
@@ -134,11 +141,40 @@ public static class ServiceExtensions
                 ValidIssuer = jwt["Issuer"],
                 ValidAudience = jwt["Audience"],
                 IssuerSigningKey = new SymmetricSecurityKey(key),
+                RoleClaimType = ClaimTypes.Role,
 
                 ClockSkew = TimeSpan.FromSeconds(30)
             };
         });
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(AppPolicies.Admin, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(AppRoles.Admin));
+
+            options.AddPolicy(AppPolicies.Customer, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(AppRoles.Customer));
+
+            options.AddPolicy(AppPolicies.Employee, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(AppRoles.Employee));
+
+            options.AddPolicy(AppPolicies.DeliveryAgent, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(AppRoles.DeliveryAgent));
+
+            options.AddPolicy(AppPolicies.CanManageUsers, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(AppRoles.Admin));
+
+            options.AddPolicy(AppPolicies.CanManageStores, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(AppRoles.Admin));
+
+            foreach (var permission in AppPermissions.PolicyPermissions)
+            {
+                options.AddPolicy(permission.Key, policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireAssertion(context =>
+                        context.User.IsInRole(AppRoles.Admin) ||
+                        context.User.HasClaim(AppPermissions.ClaimType, permission.Value)));
+            }
+        });
 
 
 

@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Constants;
 
 namespace WebAPI.Controllers.Admin;
 
 
-[Authorize(Roles = "Admin")] // عدّلها حسب نظامك
+[Authorize(Policy = AppPolicies.Admin)]
 public abstract class AdminBaseApiController : BaseApiController
 {
     private readonly IWebHostEnvironment _env;

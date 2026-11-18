@@ -12,6 +12,11 @@ public class UnitOfWork : IUnitOfWork
     {
         _context = context;
         Customers = new CustomerRepository(_context);
+        Pharmacies = new GenericRepository<Pharmacy>(_context);
+        Stores = new GenericRepository<Store>(_context);
+        Employees = new GenericRepository<Employee>(_context);
+        Governorates = new GenericRepository<Governorate>(_context);
+        GovernorateAreas = new GenericRepository<GovernorateArea>(_context);
         Products = new ProductRepository(_context);
         Categories = new CategoryRepository(_context);
         Promotions = new PromotionRepository(_context);
@@ -24,6 +29,11 @@ public class UnitOfWork : IUnitOfWork
     }
 
     public ICustomerRepository Customers { get; private set; }
+    public IGenericRepository<Pharmacy> Pharmacies { get; private set; }
+    public IGenericRepository<Store> Stores { get; private set; }
+    public IGenericRepository<Employee> Employees { get; private set; }
+    public IGenericRepository<Governorate> Governorates { get; private set; }
+    public IGenericRepository<GovernorateArea> GovernorateAreas { get; private set; }
     public IProductRepository Products { get; private set; }
     public ICategoryRepository Categories { get; private set; }
     public ICartRepository Carts { get; private set; }

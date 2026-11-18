@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Models.Auth;
+using Shared.Constants;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace WebAPI.Controllers.Auth;
@@ -9,7 +10,7 @@ namespace WebAPI.Controllers.Auth;
 
 [Route("api/admin/users")]
 [ApiController]
-//[Authorize(Roles = "Admin")] // أو Policy لاحقاً
+[Authorize(Policy = AppPolicies.Admin)]
 public sealed class AdminUsersRolesController : ControllerBase
 {
     private readonly IUserRoleService _service;
