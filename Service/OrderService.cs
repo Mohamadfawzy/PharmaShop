@@ -1313,7 +1313,7 @@ public class OrderService : IOrderService
             (2, 6) => true, // Confirmed -> Cancelled
             (3, 6) => true, // Preparing -> Cancelled
 
-            (5, 7) => true, // Delivered -> Returned
+            // Delivered orders must use the return-request approval flow.
 
             (8, 2) => true, // PendingApproval -> Confirmed
 

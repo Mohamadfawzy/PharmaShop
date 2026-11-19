@@ -10,7 +10,7 @@ namespace Service;
 
 public sealed class InventoryService : IInventoryService
 {
-    private const byte Receipt = 1, AdjustmentIncrease = 2, AdjustmentDecrease = 3, OrderDeduction = 4, OrderRestock = 5;
+    private const byte Receipt = 1, AdjustmentIncrease = 2, AdjustmentDecrease = 3, OrderDeduction = 4, OrderRestock = 5, ReturnRestock = 6;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentUserService _currentUser;
     private readonly IValidator<ReceiveStockDto> _receiveValidator;
@@ -160,7 +160,7 @@ public sealed class InventoryService : IInventoryService
         var deductions = await _uow.Inventory.GetOrderMovementsAsync(orderId, OrderDeduction, ct);
         if (deductions.Count == 0 || await _uow.Inventory.HasOrderMovementAsync(orderId, OrderRestock, ct)) return;
         var employee = await GetCurrentEmployeeAsync(ct);
-        if (employee is null && !_currentUser.IsInRole(Shared.Constants.AppRoles.Admin))
+        if (employee is null && !_currentUser.IsInRole(Shared.Constants.AppRoles.Admin) && !_currentUser.IsInRole(Shared.Constants.AppRoles.Customer))
             throw new InventoryOperationException("Active employee account is required to cancel or return an order");
         foreach (var group in deductions.GroupBy(x => x.ProductId))
         {
@@ -187,6 +187,36 @@ public sealed class InventoryService : IInventoryService
         }
     }
 
+    public async Task<decimal> RestoreApprovedReturnItemAsync(ReturnRequestItem item, CancellationToken ct)
+    {
+        if (await _uow.Inventory.HasReturnMovementAsync(item.Id, ct)) return 0m;
+        var employee = await GetCurrentEmployeeAsync(ct);
+        if (employee is null && !_currentUser.IsInRole(Shared.Constants.AppRoles.Admin))
+            throw new InventoryOperationException("An active employee account is required to approve returns");
+        var orderItem = item.OrderItem;
+        var outerQuantity = orderItem.UnitLevel == 2
+            ? item.Quantity / (orderItem.InnerPerOuterSnapshot.GetValueOrDefault() > 0
+                ? orderItem.InnerPerOuterSnapshot!.Value
+                : throw new InventoryOperationException($"Order item {orderItem.Id} has no inner-unit snapshot"))
+            : item.Quantity;
+        var product = await _uow.Inventory.GetProductAsync(orderItem.ProductId, ct)
+            ?? throw new InventoryOperationException($"Product {orderItem.ProductId} no longer exists");
+        if (employee is not null && employee.PharmacyId != product.Store.PharmacyId)
+            throw new InventoryOperationException("You cannot approve a return for another pharmacy");
+        var before = product.Quantity;
+        if (!await _uow.Inventory.ApplyStockDeltaAsync(product.Id, before, outerQuantity, ct))
+            throw new InventoryOperationException($"Stock changed while restoring product {product.Id}");
+        await _uow.Inventory.AddMovementAsync(new ProductInventoryTransaction
+        {
+            ProductId = product.Id, EmployeeId = employee?.Id, OrderId = item.ReturnRequest.OrderId,
+            OrderItemId = orderItem.Id, ReturnRequestItemId = item.Id, TransactionType = ReturnRestock,
+            ProductUnitId = orderItem.UnitLevel == 2 ? orderItem.InnerUnitIdSnapshot : orderItem.OuterUnitIdSnapshot,
+            Quantity = outerQuantity, QuantityBefore = before, QuantityAfter = before + outerQuantity,
+            Reason = ActorReason($"Approved return request #{item.ReturnRequestId}"), CreatedAt = DateTime.UtcNow
+        }, ct);
+        return outerQuantity;
+    }
+
     private async Task<Employee?> GetCurrentEmployeeAsync(CancellationToken ct)
     {
         if (!int.TryParse(_currentUser.UserId, out var userId)) return null;
@@ -196,6 +226,8 @@ public sealed class InventoryService : IInventoryService
     private string ActorReason(string reason)
         => _currentUser.IsInRole(Shared.Constants.AppRoles.Admin)
             ? $"Admin {_currentUser.UserId}: {reason}"
+            : _currentUser.IsInRole(Shared.Constants.AppRoles.Customer)
+                ? $"Customer {_currentUser.UserId}: {reason}"
             : reason;
 
     private static decimal ToOuterQuantity(OrderItem item)

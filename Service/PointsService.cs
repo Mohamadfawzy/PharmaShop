@@ -44,8 +44,8 @@ public sealed class PointsService : IPointsService
         var customer = await FindCustomerAsync(ct);
         if (customer is null) return AppResponse<List<CustomerPointTransactionDto>>.NotFound("Active customer profile not found");
         if (query is null) return AppResponse<List<CustomerPointTransactionDto>>.ValidationError("Query is required");
-        if (query.TransactionType.HasValue && (query.TransactionType < 1 || query.TransactionType > 7))
-            return AppResponse<List<CustomerPointTransactionDto>>.ValidationError("TransactionType must be between 1 and 7");
+        if (query.TransactionType.HasValue && (query.TransactionType < 1 || query.TransactionType > 8))
+            return AppResponse<List<CustomerPointTransactionDto>>.ValidationError("TransactionType must be between 1 and 8");
         if (query.From.HasValue && query.To.HasValue && query.From > query.To)
             return AppResponse<List<CustomerPointTransactionDto>>.ValidationError("From must be earlier than To");
         NormalizePage(query);
@@ -210,6 +210,81 @@ public sealed class PointsService : IPointsService
         customer.UpdatedAt = refundedAtUtc;
         if (rows.Count > 0) await _unitOfWork.Points.AddTransactionsAsync(rows, ct);
     }
+
+    public async Task<(int RedeemedRefunded, int EarnedReversed)> ApplyApprovedReturnAsync(
+        Order order, ReturnRequest request, IReadOnlyList<ReturnRequestItem> priorApprovedItems, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var customer = await _unitOfWork.Customers.FirstOrDefaultAsync(c => c.Id == order.CustomerId, asNoTracking: false, ct: ct)
+            ?? throw new InvalidOperationException("Return order customer not found");
+        var totalLineValue = order.OrderItems.Sum(i => i.LineTotal);
+        var priorReturnValue = priorApprovedItems.Sum(i => ReturnLineValue(i.OrderItem, i.Quantity));
+        var currentReturnValue = request.Items.Sum(i => ReturnLineValue(i.OrderItem, i.Quantity));
+
+        var redemptions = await _unitOfWork.Points.GetOrderRedemptionsAsync(order.Id, order.CustomerId, ct);
+        var totalRedeemed = redemptions.Sum(t => -t.PointsDelta);
+        var previouslyRefunded = await _unitOfWork.Points.GetReturnPointAdjustmentTotalAsync(order.Id, 8, ct);
+        var targetRefunded = totalLineValue <= 0 ? 0 : Math.Min(totalRedeemed,
+            (int)Math.Floor(totalRedeemed * (priorReturnValue + currentReturnValue) / totalLineValue));
+        var redeemedRefund = Math.Max(0, targetRefunded - previouslyRefunded);
+
+        var earnedLot = await _unitOfWork.Points.GetOrderEarnLotAsync(order.Id, ct);
+        var earnedToReverse = 0;
+        foreach (var orderItem in order.OrderItems)
+        {
+            if (orderItem.Quantity <= 0 || orderItem.EarnedPoints <= 0) continue;
+            var priorQty = priorApprovedItems.Where(i => i.OrderItemId == orderItem.Id).Sum(i => i.Quantity);
+            var thisQty = request.Items.Where(i => i.OrderItemId == orderItem.Id).Sum(i => i.Quantity);
+            var target = (int)Math.Floor(orderItem.EarnedPoints * Math.Min(orderItem.Quantity, priorQty + thisQty) / orderItem.Quantity);
+            var reversed = -await _unitOfWork.Points.GetEarnedPointsReversedAsync(orderItem.Id, ct);
+            earnedToReverse += Math.Max(0, target - reversed);
+        }
+
+        var earnedReversed = Math.Min(earnedToReverse, earnedLot?.RemainingPoints ?? 0);
+        if (earnedReversed > 0 && earnedLot is not null)
+        {
+            if (customer.Points < earnedReversed)
+                throw new InvalidOperationException("Customer points balance is inconsistent with the available order points lot");
+            earnedLot.RemainingPoints -= earnedReversed;
+            earnedLot.Status = earnedLot.RemainingPoints == 0 ? (byte)3 : earnedLot.Status;
+            earnedLot.UpdatedAt = now;
+            customer.Points -= earnedReversed;
+            await _unitOfWork.Points.AddTransactionsAsync([new CustomerPointTransaction
+            {
+                CustomerId = customer.Id, LotId = earnedLot.Id, OrderId = order.Id,
+                TransactionType = 6, PointsDelta = -earnedReversed, BalanceAfter = customer.Points,
+                ReferenceType = 5, ReferenceId = request.Id,
+                Notes = $"Earned points reversed for approved return #{request.Id}", CreatedAt = now
+            }], ct);
+        }
+
+        if (redeemedRefund > 0)
+        {
+            var expiry = now.AddDays(90);
+            var lot = new CustomerPointLot
+            {
+                CustomerId = customer.Id, OrderId = order.Id, PointsTotal = redeemedRefund,
+                RemainingPoints = redeemedRefund, Status = 2, EarnedAt = now, AvailableAt = now,
+                ExpiresAt = expiry, CreatedAt = now
+            };
+            await _unitOfWork.Points.AddLotAsync(lot, ct);
+            customer.Points += redeemedRefund;
+            await _unitOfWork.Points.AddTransactionsAsync([new CustomerPointTransaction
+            {
+                CustomerId = customer.Id, Lot = lot, OrderId = order.Id, TransactionType = 8,
+                PointsDelta = redeemedRefund, BalanceAfter = customer.Points, PointsPerEGP = ConversionRate,
+                AmountEGP = Math.Round(redeemedRefund / (decimal)ConversionRate, 2), ExpiresAt = expiry,
+                ReferenceType = 5, ReferenceId = request.Id,
+                Notes = $"Redeemed points refunded for approved return #{request.Id}; expires 90 days after refund", CreatedAt = now
+            }], ct);
+        }
+
+        customer.UpdatedAt = now;
+        return (redeemedRefund, earnedReversed);
+    }
+
+    private static decimal ReturnLineValue(OrderItem item, decimal quantity)
+        => item.Quantity <= 0 ? 0 : decimal.Round(item.LineTotal * quantity / item.Quantity, 2, MidpointRounding.AwayFromZero);
 
     private Task<Customer?> FindCustomerAsync(CancellationToken ct)
     {

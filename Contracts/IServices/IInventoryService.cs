@@ -10,4 +10,5 @@ public interface IInventoryService
     Task<AppResponse<InventoryTransactionPageDto>> SearchAsync(InventoryTransactionQueryDto query, CancellationToken ct);
     Task ApplyOrderConfirmationAsync(int orderId, CancellationToken ct);
     Task RestoreOrderStockAsync(int orderId, CancellationToken ct);
+    Task<decimal> RestoreApprovedReturnItemAsync(Entities.Models.ReturnRequestItem item, CancellationToken ct);
 }

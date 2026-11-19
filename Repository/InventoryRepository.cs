@@ -19,6 +19,9 @@ public sealed class InventoryRepository : IInventoryRepository
     public Task<bool> HasOrderMovementAsync(int orderId, byte transactionType, CancellationToken ct)
         => _db.ProductInventoryTransactions.AnyAsync(x => x.OrderId == orderId && x.TransactionType == transactionType, ct);
 
+    public Task<bool> HasReturnMovementAsync(int returnRequestItemId, CancellationToken ct)
+        => _db.ProductInventoryTransactions.AnyAsync(x => x.ReturnRequestItemId == returnRequestItemId, ct);
+
     public Task<List<ProductInventoryTransaction>> GetOrderMovementsAsync(int orderId, byte transactionType, CancellationToken ct)
         => _db.ProductInventoryTransactions.Where(x => x.OrderId == orderId && x.TransactionType == transactionType)
             .OrderBy(x => x.Id).ToListAsync(ct);

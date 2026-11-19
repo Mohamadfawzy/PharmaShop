@@ -20,7 +20,7 @@ BEGIN
         ExpirationDate DATETIME2(0) NULL,
         CostPrice DECIMAL(18,2) NULL,
         CreatedAt DATETIME2(0) NOT NULL CONSTRAINT DF_ProductInventoryTransactions_CreatedAt DEFAULT (SYSUTCDATETIME()),
-        CONSTRAINT CK_ProductInventoryTransactions_Type CHECK (TransactionType BETWEEN 1 AND 5),
+        CONSTRAINT CK_ProductInventoryTransactions_Type CHECK (TransactionType BETWEEN 1 AND 6),
         CONSTRAINT CK_ProductInventoryTransactions_Quantity CHECK (Quantity > 0),
         CONSTRAINT FK_ProductInventoryTransactions_Products FOREIGN KEY (ProductId) REFERENCES dbo.Products(Id),
         CONSTRAINT FK_ProductInventoryTransactions_Employees FOREIGN KEY (EmployeeId) REFERENCES dbo.Employees(Id),

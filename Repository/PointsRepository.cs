@@ -103,6 +103,19 @@ public sealed class PointsRepository : IPointsRepository
         => _db.CustomerPointTransactions.AsNoTracking().AnyAsync(t => t.TransactionType == 4 &&
             t.SourceTransactionId == sourceTransactionId, ct);
 
+    public Task<CustomerPointLot?> GetOrderEarnLotAsync(int orderId, CancellationToken ct)
+        => _db.CustomerPointLots.FirstOrDefaultAsync(l => l.OrderId == orderId && l.OrderItemId == null, ct);
+
+    public async Task<int> GetReturnPointAdjustmentTotalAsync(int orderId, byte transactionType, CancellationToken ct)
+        => await _db.CustomerPointTransactions.AsNoTracking()
+            .Where(t => t.OrderId == orderId && t.TransactionType == transactionType && t.ReferenceType == 5)
+            .SumAsync(t => (int?)t.PointsDelta, ct) ?? 0;
+
+    public async Task<int> GetEarnedPointsReversedAsync(int orderItemId, CancellationToken ct)
+        => await _db.CustomerPointTransactions.AsNoTracking()
+            .Where(t => t.OrderItemId == orderItemId && t.TransactionType == 6 && t.ReferenceType == 5)
+            .SumAsync(t => (int?)t.PointsDelta, ct) ?? 0;
+
     public async Task AddLotAsync(CustomerPointLot lot, CancellationToken ct)
         => await _db.CustomerPointLots.AddAsync(lot, ct);
 

@@ -34,6 +34,7 @@ public class UnitOfWork : IUnitOfWork
         Points = new PointsRepository(_context);
         Prescriptions = new PrescriptionRepository(_context);
         Inventory = new InventoryRepository(_context);
+        ReturnRequests = new ReturnRequestRepository(_context);
     }
 
     public ICustomerRepository Customers { get; private set; }
@@ -53,6 +54,7 @@ public class UnitOfWork : IUnitOfWork
     public IPointsRepository Points { get; private set; }
     public IPrescriptionRepository Prescriptions { get; private set; }
     public IInventoryRepository Inventory { get; private set; }
+    public IReturnRequestRepository ReturnRequests { get; private set; }
 
     public IGenericRepository<Unit> Units { get; private set; }
     public IGenericRepository<Company> Companies { get; private set; }
@@ -87,4 +89,5 @@ public class UnitOfWork : IUnitOfWork
         var dbTransaction = await _context.Database.BeginTransactionAsync(ct);
         return new EfTransaction(dbTransaction);
     }
+
 }

@@ -111,11 +111,11 @@ CREATE TABLE [dbo].[CustomerPointTransactions] (
         FOREIGN KEY ([CreatedByEmployeeId]) REFERENCES [dbo].[Employees] ([Id]) ON DELETE NO ACTION,
 
     CONSTRAINT [CK_CustomerPointTransactions_Type]
-        CHECK ([TransactionType] IN ((1),(2),(3),(4),(5),(6),(7))),
+        CHECK ([TransactionType] IN ((1),(2),(3),(4),(5),(6),(7),(8))),
 
     CONSTRAINT [CK_CustomerPointTransactions_PointsDelta]
         CHECK (
-            ([TransactionType] IN ((1),(2),(4)) AND [PointsDelta] > (0))
+            ([TransactionType] IN ((1),(2),(4),(8)) AND [PointsDelta] > (0))
             OR ([TransactionType] IN ((3),(5),(6)) AND [PointsDelta] < (0))
             OR ([TransactionType] = (7) AND [PointsDelta] <> (0))
         ),
@@ -131,12 +131,12 @@ CREATE TABLE [dbo].[CustomerPointTransactions] (
 
     CONSTRAINT [CK_CustomerPointTransactions_EarnExpiresAt]
         CHECK (
-            ([TransactionType] NOT IN ((1),(2)) AND [ExpiresAt] IS NULL)
-            OR ([TransactionType] IN ((1),(2)) AND [ExpiresAt] IS NOT NULL)
+            ([TransactionType] NOT IN ((1),(2),(8)) AND [ExpiresAt] IS NULL)
+            OR ([TransactionType] IN ((1),(2),(8)) AND [ExpiresAt] IS NOT NULL)
         ),
 
     CONSTRAINT [CK_CustomerPointTransactions_ReferenceType]
-        CHECK ([ReferenceType] IS NULL OR [ReferenceType] IN ((1),(2),(3),(4)))
+        CHECK ([ReferenceType] IS NULL OR [ReferenceType] IN ((1),(2),(3),(4),(5)))
 );
 GO
 

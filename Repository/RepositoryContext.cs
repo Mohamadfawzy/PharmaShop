@@ -69,6 +69,8 @@ public partial class RepositoryContext : DbContext
     public virtual DbSet<Product> Products { get; set; }
 
     public virtual DbSet<ProductInventoryTransaction> ProductInventoryTransactions { get; set; }
+    public virtual DbSet<ReturnRequest> ReturnRequests { get; set; }
+    public virtual DbSet<ReturnRequestItem> ReturnRequestItems { get; set; }
 
     public virtual DbSet<ProductImage> ProductImages { get; set; }
 
@@ -752,6 +754,8 @@ public partial class RepositoryContext : DbContext
                 .IsUnique().HasFilter("([OrderId] IS NOT NULL AND [OrderItemId] IS NOT NULL AND [TransactionType]=(4))");
             entity.HasIndex(e => new { e.OrderId, e.OrderItemId }, "UX_ProductInventoryTransactions_OrderRestock")
                 .IsUnique().HasFilter("([OrderId] IS NOT NULL AND [OrderItemId] IS NOT NULL AND [TransactionType]=(5))");
+            entity.HasIndex(e => e.ReturnRequestItemId, "UX_ProductInventoryTransactions_ReturnRequestItem")
+                .IsUnique().HasFilter("([ReturnRequestItemId] IS NOT NULL)");
             entity.Property(e => e.Quantity).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.QuantityBefore).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.QuantityAfter).HasColumnType("decimal(18, 3)");
@@ -765,6 +769,39 @@ public partial class RepositoryContext : DbContext
             entity.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne(e => e.OrderItem).WithMany().HasForeignKey(e => e.OrderItemId).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne<Unit>().WithMany().HasForeignKey(e => e.ProductUnitId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.ReturnRequestItem).WithMany(e => e.InventoryTransactions)
+                .HasForeignKey(e => e.ReturnRequestItemId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<ReturnRequest>(entity =>
+        {
+            entity.ToTable("ReturnRequests");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.Status, e.RequestedAt });
+            entity.HasIndex(e => new { e.OrderId, e.Status });
+            entity.Property(e => e.Reason).HasMaxLength(500);
+            entity.Property(e => e.ReviewNotes).HasMaxLength(500);
+            entity.Property(e => e.RequestedAt).HasPrecision(0);
+            entity.Property(e => e.ReviewedAt).HasPrecision(0);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.Status).HasDefaultValue((byte)1);
+            entity.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.Customer).WithMany().HasForeignKey(e => e.CustomerId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.ReviewedByEmployee).WithMany().HasForeignKey(e => e.ReviewedByEmployeeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<AspNetUser>().WithMany().HasForeignKey(e => e.ReviewedByUserId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<ReturnRequestItem>(entity =>
+        {
+            entity.ToTable("ReturnRequestItems");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ReturnRequestId, e.OrderItemId }).IsUnique();
+            entity.HasIndex(e => e.OrderItemId);
+            entity.Property(e => e.Quantity).HasColumnType("decimal(18, 3)");
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.HasOne(e => e.ReturnRequest).WithMany(e => e.Items).HasForeignKey(e => e.ReturnRequestId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.OrderItem).WithMany().HasForeignKey(e => e.OrderItemId).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<ProductImage>(entity =>

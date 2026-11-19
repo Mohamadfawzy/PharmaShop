@@ -1,0 +1,90 @@
+{
+  "info": {
+    "_postman_id": "6581af19-2a74-4de3-b8ad-afcb4410d8c2",
+    "name": "PharmaShop - Epic 15 Returns",
+    "description": "Customer order cancellation and partial return requests, plus pharmacy/admin review and approval.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "customerToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "orderId", "value": "1" },
+    { "key": "orderItemId", "value": "1" },
+    { "key": "returnRequestId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Customer - cancel order before shipping",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"reason\": \"أرغب في إلغاء الطلب قبل الشحن\"\n}" },
+        "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/cancel"
+      }
+    },
+    {
+      "name": "Customer - request partial return",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"reason\": \"وصل جزء من المنتجات تالفًا\",\n  \"items\": [\n    {\n      \"orderItemId\": {{orderItemId}},\n      \"quantity\": 1\n    }\n  ]\n}" },
+        "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/returns"
+      }
+    },
+    {
+      "name": "Customer - view return request",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/returns/{{returnRequestId}}"
+      }
+    },
+    {
+      "name": "Admin/employee - search return requests",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/returns?status=1&page=1&pageSize=25&fromUtc=2026-01-01T00:00:00Z&toUtc=2027-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "Admin/employee - return details",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/returns/{{returnRequestId}}"
+      }
+    },
+    {
+      "name": "Admin/employee - approve return",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"approve\": true,\n  \"notes\": \"تم فحص المنتج والموافقة على الكمية المرتجعة\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/returns/{{returnRequestId}}/decision"
+      }
+    },
+    {
+      "name": "Admin/employee - reject return",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"approve\": false,\n  \"notes\": \"لا تنطبق سياسة الإرجاع على حالة المنتج\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/returns/{{returnRequestId}}/decision"
+      }
+    }
+  ]
+}

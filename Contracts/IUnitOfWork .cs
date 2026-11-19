@@ -35,4 +35,5 @@ public interface IUnitOfWork : IDisposable
     Task<int> CompleteAsync(CancellationToken ct = default);
 
     Task<ITransaction> BeginTransactionAsync(CancellationToken ct = default);
+    IReturnRequestRepository ReturnRequests { get; }
 }

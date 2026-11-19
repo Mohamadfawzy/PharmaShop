@@ -12,4 +12,5 @@ public interface IPointsService
     Task<AppResponse<ManualPointsAdjustmentResultDto>> AdjustCustomerPointsAsync(int customerId, ManualPointsAdjustmentDto dto, CancellationToken ct);
     Task<int> ExpireDuePointsAsync(CancellationToken ct);
     Task RestoreRedeemedPointsAsync(Entities.Models.Order order, DateTime refundedAtUtc, CancellationToken ct);
+    Task<(int RedeemedRefunded, int EarnedReversed)> ApplyApprovedReturnAsync(Entities.Models.Order order, Entities.Models.ReturnRequest request, IReadOnlyList<Entities.Models.ReturnRequestItem> priorApprovedItems, CancellationToken ct);
 }
