@@ -21,6 +21,10 @@ public partial class RepositoryContext : DbContext
     public virtual DbSet<AspNetRoleClaim> AspNetRoleClaims { get; set; }
 
     public virtual DbSet<AspNetUser> AspNetUsers { get; set; }
+    public virtual DbSet<UserNotification> UserNotifications { get; set; }
+    public virtual DbSet<CustomerNotificationPreference> CustomerNotificationPreferences { get; set; }
+    public virtual DbSet<PaymentAttempt> PaymentAttempts { get; set; }
+    public virtual DbSet<PaymentRefund> PaymentRefunds { get; set; }
 
     public virtual DbSet<AspNetUserClaim> AspNetUserClaims { get; set; }
 
@@ -832,6 +836,57 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.ChangedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
             entity.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne(e => e.ChangedByUser).WithMany().HasForeignKey(e => e.ChangedByUserId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<UserNotification>(entity =>
+        {
+            entity.ToTable("UserNotifications");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.IsRead, e.CreatedAt });
+            entity.Property(e => e.Type).HasMaxLength(50);
+            entity.Property(e => e.Title).HasMaxLength(200);
+            entity.Property(e => e.Message).HasMaxLength(1000);
+            entity.Property(e => e.RelatedEntityType).HasMaxLength(50);
+            entity.Property(e => e.RelatedEntityId).HasColumnType("bigint");
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.HasOne<AspNetUser>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<CustomerNotificationPreference>(entity =>
+        {
+            entity.ToTable("CustomerNotificationPreferences");
+            entity.HasKey(e => e.UserId);
+            entity.Property(e => e.UpdatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.HasOne<AspNetUser>().WithOne().HasForeignKey<CustomerNotificationPreference>(e => e.UserId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<PaymentAttempt>(entity =>
+        {
+            entity.ToTable("PaymentAttempts");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.OrderId, e.CreatedAt });
+            entity.HasIndex(e => new { e.Provider, e.ExternalReference }).IsUnique().HasFilter("([ExternalReference] IS NOT NULL)");
+            entity.Property(e => e.Provider).HasMaxLength(50);
+            entity.Property(e => e.ExternalReference).HasMaxLength(200);
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.FailureReason).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<PaymentRefund>(entity =>
+        {
+            entity.ToTable("PaymentRefunds");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.PaymentAttemptId, e.Status });
+            entity.HasIndex(e => e.ExternalReference).IsUnique().HasFilter("([ExternalReference] IS NOT NULL)");
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ExternalReference).HasMaxLength(200);
+            entity.Property(e => e.Reason).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.ProcessedAt).HasPrecision(0);
+            entity.HasOne(e => e.PaymentAttempt).WithMany().HasForeignKey(e => e.PaymentAttemptId).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<ProductImage>(entity =>

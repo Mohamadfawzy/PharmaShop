@@ -1,0 +1,119 @@
+{
+  "info": {
+    "_postman_id": "a44d18c5-ec61-4f43-b8d5-dac1f72e4e90",
+    "name": "PharmaShop - Epic 17 Payments and Notifications",
+    "description": "Admin payment attempt/refund records and customer notification preferences. Payment provider connection and SMTP delivery require configuration.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "customerToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "notificationId", "value": "1" },
+    { "key": "orderId", "value": "1" },
+    { "key": "attemptId", "value": "1" },
+    { "key": "refundId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "List my notifications",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "url": "{{baseUrl}}/api/v1/notifications?unreadOnly=true&page=1&pageSize=20"
+      }
+    },
+    {
+      "name": "Mark notification as read",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "url": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/read"
+      }
+    },
+    {
+      "name": "Mark all notifications as read",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "url": "{{baseUrl}}/api/v1/notifications/read-all"
+      }
+    },
+    {
+      "name": "Get notification preferences",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "url": "{{baseUrl}}/api/v1/notifications/preferences"
+      }
+    },
+    {
+      "name": "Update notification preferences",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"orderUpdatesEnabled\": true,\n  \"prescriptionUpdatesEnabled\": true,\n  \"pointsUpdatesEnabled\": true,\n  \"emailEnabled\": false\n}" },
+        "url": "{{baseUrl}}/api/v1/notifications/preferences"
+      }
+    },
+    {
+      "name": "Admin - list order payment attempts and refunds",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/payments"
+      }
+    },
+    {
+      "name": "Admin - record pending payment attempt",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"provider\": \"Manual\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/payment-attempts"
+      }
+    },
+    {
+      "name": "Admin - manually record payment result",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"status\": 2,\n  \"externalReference\": \"provider-payment-id\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/payment-attempts/{{attemptId}}"
+      }
+    },
+    {
+      "name": "Admin - request a refund",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"paymentAttemptId\": {{attemptId}},\n  \"amount\": 100.00,\n  \"reason\": \"إرجاع معتمد\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/refunds"
+      }
+    },
+    {
+      "name": "Admin - record completed external refund",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"status\": 3,\n  \"externalReference\": \"provider-refund-id\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/payment-refunds/{{refundId}}"
+      }
+    }
+  ]
+}

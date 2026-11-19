@@ -8,6 +8,11 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<Pharmacy> Pharmacies { get; }
     IGenericRepository<Store> Stores { get; }
     IGenericRepository<Employee> Employees { get; }
+    IGenericRepository<AspNetUser> Users { get; }
+    IGenericRepository<UserNotification> UserNotifications { get; }
+    IGenericRepository<CustomerNotificationPreference> NotificationPreferences { get; }
+    IGenericRepository<PaymentAttempt> PaymentAttempts { get; }
+    IGenericRepository<PaymentRefund> PaymentRefunds { get; }
     IGenericRepository<Governorate> Governorates { get; }
     IGenericRepository<GovernorateArea> GovernorateAreas { get; }
     IGenericRepository<DeliveryZone> DeliveryZones { get; }

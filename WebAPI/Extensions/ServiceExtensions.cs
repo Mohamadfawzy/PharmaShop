@@ -53,10 +53,16 @@ public static class ServiceExtensions
         services.AddTransient<IEmployeeService, EmployeeService>();
         services.AddTransient<ILocationService, LocationService>();
         services.AddTransient<IDeliveryZoneService, DeliveryZoneService>();
+        services.AddTransient<INotificationService, NotificationService>();
+        services.AddTransient<IPaymentService, PaymentService>();
 
 
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<Contracts.Notifications.IEmailSender, LoggingEmailSender>();
+        services.AddScoped<Contracts.Notifications.IEmailSender>(sp =>
+            string.IsNullOrWhiteSpace(sp.GetRequiredService<IConfiguration>()["Smtp:Host"])
+                || string.IsNullOrWhiteSpace(sp.GetRequiredService<IConfiguration>()["Smtp:From"])
+                ? new LoggingEmailSender(sp.GetRequiredService<ILogger<LoggingEmailSender>>())
+                : new SmtpEmailSender(sp.GetRequiredService<IConfiguration>()));
 
     }
 

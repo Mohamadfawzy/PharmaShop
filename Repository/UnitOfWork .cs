@@ -15,6 +15,11 @@ public class UnitOfWork : IUnitOfWork
         Pharmacies = new GenericRepository<Pharmacy>(_context);
         Stores = new GenericRepository<Store>(_context);
         Employees = new GenericRepository<Employee>(_context);
+        Users = new GenericRepository<AspNetUser>(_context);
+        UserNotifications = new GenericRepository<UserNotification>(_context);
+        NotificationPreferences = new GenericRepository<CustomerNotificationPreference>(_context);
+        PaymentAttempts = new GenericRepository<PaymentAttempt>(_context);
+        PaymentRefunds = new GenericRepository<PaymentRefund>(_context);
         Governorates = new GenericRepository<Governorate>(_context);
         GovernorateAreas = new GenericRepository<GovernorateArea>(_context);
         DeliveryZones = new GenericRepository<DeliveryZone>(_context);
@@ -41,6 +46,11 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<Pharmacy> Pharmacies { get; private set; }
     public IGenericRepository<Store> Stores { get; private set; }
     public IGenericRepository<Employee> Employees { get; private set; }
+    public IGenericRepository<AspNetUser> Users { get; private set; }
+    public IGenericRepository<UserNotification> UserNotifications { get; private set; }
+    public IGenericRepository<CustomerNotificationPreference> NotificationPreferences { get; private set; }
+    public IGenericRepository<PaymentAttempt> PaymentAttempts { get; private set; }
+    public IGenericRepository<PaymentRefund> PaymentRefunds { get; private set; }
     public IGenericRepository<Governorate> Governorates { get; private set; }
     public IGenericRepository<GovernorateArea> GovernorateAreas { get; private set; }
     public IGenericRepository<DeliveryZone> DeliveryZones { get; private set; }

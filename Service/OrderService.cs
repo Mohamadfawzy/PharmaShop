@@ -17,19 +17,21 @@ public class OrderService : IOrderService
     private readonly ICurrentUserService _currentUser;
     private readonly IPointsService _pointsService;
     private readonly IInventoryService _inventoryService;
+    private readonly INotificationService _notifications;
 
     // Simple settings (later move to appsettings.json)
     private const int ConversionRate = 30;          // 30 points = 1 money unit
     private const int MinimumRedeemPoints = 500;    // minimum points
     private const decimal RedeemCapPercent = 0.20m; // 20% cap
 
-    public OrderService(IUnitOfWork unitOfWork, IDeliveryZoneService deliveryZoneService, ICurrentUserService currentUser, IPointsService pointsService, IInventoryService inventoryService)
+    public OrderService(IUnitOfWork unitOfWork, IDeliveryZoneService deliveryZoneService, ICurrentUserService currentUser, IPointsService pointsService, IInventoryService inventoryService, INotificationService notifications)
     {
         this.unitOfWork = unitOfWork;
         _deliveryZoneService = deliveryZoneService;
         _currentUser = currentUser;
         _pointsService = pointsService;
         _inventoryService = inventoryService;
+        _notifications = notifications;
     }
 
     public async Task<AppResponse<CheckoutPreviewResponseDto>> PreviewAsync(CheckoutPreviewRequestDto dto,CancellationToken ct)
@@ -234,6 +236,8 @@ public class OrderService : IOrderService
                 // 8) Commit transaction before returning
                 await tx.CommitAsync(ct);
 
+                await _notifications.NotifyCustomerAsync(order.CustomerId, "Order", "تم استلام طلبك", $"تم إنشاء الطلب رقم {order.OrderNumber}.", "Order", order.Id, ct);
+
                 // 9) Build response after commit
                 var response = BuildCheckoutResponse(order, priced, totals, promo, points);
 
@@ -290,6 +294,8 @@ public class OrderService : IOrderService
 
             // 19) Commit transaction before returning
             await tx.CommitAsync(ct);
+
+            await _notifications.NotifyCustomerAsync(normalOrder.CustomerId, "Order", "تم استلام طلبك", $"تم إنشاء الطلب رقم {normalOrder.OrderNumber}.", "Order", normalOrder.Id, ct);
 
             // 20) Build response after commit
             var normalResult = BuildCheckoutResponse(normalOrder, priced, normalTotals, normalPromo, normalPoints);
@@ -1309,6 +1315,9 @@ public class OrderService : IOrderService
             unitOfWork.Orders.UpdateOrder(order);
             await unitOfWork.CompleteAsync(ct);
             await transaction.CommitAsync(ct);
+            await _notifications.NotifyCustomerAsync(order.CustomerId, "Order", "تحديث حالة الطلب", $"تم تحديث حالة الطلب رقم {order.OrderNumber} إلى {GetOrderStatusLabel(dto.Status)}.", "Order", order.Id, ct);
+            if (dto.Status == 5 && order.EarnedPoints > 0)
+                await _notifications.NotifyCustomerAsync(order.CustomerId, "Points", "تمت إضافة نقاط الولاء", $"تم تفعيل {order.EarnedPoints} نقطة للطلب رقم {order.OrderNumber}.", "Order", order.Id, ct);
             return AppResponse<int>.Ok(order.Id, "Order status updated successfully");
         }
         catch (InventoryOperationException ex)
@@ -1331,6 +1340,12 @@ public class OrderService : IOrderService
     private string GetCurrentActorRole()
         => _currentUser.Roles.FirstOrDefault(r => r is Shared.Constants.AppRoles.Admin or Shared.Constants.AppRoles.Employee
             or Shared.Constants.AppRoles.DeliveryAgent or Shared.Constants.AppRoles.Customer) ?? "System";
+
+    private static string GetOrderStatusLabel(byte status) => status switch
+    {
+        1 => "قيد الانتظار", 2 => "تم التأكيد", 3 => "قيد التجهيز", 4 => "خرج للتوصيل",
+        5 => "تم التسليم", 6 => "ملغي", 7 => "مرتجع", 8 => "بانتظار المراجعة", _ => "محدثة"
+    };
 
     private static bool IsOrderTransitionAllowed(byte current, byte next)
     {

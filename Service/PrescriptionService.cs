@@ -16,17 +16,19 @@ public class PrescriptionService: IPrescriptionService
     private readonly IUnitOfWork unitOfWork;
     private readonly IImageService _imageService;
     private readonly ICurrentUserService _currentUser;
+    private readonly INotificationService _notifications;
 
     private const string RootPath = "prescriptions";
 
     // 1=Submitted, 2=InReview, 3=ReadyForCheckout, 4=Closed, 5=Rejected
 
 
-    public PrescriptionService(IUnitOfWork unitOfWork, IImageService imageService, ICurrentUserService currentUser)
+    public PrescriptionService(IUnitOfWork unitOfWork, IImageService imageService, ICurrentUserService currentUser, INotificationService notifications)
     {
         this.unitOfWork = unitOfWork;
         _imageService = imageService;
         _currentUser = currentUser;
+        _notifications = notifications;
     }
     public async Task<AppResponse<PrescriptionCreateResultDto>> CreateWithImagesAsync(
     PrescriptionCreateRequestDto dto,
@@ -745,6 +747,10 @@ public class PrescriptionService: IPrescriptionService
         // 10) Save changes
         unitOfWork.Prescriptions.UpdatePrescription(prescription);
         await unitOfWork.CompleteAsync(ct);
+
+        var prescriptionStatusLabel = dto.Status switch { 2 => "قيد المراجعة", 3 => "جاهزة للشراء", 5 => "مرفوضة", _ => "محدثة" };
+        await _notifications.NotifyCustomerAsync(prescription.CustomerId, "Prescription", "تحديث الوصفة الطبية",
+            $"تم تحديث حالة الوصفة رقم {prescription.Id} إلى {prescriptionStatusLabel}.", "Prescription", prescription.Id, ct);
 
         // 11) Return success
         return AppResponse<int>.Ok(prescriptionId, "Prescription status updated successfully");

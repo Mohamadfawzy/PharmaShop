@@ -13,9 +13,10 @@ public sealed class PointsService : IPointsService
     private const int ExpiryBatchSize = 500;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
+    private readonly INotificationService _notifications;
 
-    public PointsService(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
-    { _unitOfWork = unitOfWork; _currentUser = currentUser; }
+    public PointsService(IUnitOfWork unitOfWork, ICurrentUserService currentUser, INotificationService notifications)
+    { _unitOfWork = unitOfWork; _currentUser = currentUser; _notifications = notifications; }
 
     public async Task<AppResponse<PointsBalanceDto>> GetMyBalanceAsync(CancellationToken ct)
     {
@@ -125,6 +126,8 @@ public sealed class PointsService : IPointsService
         await _unitOfWork.Points.AddTransactionsAsync([transactionRow], ct);
         await _unitOfWork.CompleteAsync(ct);
         await transaction.CommitAsync(ct);
+        await _notifications.NotifyCustomerAsync(customerId, "Points", "تحديث رصيد النقاط",
+            delta > 0 ? $"تمت إضافة {delta} نقطة إلى رصيدك." : $"تم خصم {Math.Abs(delta)} نقطة من رصيدك.", "Points", transactionRow.Id, ct);
         return AppResponse<ManualPointsAdjustmentResultDto>.Created(new ManualPointsAdjustmentResultDto
         {
             CustomerId = customerId, PointsDelta = delta, BalanceAfter = activeBalance + delta,
