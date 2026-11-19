@@ -3,6 +3,7 @@ using Entities.Models;
 using Shared.Models.Dtos.Order;
 using Shared.Models.Dtos.Order.order;
 using Shared.Responses;
+using Shared.Models.Dtos.Delivery;
 
 namespace Contracts;
 
@@ -25,6 +26,18 @@ public interface IOrderRepository
     Task<List<CheckoutLineData>> GetLinesFromPointsRedemptionCartAsync(int cartId, int customerId, CancellationToken ct);
     Task<List<CheckoutLineData>> GetLinesFromPrescriptionAsync(int prescriptionId, int customerId, CancellationToken ct);
     Task<Order?> GetOrderForStatusUpdateAsync(int orderId, CancellationToken ct);
+    Task LockOrderForStatusUpdateAsync(int orderId, CancellationToken ct);
+    Task<int?> GetStorePharmacyIdAsync(int storeId, CancellationToken ct);
+    Task<Employee?> GetActiveDeliveryAgentAsync(int userId, CancellationToken ct);
+    Task<List<DeliveryAgentDto>> SearchDeliveryAgentsAsync(int storeId, int page, int pageSize, CancellationToken ct);
+    Task<OrderDeliveryAssignment?> GetActiveDeliveryAssignmentAsync(int orderId, bool tracked, CancellationToken ct);
+    Task<DeliveryAgentAssignmentDto?> GetDeliveryAssignmentDetailsAsync(int orderId, CancellationToken ct);
+    Task AddDeliveryAssignmentAsync(OrderDeliveryAssignment assignment, CancellationToken ct);
+    void UpdateDeliveryAssignment(OrderDeliveryAssignment assignment);
+    Task<PagedResult<DeliveryOrderListItemDto>> SearchAssignedDeliveryOrdersAsync(int userId, DeliveryOrdersQueryDto query, CancellationToken ct);
+    Task<DeliveryOrderDetailsDto?> GetAssignedDeliveryOrderAsync(int orderId, int userId, CancellationToken ct);
+    Task<List<OrderStatusHistoryDto>> GetOrderStatusHistoryAsync(int orderId, CancellationToken ct);
+    Task AddStatusHistoryAsync(OrderStatusHistory history, CancellationToken ct);
     Task<List<CustomerPointLot>> GetPendingPointLotsByOrderAsync(int orderId, CancellationToken ct);
     Task<int> MarkCartCheckedOutAsync(int cartId, int customerId, CancellationToken ct);
     Task<AdminOrderDetailsDto?> GetAdminOrderDetailsAsync(int orderId, CancellationToken ct);

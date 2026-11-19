@@ -743,6 +743,13 @@ public class OrderService : IOrderService
         // 5) Save now to get OrderId
         await unitOfWork.CompleteAsync(ct);
 
+        await unitOfWork.Orders.AddStatusHistoryAsync(new OrderStatusHistory
+        {
+            OrderId = order.Id, PreviousStatus = null, NewStatus = order.Status,
+            ChangedByUserId = int.TryParse(_currentUser.UserId, out var creatorUserId) ? creatorUserId : null,
+            ChangedByRole = GetCurrentActorRole(), Notes = "Order created", ChangedAt = now
+        }, ct);
+
         // 6) Build order items (snapshots)
         var orderItems = priced.Select(i => new OrderItem
         {
@@ -1241,10 +1248,23 @@ public class OrderService : IOrderService
                 detail: "Validation failed");
         }
 
-        // 2) Load order
+        await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.Orders.LockOrderForStatusUpdateAsync(orderId, ct);
+
+        // 2) Load order while holding the status-update lock
         var order = await unitOfWork.Orders.GetOrderForStatusUpdateAsync(orderId, ct);
         if (order is null)
             return AppResponse<int>.NotFound("Order not found");
+
+        if (_currentUser.IsInRole(Shared.Constants.AppRoles.DeliveryAgent)
+            && !_currentUser.IsInRole(Shared.Constants.AppRoles.Admin))
+        {
+            if (dto.Status != 5 || order.Status != 4 || !int.TryParse(_currentUser.UserId, out var deliveryAgentUserId))
+                return AppResponse<int>.Forbidden("Delivery agents can only mark their assigned out-for-delivery orders as delivered");
+            var assignment = await unitOfWork.Orders.GetActiveDeliveryAssignmentAsync(order.Id, false, ct);
+            if (assignment?.DeliveryAgentUserId != deliveryAgentUserId)
+                return AppResponse<int>.Forbidden("This order is not assigned to you");
+        }
 
         // 3) Ignore if order already has the requested status
         if (order.Status == dto.Status)
@@ -1254,7 +1274,6 @@ public class OrderService : IOrderService
         if (!IsOrderTransitionAllowed(order.Status, dto.Status))
             return AppResponse<int>.BusinessRuleViolation("Invalid order status transition");
 
-        await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             // 5) Apply status update and keep point settlement atomic with it.
@@ -1266,10 +1285,20 @@ public class OrderService : IOrderService
             if (dto.Status is 6 or 7)
                 await _pointsService.RestoreRedeemedPointsAsync(order, now, ct);
 
+            var previousStatus = order.Status;
             order.Status = dto.Status;
             order.StatusUpdatedAt = now;
             order.UpdatedAt = now;
-            if (!string.IsNullOrWhiteSpace(dto.Notes)) order.Notes = dto.Notes.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Notes) && !_currentUser.IsInRole(Shared.Constants.AppRoles.DeliveryAgent))
+                order.Notes = dto.Notes.Trim();
+
+            await unitOfWork.Orders.AddStatusHistoryAsync(new OrderStatusHistory
+            {
+                OrderId = order.Id, PreviousStatus = previousStatus,
+                NewStatus = dto.Status,
+                ChangedByUserId = int.TryParse(_currentUser.UserId, out var changedByUserId) ? changedByUserId : null,
+                ChangedByRole = GetCurrentActorRole(), Notes = dto.Notes?.Trim(), ChangedAt = now
+            }, ct);
 
             if (dto.Status == 5)
             {
@@ -1298,6 +1327,10 @@ public class OrderService : IOrderService
         // - Add order status history table
         // - Send notification after status update
     }
+
+    private string GetCurrentActorRole()
+        => _currentUser.Roles.FirstOrDefault(r => r is Shared.Constants.AppRoles.Admin or Shared.Constants.AppRoles.Employee
+            or Shared.Constants.AppRoles.DeliveryAgent or Shared.Constants.AppRoles.Customer) ?? "System";
 
     private static bool IsOrderTransitionAllowed(byte current, byte next)
     {

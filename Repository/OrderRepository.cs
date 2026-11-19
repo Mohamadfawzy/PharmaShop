@@ -3,6 +3,7 @@ using Entities.Models;
 using Microsoft.EntityFrameworkCore;
 using Shared.Models.Dtos.Order;
 using Shared.Models.Dtos.Order.order;
+using Shared.Models.Dtos.Delivery;
 using Shared.Responses;
 
 namespace Repository;
@@ -476,6 +477,110 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
 
         // Future improvement: add StoreId scope for admin authorization
     }
+
+    public async Task LockOrderForStatusUpdateAsync(int orderId, CancellationToken ct)
+        => _ = await _db.Orders.FromSqlInterpolated($"SELECT * FROM [dbo].[Orders] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {orderId}")
+            .Select(o => o.Id).SingleOrDefaultAsync(ct);
+
+    public Task<int?> GetStorePharmacyIdAsync(int storeId, CancellationToken ct)
+        => _db.Stores.AsNoTracking().Where(s => s.Id == storeId && s.DeletedAt == null)
+            .Select(s => (int?)s.PharmacyId).SingleOrDefaultAsync(ct);
+
+    public Task<Employee?> GetActiveDeliveryAgentAsync(int userId, CancellationToken ct)
+        => _db.Employees.AsNoTracking().Where(e => e.UserId == userId && e.IsActive && e.DeletedAt == null
+            && e.User != null && e.User.IsActive && e.User.Roles.Any(r => r.NormalizedName == "DELIVERYAGENT"))
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<List<DeliveryAgentDto>> SearchDeliveryAgentsAsync(int storeId, int page, int pageSize, CancellationToken ct)
+    {
+        var pharmacyId = await _db.Stores.AsNoTracking().Where(s => s.Id == storeId && s.DeletedAt == null)
+            .Select(s => (int?)s.PharmacyId).SingleOrDefaultAsync(ct);
+        if (!pharmacyId.HasValue) return new List<DeliveryAgentDto>();
+        return await _db.Employees.AsNoTracking().Where(e => e.IsActive && e.DeletedAt == null
+                && e.UserId.HasValue && e.PharmacyId == pharmacyId.Value
+                && e.User != null && e.User.IsActive && e.User.Roles.Any(r => r.NormalizedName == "DELIVERYAGENT"))
+            .OrderBy(e => e.FullNameAr).Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(e => new DeliveryAgentDto
+            {
+                UserId = e.UserId!.Value, EmployeeId = e.Id, PharmacyId = e.PharmacyId,
+                FullNameAr = e.FullNameAr, PhoneNumber = e.PhoneNumber, Email = e.Email
+            }).ToListAsync(ct);
+    }
+
+    public Task<OrderDeliveryAssignment?> GetActiveDeliveryAssignmentAsync(int orderId, bool tracked, CancellationToken ct)
+    {
+        var query = _db.OrderDeliveryAssignments.Where(a => a.OrderId == orderId && a.IsActive);
+        if (!tracked) query = query.AsNoTracking();
+        return query.FirstOrDefaultAsync(ct);
+    }
+
+    public Task<DeliveryAgentAssignmentDto?> GetDeliveryAssignmentDetailsAsync(int orderId, CancellationToken ct)
+        => _db.OrderDeliveryAssignments.AsNoTracking().Where(a => a.OrderId == orderId && a.IsActive)
+            .Select(a => new DeliveryAgentAssignmentDto
+            {
+                OrderId = a.OrderId, DeliveryAgentUserId = a.DeliveryAgentUserId,
+                EmployeeId = a.DeliveryAgentUser.Employee!.Id, FullNameAr = a.DeliveryAgentUser.Employee.FullNameAr,
+                PhoneNumber = a.DeliveryAgentUser.Employee.PhoneNumber, AssignedAt = a.AssignedAt,
+                AssignedByUserId = a.AssignedByUserId, Notes = a.Notes
+            }).FirstOrDefaultAsync(ct);
+
+    public Task AddDeliveryAssignmentAsync(OrderDeliveryAssignment assignment, CancellationToken ct)
+        => _db.OrderDeliveryAssignments.AddAsync(assignment, ct).AsTask();
+
+    public void UpdateDeliveryAssignment(OrderDeliveryAssignment assignment)
+        => _db.OrderDeliveryAssignments.Update(assignment);
+
+    public async Task<PagedResult<DeliveryOrderListItemDto>> SearchAssignedDeliveryOrdersAsync(int userId, DeliveryOrdersQueryDto query, CancellationToken ct)
+    {
+        var source = _db.OrderDeliveryAssignments.AsNoTracking()
+            .Where(a => a.IsActive && a.DeliveryAgentUserId == userId && (a.Order.Status == 3 || a.Order.Status == 4));
+        if (query.Status.HasValue) source = source.Where(a => a.Order.Status == query.Status.Value);
+        var total = await source.CountAsync(ct);
+        var ordered = query.NewestFirst
+            ? source.OrderByDescending(a => a.Order.StatusUpdatedAt)
+            : source.OrderBy(a => a.Order.StatusUpdatedAt);
+        var items = await ordered.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize)
+            .Select(a => new DeliveryOrderListItemDto
+            {
+                Id = a.Order.Id, OrderNumber = a.Order.OrderNumber, StoreId = a.Order.StoreId,
+                StoreNameAr = a.Order.Store.NameAr, Status = a.Order.Status, StatusUpdatedAt = a.Order.StatusUpdatedAt,
+                DeliveryTitle = a.Order.DeliveryTitle, DeliveryCity = a.Order.DeliveryCity,
+                DeliveryRegion = a.Order.DeliveryRegion, DeliveryStreet = a.Order.DeliveryStreet,
+                DeliveryPhone = a.Order.DeliveryPhone, AssignedAt = a.AssignedAt
+            }).ToListAsync(ct);
+        return new PagedResult<DeliveryOrderListItemDto> { Items = items, TotalCount = total };
+    }
+
+    public Task<DeliveryOrderDetailsDto?> GetAssignedDeliveryOrderAsync(int orderId, int userId, CancellationToken ct)
+        => _db.OrderDeliveryAssignments.AsNoTracking()
+            .Where(a => a.IsActive && a.DeliveryAgentUserId == userId && a.OrderId == orderId && (a.Order.Status == 3 || a.Order.Status == 4))
+            .Select(a => new DeliveryOrderDetailsDto
+            {
+                Id = a.Order.Id, OrderNumber = a.Order.OrderNumber, StoreId = a.Order.StoreId,
+                StoreNameAr = a.Order.Store.NameAr, Status = a.Order.Status, StatusUpdatedAt = a.Order.StatusUpdatedAt,
+                DeliveryTitle = a.Order.DeliveryTitle, DeliveryCity = a.Order.DeliveryCity,
+                DeliveryRegion = a.Order.DeliveryRegion, DeliveryStreet = a.Order.DeliveryStreet,
+                DeliveryPhone = a.Order.DeliveryPhone, AssignedAt = a.AssignedAt, Notes = a.Order.Notes,
+                Items = a.Order.OrderItems.OrderBy(i => i.Id).Select(i => new DeliveryOrderItemDto
+                {
+                    ProductId = i.ProductId, ProductNameAr = i.Product.NameAr,
+                    UnitLevel = i.UnitLevel, Quantity = i.Quantity
+                }).ToList()
+            }).FirstOrDefaultAsync(ct);
+
+    public Task<List<OrderStatusHistoryDto>> GetOrderStatusHistoryAsync(int orderId, CancellationToken ct)
+        => _db.OrderStatusHistories.AsNoTracking().Where(h => h.OrderId == orderId)
+            .OrderBy(h => h.ChangedAt).ThenBy(h => h.Id)
+            .Select(h => new OrderStatusHistoryDto
+            {
+                Id = h.Id, OrderId = h.OrderId, PreviousStatus = h.PreviousStatus,
+                NewStatus = h.NewStatus, ChangedByUserId = h.ChangedByUserId,
+                ChangedByUserName = h.ChangedByUser == null ? null : h.ChangedByUser.UserName,
+                ChangedByRole = h.ChangedByRole, Notes = h.Notes, ChangedAt = h.ChangedAt
+            }).ToListAsync(ct);
+
+    public Task AddStatusHistoryAsync(OrderStatusHistory history, CancellationToken ct)
+        => _db.OrderStatusHistories.AddAsync(history, ct).AsTask();
 
     public async Task<List<CustomerPointLot>> GetPendingPointLotsByOrderAsync(int orderId, CancellationToken ct)
     {

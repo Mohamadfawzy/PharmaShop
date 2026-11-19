@@ -1,0 +1,90 @@
+{
+  "info": {
+    "_postman_id": "dcf70f14-31bc-46de-9e36-46e37c494ea8",
+    "name": "PharmaShop - Epic 16 Delivery",
+    "description": "Delivery-agent listing, assignment, own order workflow and order status history.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "adminToken", "value": "" },
+    { "key": "deliveryAgentToken", "value": "" },
+    { "key": "storeId", "value": "1" },
+    { "key": "orderId", "value": "1" },
+    { "key": "deliveryAgentUserId", "value": "2" }
+  ],
+  "item": [
+    {
+      "name": "Admin - list agents for store",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/delivery-agents?storeId={{storeId}}&page=1&pageSize=50"
+      }
+    },
+    {
+      "name": "Admin - assign agent to preparing/out-for-delivery order",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"deliveryAgentUserId\": {{deliveryAgentUserId}},\n  \"notes\": \"تسليم الطلب للمندوب المناوب\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/delivery-agent"
+      }
+    },
+    {
+      "name": "Admin - get active assignment",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/delivery-agent"
+      }
+    },
+    {
+      "name": "Admin - order status history",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status-history"
+      }
+    },
+    {
+      "name": "Delivery agent - list assigned orders",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{deliveryAgentToken}}" }],
+        "url": "{{baseUrl}}/api/v1/delivery/orders?status=4&page=1&pageSize=20&newestFirst=true"
+      }
+    },
+    {
+      "name": "Delivery agent - order details",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{deliveryAgentToken}}" }],
+        "url": "{{baseUrl}}/api/v1/delivery/orders/{{orderId}}"
+      }
+    },
+    {
+      "name": "Delivery agent - mark delivered",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{deliveryAgentToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"status\": 5,\n  \"notes\": \"تم تسليم الطلب للعميل\"\n}" },
+        "url": "{{baseUrl}}/api/v1/delivery/orders/{{orderId}}/status"
+      }
+    },
+    {
+      "name": "Admin - unassign agent before delivery",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/delivery-agent"
+      }
+    }
+  ]
+}

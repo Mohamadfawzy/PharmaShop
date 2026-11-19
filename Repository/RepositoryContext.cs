@@ -71,6 +71,8 @@ public partial class RepositoryContext : DbContext
     public virtual DbSet<ProductInventoryTransaction> ProductInventoryTransactions { get; set; }
     public virtual DbSet<ReturnRequest> ReturnRequests { get; set; }
     public virtual DbSet<ReturnRequestItem> ReturnRequestItems { get; set; }
+    public virtual DbSet<OrderDeliveryAssignment> OrderDeliveryAssignments { get; set; }
+    public virtual DbSet<OrderStatusHistory> OrderStatusHistories { get; set; }
 
     public virtual DbSet<ProductImage> ProductImages { get; set; }
 
@@ -802,6 +804,34 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
             entity.HasOne(e => e.ReturnRequest).WithMany(e => e.Items).HasForeignKey(e => e.ReturnRequestId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.OrderItem).WithMany().HasForeignKey(e => e.OrderItemId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<OrderDeliveryAssignment>(entity =>
+        {
+            entity.ToTable("OrderDeliveryAssignments");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.OrderId, "UX_OrderDeliveryAssignments_ActiveOrder")
+                .IsUnique().HasFilter("([IsActive]=(1))");
+            entity.HasIndex(e => new { e.DeliveryAgentUserId, e.IsActive, e.AssignedAt });
+            entity.Property(e => e.AssignedAt).HasPrecision(0);
+            entity.Property(e => e.UnassignedAt).HasPrecision(0);
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.DeliveryAgentUser).WithMany().HasForeignKey(e => e.DeliveryAgentUserId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.AssignedByUser).WithMany().HasForeignKey(e => e.AssignedByUserId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<AspNetUser>().WithMany().HasForeignKey(e => e.UnassignedByUserId).OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<OrderStatusHistory>(entity =>
+        {
+            entity.ToTable("OrderStatusHistories");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.OrderId, e.ChangedAt });
+            entity.Property(e => e.ChangedByRole).HasMaxLength(50);
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.ChangedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.ChangedByUser).WithMany().HasForeignKey(e => e.ChangedByUserId).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<ProductImage>(entity =>
