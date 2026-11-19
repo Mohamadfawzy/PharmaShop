@@ -1,0 +1,3896 @@
+{
+  "info": {
+    "_postman_id": "9d8810f0-239b-44f9-8b37-96d7e580c101",
+    "name": "PharmaShop - Complete API",
+    "description": "Collection موحدة لمسارات PharmaShop الفعالة المستخرجة من Controllers الحالية. ابدأ من Auth لتسجيل الدخول ثم انسخ access token إلى متغير الدور المناسب. جميع IDs وحقول الأمثلة قابلة للتعديل. ملفات multipart تتطلب اختيار ملف يدويًا. مسارات Development Only لا تعمل في Production.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "default"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "customerToken",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "employeeToken",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "deliveryAgentToken",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "customerId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "employeeId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "storeId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "pharmacyId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "productId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "productImageId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "categoryId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "tagId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "promotionId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "promotionProductId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "companyId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "unitId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "orderId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "addressId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "cartId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "cartItemId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "prescriptionId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "prescriptionItemId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "imageIdentifier",
+      "value": "sample-image-id",
+      "type": "default"
+    },
+    {
+      "key": "governorateId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "areaId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "deliveryZoneId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "returnRequestId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "attemptId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "refundId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "notificationId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "roleId",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "id",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "imageVariant",
+      "value": "medium",
+      "type": "default"
+    },
+    {
+      "key": "devImageId",
+      "value": "sample-image-id",
+      "type": "default"
+    }
+  ],
+  "item": [
+    {
+      "name": "03 - Customer Addresses",
+      "description": "",
+      "item": [
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/addresses",
+            "description": "GET /api/v1/addresses\nController: WebAPI\\Controllers\\AddressesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/addresses/{{id}}",
+            "description": "GET /api/v1/addresses/{id}\nController: WebAPI\\Controllers\\AddressesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/addresses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"عنوان المنزل\",\n  \"governorateId\": 1,\n  \"governorateAreaId\": 1,\n  \"street\": \"شارع التحرير، مبنى 10\",\n  \"landmark\": \"قيمة تجريبية\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357,\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/v1/addresses\nController: WebAPI\\Controllers\\AddressesController.cs\nJSON body DTO: CustomerAddressWriteDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/addresses/{{id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"عنوان المنزل\",\n  \"governorateId\": 1,\n  \"governorateAreaId\": 1,\n  \"street\": \"شارع التحرير، مبنى 10\",\n  \"landmark\": \"قيمة تجريبية\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357,\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/v1/addresses/{id}\nController: WebAPI\\Controllers\\AddressesController.cs\nJSON body DTO: CustomerAddressWriteDto"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/addresses/{{id}}",
+            "description": "DELETE /api/v1/addresses/{id}\nController: WebAPI\\Controllers\\AddressesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH SetDefault",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/addresses/{{id}}/default",
+            "description": "PATCH /api/v1/addresses/{id}/default\nController: WebAPI\\Controllers\\AddressesController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Locations",
+      "description": "",
+      "item": [
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/areas?governorateId=1",
+            "description": "GET /api/v1/admin/areas\nController: WebAPI\\Controllers\\Admin\\AdminAreasController.cs\nNo request body.\nQuery parameters: governorateId"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/areas/{{id}}",
+            "description": "GET /api/v1/admin/areas/{id}\nController: WebAPI\\Controllers\\Admin\\AdminAreasController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/areas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"governorateId\": 1,\n  \"nameAr\": \"اسم تجريبي\",\n  \"nameEn\": \"Sample Name\",\n  \"displayOrder\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/v1/admin/areas\nController: WebAPI\\Controllers\\Admin\\AdminAreasController.cs\nJSON body DTO: GovernorateAreaWriteDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/areas/{{id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"governorateId\": 1,\n  \"nameAr\": \"اسم تجريبي\",\n  \"nameEn\": \"Sample Name\",\n  \"displayOrder\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/v1/admin/areas/{id}\nController: WebAPI\\Controllers\\Admin\\AdminAreasController.cs\nJSON body DTO: GovernorateAreaWriteDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH SetActive",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/areas/{{id}}/active",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PATCH /api/v1/admin/areas/{id}/active\nController: WebAPI\\Controllers\\Admin\\AdminAreasController.cs\nJSON body DTO: LocationActiveDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/governorates",
+            "description": "GET /api/v1/admin/governorates\nController: WebAPI\\Controllers\\Admin\\AdminGovernoratesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/governorates/{{id}}",
+            "description": "GET /api/v1/admin/governorates/{id}\nController: WebAPI\\Controllers\\Admin\\AdminGovernoratesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/governorates",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"اسم تجريبي\",\n  \"nameEn\": \"Sample Name\",\n  \"displayOrder\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/v1/admin/governorates\nController: WebAPI\\Controllers\\Admin\\AdminGovernoratesController.cs\nJSON body DTO: GovernorateWriteDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/governorates/{{id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"اسم تجريبي\",\n  \"nameEn\": \"Sample Name\",\n  \"displayOrder\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/v1/admin/governorates/{id}\nController: WebAPI\\Controllers\\Admin\\AdminGovernoratesController.cs\nJSON body DTO: GovernorateWriteDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH SetActive",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/governorates/{{id}}/active",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PATCH /api/v1/admin/governorates/{id}/active\nController: WebAPI\\Controllers\\Admin\\AdminGovernoratesController.cs\nJSON body DTO: LocationActiveDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetGovernorates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/locations/governorates",
+            "description": "GET /api/v1/locations/governorates\nController: WebAPI\\Controllers\\LocationsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetAreas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/locations/governorates/{{id}}/areas",
+            "description": "GET /api/v1/locations/governorates/{id}/areas\nController: WebAPI\\Controllers\\LocationsController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 - Admin Catalog",
+      "description": "",
+      "item": [
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/categories?param=1",
+            "description": "GET /api/v1/admin/categories\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nNo request body.\nQuery parameters: param"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}",
+            "description": "GET /api/v1/admin/categories/{categoryId}\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"مسكنات الألم\",\n  \"nameEn\": \"Pain relief\",\n  \"description\": \"مسكنات وخافضات حرارة\",\n  \"parentCategoryId\": null\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/categories",
+            "description": "POST /api/v1/admin/categories\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nJSON body DTO: CategoryCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Update category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{categoryId}},\n  \"name\": \"مسكنات الألم\",\n  \"nameEn\": \"Pain relief\",\n  \"description\": \"تحديث الوصف\",\n  \"parentCategoryId\": null\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}",
+            "description": "PUT /api/v1/admin/categories/{categoryId}\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nJSON body DTO: CategoryUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT ChangeParent",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}/parent?newParentCategoryId=1",
+            "description": "PUT /api/v1/admin/categories/{categoryId}/parent\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nNo request body.\nQuery parameters: newParentCategoryId"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - replace category image",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}/image?format=Auto",
+            "description": "PUT /api/v1/admin/categories/{categoryId}/image\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nNo request body.\nQuery parameters: format\nملاحظة: اختر الملف يدويًا في حقل File داخل Postman."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Activate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}/activate",
+            "description": "PATCH /api/v1/admin/categories/{categoryId}/activate\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}/deactivate",
+            "description": "PATCH /api/v1/admin/categories/{categoryId}/deactivate\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete category (soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}",
+            "description": "DELETE /api/v1/admin/categories/{categoryId}\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Restore category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}/restore",
+            "description": "PATCH /api/v1/admin/categories/{categoryId}/restore\nController: WebAPI\\Controllers\\Admin\\AdminCategoriesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - list product images",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images",
+            "description": "GET /api/v1/admin/products/{productId}/images\nController: WebAPI\\Controllers\\Admin\\AdminProductAssetsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - add product image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "altText",
+                  "type": "text",
+                  "value": "صورة المنتج"
+                },
+                {
+                  "key": "isPrimary",
+                  "type": "text",
+                  "value": "true"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images?format=Auto",
+            "description": "POST /api/v1/admin/products/{productId}/images\nController: WebAPI\\Controllers\\Admin\\AdminProductAssetsController.cs\nNo request body.\nQuery parameters: format\nملاحظة: اختر الملف يدويًا في حقل File داخل Postman."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - update product image metadata",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"altText\": \"صورة العبوة\",\n  \"sortOrder\": 0,\n  \"isPrimary\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images/{{productImageId}}",
+            "description": "PUT /api/v1/admin/products/{productId}/images/{imageId}\nController: WebAPI\\Controllers\\Admin\\AdminProductAssetsController.cs\nJSON body DTO: ProductImageUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - replace product image file",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images/{{productImageId}}/file?format=Auto",
+            "description": "PUT /api/v1/admin/products/{productId}/images/{imageId}/file\nController: WebAPI\\Controllers\\Admin\\AdminProductAssetsController.cs\nNo request body.\nQuery parameters: format\nملاحظة: اختر الملف يدويًا في حقل File داخل Postman."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - soft-delete product image",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images/{{productImageId}}",
+            "description": "DELETE /api/v1/admin/products/{productId}/images/{imageId}\nController: WebAPI\\Controllers\\Admin\\AdminProductAssetsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/tags",
+            "description": "GET /api/v1/admin/products/{productId}/tags\nController: WebAPI\\Controllers\\Admin\\AdminProductTagsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Replace product tags",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tagIds\": [{{tagId}}]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/tags",
+            "description": "PUT /api/v1/admin/products/{productId}/tags\nController: WebAPI\\Controllers\\Admin\\AdminProductTagsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Companies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/companies?includeInactive=true",
+            "description": "GET /api/v1/admin/companies\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body.\nQuery parameters: includeInactive"
+          },
+          "response": []
+        },
+        {
+          "name": "GET Company",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/companies/{{id}}",
+            "description": "GET /api/v1/admin/companies/{id}\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Create company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"شركة دوائية\",\n  \"nameEn\": \"Pharma Company\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/companies",
+            "description": "POST /api/v1/admin/companies\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Update company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"شركة دوائية محدثة\",\n  \"nameEn\": \"Pharma Company Updated\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/companies/{{id}}",
+            "description": "PUT /api/v1/admin/companies/{id}\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete company (soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/companies/{{id}}",
+            "description": "DELETE /api/v1/admin/companies/{id}\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Restore company",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/companies/{{id}}/restore",
+            "description": "PATCH /api/v1/admin/companies/{id}/restore\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Units",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/units?includeInactive=true",
+            "description": "GET /api/v1/admin/units\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body.\nQuery parameters: includeInactive"
+          },
+          "response": []
+        },
+        {
+          "name": "GET Unit",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/units/{{id}}",
+            "description": "GET /api/v1/admin/units/{id}\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Create unit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"BOX\",\n  \"nameAr\": \"علبة\",\n  \"nameEn\": \"Box\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/units",
+            "description": "POST /api/v1/admin/units\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Update unit",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"BOX\",\n  \"nameAr\": \"علبة\",\n  \"nameEn\": \"Box\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/units/{{id}}",
+            "description": "PUT /api/v1/admin/units/{id}\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate unit",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/units/{{id}}",
+            "description": "DELETE /api/v1/admin/units/{id}\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Activate unit",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/units/{{id}}/activate",
+            "description": "PATCH /api/v1/admin/units/{id}/activate\nController: WebAPI\\Controllers\\Admin\\AdminReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Create product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": {{storeId}},\n  \"categoryId\": {{categoryId}},\n  \"companyId\": {{companyId}},\n  \"internationalCode\": \"6281000000012\",\n  \"nameAr\": \"باراسيتامول 500 مجم\",\n  \"nameEn\": \"Paracetamol 500 mg\",\n  \"outerUnitId\": {{unitId}},\n  \"outerUnitPrice\": 35.00,\n  \"minOrderQty\": 1,\n  \"quantity\": 25,\n  \"isAvailable\": true,\n  \"isActive\": true,\n  \"requiresPrescription\": false,\n  \"hasPromotion\": false,\n  \"promotionDiscountPercent\": 0\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/Products",
+            "description": "POST /api/v1/admin/Products\nController: WebAPI\\Controllers\\ProductsController.cs\nJSON body DTO: ProductCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Update product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": {{storeId}},\n  \"categoryId\": {{categoryId}},\n  \"companyId\": {{companyId}},\n  \"internationalCode\": \"6281000000012\",\n  \"nameAr\": \"باراسيتامول 500 مجم - محدث\",\n  \"nameEn\": \"Paracetamol 500 mg\",\n  \"outerUnitId\": {{unitId}},\n  \"outerUnitPrice\": 37.50,\n  \"minOrderQty\": 1,\n  \"quantity\": 25,\n  \"isAvailable\": true,\n  \"isActive\": true,\n  \"requiresPrescription\": false,\n  \"hasPromotion\": false,\n  \"promotionDiscountPercent\": 0\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/Products/{{id}}",
+            "description": "PUT /api/v1/admin/Products/{id}\nController: WebAPI\\Controllers\\ProductsController.cs\nJSON body DTO: ProductCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin product details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Products/{{id}}",
+            "description": "GET /api/v1/admin/Products/{id}\nController: WebAPI\\Controllers\\ProductsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "List deleted products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Products/deleted?page=1&pageSize=50",
+            "description": "GET /api/v1/admin/Products/deleted\nController: WebAPI\\Controllers\\ProductsController.cs\nNo request body.\nQuery parameters: page, pageSize"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Products/{{id}}/activate",
+            "description": "PATCH /api/v1/admin/Products/{id}/activate\nController: WebAPI\\Controllers\\ProductsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Products/{{id}}/deactivate",
+            "description": "PATCH /api/v1/admin/Products/{id}/deactivate\nController: WebAPI\\Controllers\\ProductsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Restore product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Products/{{id}}/restore",
+            "description": "PATCH /api/v1/admin/Products/{id}/restore\nController: WebAPI\\Controllers\\ProductsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Soft-delete product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Products/{{id}}",
+            "description": "DELETE /api/v1/admin/Products/{id}\nController: WebAPI\\Controllers\\ProductsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Products/search?storeId={{storeId}}&q=باراسيتامول&page=1&pageSize=25&sort=Newest",
+            "description": "GET /api/v1/admin/Products/search\nController: WebAPI\\Controllers\\ProductsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Create tag",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"مسكن\",\n  \"nameEn\": \"Analgesic\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/Tags",
+            "description": "POST /api/v1/admin/Tags\nController: WebAPI\\Controllers\\TagsController.cs\nJSON body DTO: TagCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Tags?query=1",
+            "description": "GET /api/v1/admin/Tags\nController: WebAPI\\Controllers\\TagsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Tags/{{id}}",
+            "description": "GET /api/v1/admin/Tags/{id}\nController: WebAPI\\Controllers\\TagsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Update tag",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"مسكن\",\n  \"nameEn\": \"Analgesic\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/Tags/{{id}}",
+            "description": "PUT /api/v1/admin/Tags/{id}\nController: WebAPI\\Controllers\\TagsController.cs\nJSON body DTO: TagCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate tag",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Tags/{{id}}",
+            "description": "DELETE /api/v1/admin/Tags/{id}\nController: WebAPI\\Controllers\\TagsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Activate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/Tags/{{id}}/activate",
+            "description": "PATCH /api/v1/admin/Tags/{id}/activate\nController: WebAPI\\Controllers\\TagsController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "00 - Public Catalog",
+      "description": "",
+      "item": [
+        {
+          "name": "Admin - list agents for store",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/delivery-agents?storeId={{storeId}}&page=1&pageSize=50",
+            "description": "GET /api/v1/admin/delivery-agents\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Categories list",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/categories?pageNumber=1&pageSize=50",
+            "header": [],
+            "description": "GET /api/v1/categories\nController: WebAPI\\Controllers\\CategoriesController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
+            "description": "GET /api/v1/categories/{categoryId}\nController: WebAPI\\Controllers\\CategoriesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetRoots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/categories/root",
+            "description": "GET /api/v1/categories/root\nController: WebAPI\\Controllers\\CategoriesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Category tree",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/categories/tree",
+            "header": [],
+            "description": "GET /api/v1/categories/tree\nController: WebAPI\\Controllers\\CategoriesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Search products (advanced)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/products?storeId={{storeId}}&q=باراسيتامول&categoryId={{categoryId}}&companyId={{companyId}}&unitId={{unitId}}&tagIds={{tagId}}&tagMatch=Any&minPrice=10&maxPrice=250&requiresPrescription=false&hasPromotion=true&isAvailable=true&isFeatured=true&allowSplitSale=false&minPoints=0&sort=PriceAsc&page=1&pageSize=20",
+            "description": "GET /api/v1/products\nController: WebAPI\\Controllers\\PublicProductsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Product details",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/products/{{id}}",
+            "header": [],
+            "description": "GET /api/v1/products/{id}\nController: WebAPI\\Controllers\\PublicProductsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Tags list",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/tags?page=1&pageSize=100&q=مسكن",
+            "header": [],
+            "description": "GET /api/v1/tags\nController: WebAPI\\Controllers\\PublicTagsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Companies list",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/companies",
+            "header": [],
+            "description": "GET /api/v1/companies\nController: WebAPI\\Controllers\\ReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Units list",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/units",
+            "header": [],
+            "description": "GET /api/v1/units\nController: WebAPI\\Controllers\\ReferenceDataController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/stores?pharmacyId=1",
+            "description": "GET /api/v1/stores\nController: WebAPI\\Controllers\\StoresController.cs\nNo request body.\nQuery parameters: pharmacyId"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/stores/{{id}}",
+            "description": "GET /api/v1/stores/{id}\nController: WebAPI\\Controllers\\StoresController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12 - Orders & Checkout",
+      "description": "",
+      "item": [
+        {
+          "name": "Admin - get active assignment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/delivery-agent",
+            "description": "GET /api/v1/admin/orders/{orderId}/delivery-agent\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - assign agent to preparing/out-for-delivery order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deliveryAgentUserId\": {{deliveryAgentUserId}},\n  \"notes\": \"تسليم الطلب للمندوب المناوب\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/delivery-agent",
+            "description": "PUT /api/v1/admin/orders/{orderId}/delivery-agent\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryController.cs\nJSON body DTO: AssignDeliveryAgentDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - unassign agent before delivery",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/delivery-agent",
+            "description": "DELETE /api/v1/admin/orders/{orderId}/delivery-agent\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - order status history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status-history",
+            "description": "GET /api/v1/admin/orders/{orderId}/status-history\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Search all orders (optional filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/orders?storeId={{storeId}}&status=1&paymentStatus=1&orderNumber=&page=1&pageSize=20",
+            "description": "GET /api/v1/admin/orders\nController: WebAPI\\Controllers\\Admin\\AdminOrdersController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Get order details for administrator",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{id}}",
+            "description": "GET /api/v1/admin/orders/{id}\nController: WebAPI\\Controllers\\Admin\\AdminOrdersController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm order (deduct once)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 2,\n  \"notes\": \"تم التأكيد وتجهيز الطلب للمخزن\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{id}}/status",
+            "description": "PATCH /api/v1/admin/orders/{id}/status\nController: WebAPI\\Controllers\\Admin\\AdminOrdersController.cs\nJSON body DTO: OrderStatusUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - list order payment attempts and refunds",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/payments",
+            "description": "GET /api/v1/admin/orders/{orderId}/payments\nController: WebAPI\\Controllers\\Admin\\AdminPaymentsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - record pending payment attempt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"Manual\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/payment-attempts",
+            "description": "POST /api/v1/admin/orders/{orderId}/payment-attempts\nController: WebAPI\\Controllers\\Admin\\AdminPaymentsController.cs\nJSON body DTO: CreatePaymentAttemptDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - request a refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentAttemptId\": {{attemptId}},\n  \"amount\": 100.00,\n  \"reason\": \"إرجاع معتمد\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/refunds",
+            "description": "POST /api/v1/admin/orders/{orderId}/refunds\nController: WebAPI\\Controllers\\Admin\\AdminPaymentsController.cs\nJSON body DTO: CreatePaymentRefundDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer - cancel order before shipping",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"أرغب في إلغاء الطلب قبل الشحن\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/cancel",
+            "description": "PATCH /api/v1/orders/{orderId}/cancel\nController: WebAPI\\Controllers\\CustomerOrderReturnsController.cs\nJSON body DTO: CancelOrderDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer - request partial return",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"وصل جزء من المنتجات تالفًا\",\n  \"items\": [\n    {\n      \"orderItemId\": {{orderItemId}},\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/returns",
+            "description": "POST /api/v1/orders/{orderId}/returns\nController: WebAPI\\Controllers\\CustomerOrderReturnsController.cs\nJSON body DTO: CreateReturnRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer - view return request",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/returns/{{returnRequestId}}",
+            "description": "GET /api/v1/orders/{orderId}/returns/{returnRequestId}\nController: WebAPI\\Controllers\\CustomerOrderReturnsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm regular cart checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{cartId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/orders/checkout",
+            "description": "POST /api/v1/orders/checkout\nController: WebAPI\\Controllers\\OrdersController.cs\nJSON body DTO: CheckoutRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Preview regular cart checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{cartId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/orders/checkout/preview",
+            "description": "SourceType: 1=Cart, 2=Prescription, 3=PointsRedemption. PaymentMethod 1=COD. No CustomerId is sent."
+          },
+          "response": []
+        },
+        {
+          "name": "List my orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/orders?status=1&page=1&pageSize=20&newestFirst=true",
+            "description": "GET /api/v1/orders\nController: WebAPI\\Controllers\\OrdersController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Get my order details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/orders/{{id}}",
+            "description": "GET /api/v1/orders/{id}\nController: WebAPI\\Controllers\\OrdersController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Organization & Delivery Zones",
+      "description": "",
+      "item": [
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/delivery-zones",
+            "description": "GET /api/v1/admin/stores/{storeId}/delivery-zones\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryZonesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/delivery-zones/{{id}}",
+            "description": "GET /api/v1/admin/stores/{storeId}/delivery-zones/{id}\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryZonesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/delivery-zones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"اسم تجريبي\",\n  \"nameEn\": \"Sample Name\",\n  \"deliveryFee\": 0,\n  \"freeDeliveryMinimumAmount\": 0,\n  \"governorateAreaIds\": [\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/v1/admin/stores/{storeId}/delivery-zones\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryZonesController.cs\nJSON body DTO: DeliveryZoneWriteDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/delivery-zones/{{id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"اسم تجريبي\",\n  \"nameEn\": \"Sample Name\",\n  \"deliveryFee\": 0,\n  \"freeDeliveryMinimumAmount\": 0,\n  \"governorateAreaIds\": [\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/v1/admin/stores/{storeId}/delivery-zones/{id}\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryZonesController.cs\nJSON body DTO: DeliveryZoneWriteDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH SetActive",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/delivery-zones/{{id}}/active",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PATCH /api/v1/admin/stores/{storeId}/delivery-zones/{id}/active\nController: WebAPI\\Controllers\\Admin\\AdminDeliveryZonesController.cs\nJSON body DTO: DeliveryZoneActiveDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/pharmacies",
+            "description": "GET /api/v1/admin/pharmacies\nController: WebAPI\\Controllers\\Admin\\AdminPharmaciesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/pharmacies/{{id}}",
+            "description": "GET /api/v1/admin/pharmacies/{id}\nController: WebAPI\\Controllers\\Admin\\AdminPharmaciesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/pharmacies",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"قيمة تجريبية\",\n  \"nameEn\": \"Sample Name\",\n  \"ownerName\": \"قيمة تجريبية\",\n  \"licenseNumber\": \"قيمة تجريبية\",\n  \"phoneNumber\": \"+201000000001\",\n  \"email\": \"user@example.com\",\n  \"address\": \"قيمة تجريبية\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/v1/admin/pharmacies\nController: WebAPI\\Controllers\\Admin\\AdminPharmaciesController.cs\nJSON body DTO: PharmacyCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/pharmacies/{{id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/v1/admin/pharmacies/{id}\nController: WebAPI\\Controllers\\Admin\\AdminPharmaciesController.cs\nJSON body DTO: PharmacyUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores?pharmacyId=1",
+            "description": "GET /api/v1/admin/stores\nController: WebAPI\\Controllers\\Admin\\AdminStoresController.cs\nNo request body.\nQuery parameters: pharmacyId"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{id}}",
+            "description": "GET /api/v1/admin/stores/{id}\nController: WebAPI\\Controllers\\Admin\\AdminStoresController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pharmacyId\": 1,\n  \"nameAr\": \"اسم تجريبي\",\n  \"nameEn\": \"Sample Name\",\n  \"code\": \"SAMPLE-001\",\n  \"address\": \"قيمة تجريبية\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/v1/admin/stores\nController: WebAPI\\Controllers\\Admin\\AdminStoresController.cs\nJSON body DTO: StoreCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"اسم تجريبي\",\n  \"nameEn\": \"Sample Name\",\n  \"code\": \"SAMPLE-001\",\n  \"address\": \"قيمة تجريبية\",\n  \"isActive\": true,\n  \"rowVersion\": \"قيمة تجريبية\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/v1/admin/stores/{id}\nController: WebAPI\\Controllers\\Admin\\AdminStoresController.cs\nJSON body DTO: StoreUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH SetActive",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{id}}/active",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PATCH /api/v1/admin/stores/{id}/active\nController: WebAPI\\Controllers\\Admin\\AdminStoresController.cs\nJSON body DTO: StoreActiveDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH SetDefault",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{id}}/default",
+            "description": "PATCH /api/v1/admin/stores/{id}/default\nController: WebAPI\\Controllers\\Admin\\AdminStoresController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{id}}",
+            "description": "DELETE /api/v1/admin/stores/{id}\nController: WebAPI\\Controllers\\Admin\\AdminStoresController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Employees",
+      "description": "",
+      "item": [
+        {
+          "name": "GET GetAll",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/employees?pharmacyId=1&includeInactive=true",
+            "description": "GET /api/v1/admin/employees\nController: WebAPI\\Controllers\\Admin\\AdminEmployeesController.cs\nNo request body.\nQuery parameters: pharmacyId, includeInactive"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetDeleted",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/employees/deleted?pharmacyId=1",
+            "description": "GET /api/v1/admin/employees/deleted\nController: WebAPI\\Controllers\\Admin\\AdminEmployeesController.cs\nNo request body.\nQuery parameters: pharmacyId"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/employees/{{id}}",
+            "description": "GET /api/v1/admin/employees/{id}\nController: WebAPI\\Controllers\\Admin\\AdminEmployeesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pharmacyId\": 1,\n  \"fullNameAr\": \"اسم تجريبي\",\n  \"fullNameEn\": \"Sample Name\",\n  \"phoneNumber\": \"+201000000001\",\n  \"email\": \"user@example.com\",\n  \"nationalId\": \"قيمة تجريبية\",\n  \"jobTitle\": \"عنوان المنزل\",\n  \"employeeCode\": \"SAMPLE-001\",\n  \"userName\": \"قيمة تجريبية\",\n  \"initialPassword\": \"ChangeMe123!\",\n  \"roleName\": \"Employee\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/v1/admin/employees\nController: WebAPI\\Controllers\\Admin\\AdminEmployeesController.cs\nJSON body DTO: EmployeeCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/employees/{{id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pharmacyId\": 1,\n  \"fullNameAr\": \"اسم تجريبي\",\n  \"fullNameEn\": \"Sample Name\",\n  \"phoneNumber\": \"+201000000001\",\n  \"nationalId\": \"قيمة تجريبية\",\n  \"jobTitle\": \"عنوان المنزل\",\n  \"employeeCode\": \"SAMPLE-001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/v1/admin/employees/{id}\nController: WebAPI\\Controllers\\Admin\\AdminEmployeesController.cs\nJSON body DTO: EmployeeUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH SetActive",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/employees/{{id}}/active",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PATCH /api/v1/admin/employees/{id}/active\nController: WebAPI\\Controllers\\Admin\\AdminEmployeesController.cs\nJSON body DTO: EmployeeActiveDto"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/employees/{{id}}",
+            "description": "DELETE /api/v1/admin/employees/{id}\nController: WebAPI\\Controllers\\Admin\\AdminEmployeesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Restore",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/employees/{{id}}/restore",
+            "description": "POST /api/v1/admin/employees/{id}/restore\nController: WebAPI\\Controllers\\Admin\\AdminEmployeesController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "09 - Inventory",
+      "description": "",
+      "item": [
+        {
+          "name": "Receive stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": {{storeId}},\n  \"productUnitId\": {{productUnitId}},\n  \"quantity\": 25,\n  \"batchNumber\": \"BATCH-2026-001\",\n  \"expirationDate\": \"2028-06-30T00:00:00Z\",\n  \"costPrice\": 18.50,\n  \"reason\": \"توريد فاتورة مورد رقم 4581\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/inventory/products/{{productId}}/receipts",
+            "description": "POST /api/v1/admin/inventory/products/{productId}/receipts\nController: WebAPI\\Controllers\\Admin\\AdminInventoryController.cs\nJSON body DTO: ReceiveStockDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Increase stock adjustment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{productId}},\n  \"quantityDelta\": 3,\n  \"reason\": \"تسوية جرد بالزيادة\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/inventory/adjustments",
+            "description": "POST /api/v1/admin/inventory/adjustments\nController: WebAPI\\Controllers\\Admin\\AdminInventoryController.cs\nJSON body DTO: AdjustInventoryDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Search inventory transactions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/inventory/transactions?productId={{productId}}&page=1&pageSize=25&fromUtc=2026-01-01T00:00:00Z&toUtc=2027-01-01T00:00:00Z",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "description": "GET /api/v1/admin/inventory/transactions\nController: WebAPI\\Controllers\\Admin\\AdminInventoryController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "16 - Payments (Manual Records)",
+      "description": "",
+      "item": [
+        {
+          "name": "Admin - manually record payment result",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 2,\n  \"externalReference\": \"provider-payment-id\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/payment-attempts/{{attemptId}}",
+            "description": "PATCH /api/v1/admin/payment-attempts/{attemptId}\nController: WebAPI\\Controllers\\Admin\\AdminPaymentsController.cs\nJSON body DTO: UpdatePaymentAttemptDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - record completed external refund",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 3,\n  \"externalReference\": \"provider-refund-id\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/payment-refunds/{{refundId}}",
+            "description": "PATCH /api/v1/admin/payment-refunds/{refundId}\nController: WebAPI\\Controllers\\Admin\\AdminPaymentsController.cs\nJSON body DTO: UpdatePaymentRefundDto"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "13 - Loyalty Points",
+      "description": "",
+      "item": [
+        {
+          "name": "Grant points to customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pointsDelta\": 100,\n  \"referenceId\": {{referenceId}},\n  \"reason\": \"تعويض خدمة معتمد\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/points/customers/{{customerId}}/adjust",
+            "description": "ReferenceId must be unique. The caller must have CanManagePoints and an active employee profile for audit. Positive manual points expire after one year."
+          },
+          "response": []
+        },
+        {
+          "name": "Get my point balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/balance",
+            "description": "GET /api/v1/points/balance\nController: WebAPI\\Controllers\\PointsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "List my point lots",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/lots?status=2&page=1&pageSize=20",
+            "description": "GET /api/v1/points/lots\nController: WebAPI\\Controllers\\PointsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "List my points ledger",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/transactions?transactionType=2&from=2026-01-01T00:00:00Z&to=2026-12-31T23:59:59Z&page=1&pageSize=20",
+            "description": "GET /api/v1/points/transactions\nController: WebAPI\\Controllers\\PointsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "List redeemable products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/redeemable-products?storeId={{storeId}}&page=1&pageSize=20",
+            "description": "GET /api/v1/points/redeemable-products\nController: WebAPI\\Controllers\\PointsController.cs\nNo request body.\nQuery parameters: storeId, page, pageSize"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "14 - Returns",
+      "description": "",
+      "item": [
+        {
+          "name": "Admin/employee - search return requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/returns?status=1&page=1&pageSize=25&fromUtc=2026-01-01T00:00:00Z&toUtc=2027-01-01T00:00:00Z",
+            "description": "GET /api/v1/admin/returns\nController: WebAPI\\Controllers\\Admin\\AdminReturnsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin/employee - return details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/returns/{{id}}",
+            "description": "GET /api/v1/admin/returns/{id}\nController: WebAPI\\Controllers\\Admin\\AdminReturnsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin/employee - approve return",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approve\": true,\n  \"notes\": \"تم فحص المنتج والموافقة على الكمية المرتجعة\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/returns/{{id}}/decision",
+            "description": "PATCH /api/v1/admin/returns/{id}/decision\nController: WebAPI\\Controllers\\Admin\\AdminReturnsController.cs\nJSON body DTO: ReviewReturnRequestDto"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Authentication & Access",
+      "description": "",
+      "item": [
+        {
+          "name": "GET GetAllRoles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/roles",
+            "description": "GET /api/admin/roles\nController: WebAPI\\Controllers\\Auth\\AdminRolesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Get",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/permissions",
+            "description": "GET /api/admin/users/{userId}/permissions\nController: WebAPI\\Controllers\\Auth\\AdminUsersPermissionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Set",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/permissions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleNote\": \"راجع DTO الخاص بهذا الطلب\",\n  \"example\": \"أدخل الحقول المطلوبة حسب API\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/admin/users/{userId}/permissions\nController: WebAPI\\Controllers\\Auth\\AdminUsersPermissionsController.cs\nJSON body DTO: SetUserPermissionsRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetUserRoles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/roles",
+            "description": "GET /api/admin/users/{userId}/roles\nController: WebAPI\\Controllers\\Auth\\AdminUsersRolesController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT SetRoles",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/roles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleNote\": \"راجع DTO الخاص بهذا الطلب\",\n  \"example\": \"أدخل الحقول المطلوبة حسب API\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/admin/users/{userId}/roles\nController: WebAPI\\Controllers\\Auth\\AdminUsersRolesController.cs\nJSON body DTO: SetUserRolesRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "POST AddRoles",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/roles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleNote\": \"راجع DTO الخاص بهذا الطلب\",\n  \"example\": \"أدخل الحقول المطلوبة حسب API\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/admin/users/{userId}/roles\nController: WebAPI\\Controllers\\Auth\\AdminUsersRolesController.cs\nJSON body DTO: ModifyUserRolesRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE RemoveRoles",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/roles",
+            "description": "DELETE /api/admin/users/{userId}/roles\nController: WebAPI\\Controllers\\Auth\\AdminUsersRolesController.cs\nJSON body DTO: ModifyUserRolesRequestDto",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.customer@example.com\",\n  \"userName\": \"newcustomer\",\n  \"password\": \"ChangeMe123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/auth/register\nController: WebAPI\\Controllers\\Auth\\AuthController.cs\nJSON body DTO: RegisterRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "POST ConfirmEmail",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/confirm-email",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"token\": \"REPLACE_WITH_EMAIL_CONFIRMATION_TOKEN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/auth/confirm-email\nController: WebAPI\\Controllers\\Auth\\AuthController.cs\nJSON body DTO: ConfirmEmailRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET ConfirmEmailGet",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/confirm-email?userId=1&token=1",
+            "description": "GET /api/auth/confirm-email\nController: WebAPI\\Controllers\\Auth\\AuthController.cs\nNo request body.\nQuery parameters: userId, token"
+          },
+          "response": []
+        },
+        {
+          "name": "POST Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"new.customer@example.com\",\n  \"password\": \"ChangeMe123!\",\n  \"rememberMe\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/auth/login\nController: WebAPI\\Controllers\\Auth\\AuthController.cs\nJSON body DTO: LoginRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "POST ResendConfirmEmail",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/resend-confirm-email",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.customer@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/auth/resend-confirm-email\nController: WebAPI\\Controllers\\Auth\\AuthController.cs\nJSON body DTO: ResendConfirmEmailRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "POST ForgotPassword",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/forgot-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.customer@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/auth/forgot-password\nController: WebAPI\\Controllers\\Auth\\AuthController.cs\nJSON body DTO: ForgotPasswordRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "POST ResetPassword",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/reset-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"token\": \"REPLACE_WITH_RESET_TOKEN\",\n  \"newPassword\": \"ChangeMe123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/auth/reset-password\nController: WebAPI\\Controllers\\Auth\\AuthController.cs\nJSON body DTO: ResetPasswordRequestDto"
+          },
+          "response": []
+        },
+        {
+          "name": "POST ChangePassword",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/change-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"CurrentPass123!\",\n  \"newPassword\": \"ChangeMe123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "POST /api/auth/change-password\nController: WebAPI\\Controllers\\Auth\\AuthController.cs\nJSON body DTO: ChangePasswordRequestDto"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - My Account",
+      "description": "",
+      "item": [
+        {
+          "name": "GET Get",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/me",
+            "description": "GET /api/v1/me\nController: WebAPI\\Controllers\\Auth\\CurrentUserController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetPermissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/me/permissions",
+            "description": "GET /api/v1/me/permissions\nController: WebAPI\\Controllers\\Auth\\CurrentUserController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT UpdateCustomerProfile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/me",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullNameAr\": \"اسم تجريبي\",\n  \"fullNameEn\": \"Sample Name\",\n  \"phoneNumber\": \"+201000000001\",\n  \"gender\": \"قيمة تجريبية\",\n  \"dateOfBirth\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PUT /api/v1/me\nController: WebAPI\\Controllers\\Auth\\CurrentUserController.cs\nJSON body DTO: CustomerProfileUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET Get",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/me/employee",
+            "description": "GET /api/v1/me/employee\nController: WebAPI\\Controllers\\CurrentEmployeeController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10 - Cart",
+      "description": "",
+      "item": [
+        {
+          "name": "Add normal cart item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": {{storeId}},\n  \"productId\": {{productId}},\n  \"unitLevel\": \"Outer\",\n  \"quantity\": 2,\n  \"deviceId\": \"android-device-01\",\n  \"appInstanceId\": \"pharmashop-mobile\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/cart/items",
+            "description": "POST /api/v1/cart/items\nController: WebAPI\\Controllers\\CartsController.cs\nJSON body DTO: CartAddItemDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Add points-redemption item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": {{storeId}},\n  \"productId\": {{productId}},\n  \"unitLevel\": \"Outer\",\n  \"quantity\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/cart/redeem/items",
+            "description": "POST /api/v1/cart/redeem/items\nController: WebAPI\\Controllers\\CartsController.cs\nJSON body DTO: CartAddItemDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Get my active cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/cart",
+            "description": "GET /api/v1/cart\nController: WebAPI\\Controllers\\CartsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Update cart item quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/cart/items/{{cartItemId}}",
+            "description": "PATCH /api/v1/cart/items/{cartItemId}\nController: WebAPI\\Controllers\\CartsController.cs\nJSON body DTO: CartUpdateQtyDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove one item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/cart/items/{{cartItemId}}",
+            "description": "DELETE /api/v1/cart/items/{cartItemId}\nController: WebAPI\\Controllers\\CartsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear my active cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/cart",
+            "description": "DELETE /api/v1/cart\nController: WebAPI\\Controllers\\CartsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Preview cart and delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cartId\": {{cartId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": \"CashOnDelivery\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/cart/preview",
+            "description": "POST /api/v1/cart/preview\nController: WebAPI\\Controllers\\CartsController.cs\nJSON body DTO: CartPreviewRequestDto"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "15 - Delivery Operations",
+      "description": "",
+      "item": [
+        {
+          "name": "Delivery agent - list assigned orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deliveryAgentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/delivery/orders?status=4&page=1&pageSize=20&newestFirst=true",
+            "description": "GET /api/v1/delivery/orders\nController: WebAPI\\Controllers\\DeliveryOrdersController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Delivery agent - order details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deliveryAgentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/delivery/orders/{{id}}",
+            "description": "GET /api/v1/delivery/orders/{id}\nController: WebAPI\\Controllers\\DeliveryOrdersController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Delivery agent - mark delivered",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deliveryAgentToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 5,\n  \"notes\": \"تم تسليم الطلب للعميل\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/delivery/orders/{{id}}/status",
+            "description": "PATCH /api/v1/delivery/orders/{id}/status\nController: WebAPI\\Controllers\\DeliveryOrdersController.cs\nJSON body DTO: UpdateDeliveryOrderStatusDto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET GetByStore",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/delivery-zones?storeId=1",
+            "description": "GET /api/v1/delivery-zones\nController: WebAPI\\Controllers\\DeliveryZonesController.cs\nNo request body.\nQuery parameters: storeId"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "99 - Development Only (Admin / Development environment)",
+      "description": "هذه المسارات تتطلب ASPNETCORE_ENVIRONMENT=Development وصلاحية Admin.",
+      "item": [
+        {
+          "name": "POST Save",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/dev/images/save",
+            "description": "POST /api/dev/images/save\nController: WebAPI\\Controllers\\DevImagesController.cs\nNo request body.\nDEVELOPMENT ONLY: this endpoint is available only in Development and requires Admin.\nاختر ملف JPG أو PNG أو WebP أقل من 10MB من Postman.\nملاحظة: اختر الملف يدويًا في حقل File داخل Postman.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Replace",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/dev/images/{{devImageId}}/replace",
+            "description": "PUT /api/dev/images/{imageId}/replace\nController: WebAPI\\Controllers\\DevImagesController.cs\nNo request body.\nDEVELOPMENT ONLY: this endpoint is available only in Development and requires Admin.\nاختر ملف JPG أو PNG أو WebP أقل من 10MB من Postman.\nملاحظة: اختر الملف يدويًا في حقل File داخل Postman.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/dev/images/{{devImageId}}",
+            "description": "DELETE /api/dev/images/{imageId}\nController: WebAPI\\Controllers\\DevImagesController.cs\nNo request body.\nDEVELOPMENT ONLY: this endpoint is available only in Development and requires Admin."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/dev/images/batch",
+            "description": "POST /api/dev/images/batch\nController: WebAPI\\Controllers\\DevImagesController.cs\nNo request body.\nDEVELOPMENT ONLY: this endpoint is available only in Development and requires Admin.\nاختر حتى 5 ملفات JPG أو PNG أو WebP (حد إجمالي 25MB).\nملاحظة: اختر الملف يدويًا في حقل File داخل Postman.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET DownloadVariant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/dev/images/{{devImageId}}/{{imageVariant}}?formatHint=webp",
+            "description": "GET /api/dev/images/{imageId}/{variant}\nController: WebAPI\\Controllers\\DevImagesController.cs\nNo request body.\nQuery parameters: formatHint\nDEVELOPMENT ONLY: this endpoint is available only in Development and requires Admin."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11 - Prescriptions",
+      "description": "",
+      "item": [
+        {
+          "name": "Search review queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions?status=1&storeId={{storeId}}&page=1&pageSize=20&sort=Newest",
+            "description": "GET /api/v1/employee/prescriptions\nController: WebAPI\\Controllers\\EmployeePrescriptionsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Get prescription review details and images",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{id}}",
+            "description": "GET /api/v1/employee/prescriptions/{id}\nController: WebAPI\\Controllers\\EmployeePrescriptionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Download prescription image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{id}}/images/{{imageIdentifier}}",
+            "description": "GET /api/v1/employee/prescriptions/{id}/images/{imageIdentifier}\nController: WebAPI\\Controllers\\EmployeePrescriptionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Get prescription items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{id}}/items",
+            "description": "GET /api/v1/employee/prescriptions/{id}/items\nController: WebAPI\\Controllers\\EmployeePrescriptionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Add one mapped medicine",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{productId}},\n  \"requestedName\": \"اسم الدواء\",\n  \"requestedQuantity\": 1,\n  \"notes\": \"الجرعة حسب الوصفة\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{id}}/items",
+            "description": "POST /api/v1/employee/prescriptions/{id}/items\nController: WebAPI\\Controllers\\EmployeePrescriptionsController.cs\nJSON body DTO: PrescriptionItemCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Add several medicines",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"requestedName\": \"اسم الدواء الأول\", \"requestedQuantity\": 1 },\n    { \"productId\": 2, \"requestedName\": \"اسم الدواء الثاني\", \"requestedQuantity\": 2 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{id}}/items/batch",
+            "description": "POST /api/v1/employee/prescriptions/{id}/items/batch\nController: WebAPI\\Controllers\\EmployeePrescriptionsController.cs\nJSON body DTO: PrescriptionItemsBatchCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete an item while InReview",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{id}}/items/{{prescriptionItemId}}",
+            "description": "DELETE /api/v1/employee/prescriptions/{id}/items/{itemId}\nController: WebAPI\\Controllers\\EmployeePrescriptionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Start review (Submitted to InReview)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 2,\n  \"notes\": \"تم بدء مراجعة الوصفة\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{id}}/status",
+            "description": "PATCH /api/v1/employee/prescriptions/{id}/status\nController: WebAPI\\Controllers\\EmployeePrescriptionsController.cs\nJSON body DTO: PrescriptionStatusUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer - upload prescription images",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "storeId",
+                  "type": "text",
+                  "value": "1"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "primaryIndex",
+                  "type": "text",
+                  "value": "0"
+                },
+                {
+                  "key": "notes",
+                  "type": "text",
+                  "value": "الوصفة الطبية"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/prescriptions",
+            "description": "POST /api/v1/prescriptions\nController: WebAPI\\Controllers\\PrescriptionsController.cs\nNo request body.\nملاحظة: اختر الملف يدويًا في حقل File داخل Postman."
+          },
+          "response": []
+        },
+        {
+          "name": "List my prescriptions (optional status/page filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/prescriptions?status=1&page=1&pageSize=20&newestFirst=true",
+            "description": "GET /api/v1/prescriptions\nController: WebAPI\\Controllers\\PrescriptionsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Get my prescription details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{id}}",
+            "description": "GET /api/v1/prescriptions/{id}\nController: WebAPI\\Controllers\\PrescriptionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Customer - view own prescription image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{id}}/images/{{imageIdentifier}}",
+            "description": "GET /api/v1/prescriptions/{id}/images/{imageIdentifier}\nController: WebAPI\\Controllers\\PrescriptionsController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "17 - Notifications",
+      "description": "",
+      "item": [
+        {
+          "name": "List my notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/notifications?unreadOnly=true&page=1&pageSize=20",
+            "description": "GET /api/v1/notifications\nController: WebAPI\\Controllers\\NotificationsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark notification as read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/notifications/{{id}}/read",
+            "description": "PATCH /api/v1/notifications/{id}/read\nController: WebAPI\\Controllers\\NotificationsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark all notifications as read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/notifications/read-all",
+            "description": "PATCH /api/v1/notifications/read-all\nController: WebAPI\\Controllers\\NotificationsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Get notification preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/notifications/preferences",
+            "description": "GET /api/v1/notifications/preferences\nController: WebAPI\\Controllers\\NotificationsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Update notification preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderUpdatesEnabled\": true,\n  \"prescriptionUpdatesEnabled\": true,\n  \"pointsUpdatesEnabled\": true,\n  \"emailEnabled\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/notifications/preferences",
+            "description": "PUT /api/v1/notifications/preferences\nController: WebAPI\\Controllers\\NotificationsController.cs\nJSON body DTO: NotificationPreferencesDto"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 - Promotions",
+      "description": "",
+      "item": [
+        {
+          "name": "Create group promotion (Buy 2, get offer 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"erpPgoId\": 900001,\n  \"name\": \"اشترِ 2 واحصل على عرض\",\n  \"notes\": \"خصم 50% على القطعة المؤهلة\",\n  \"startAt\": \"2026-11-01T00:00:00Z\",\n  \"endAt\": \"2026-12-01T00:00:00Z\",\n  \"totalAmount\": 3,\n  \"basicAmount\": 2,\n  \"offerAmount\": 1,\n  \"discountPercent\": 50,\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/promotions",
+            "description": "POST /api/v1/admin/promotions\nController: WebAPI\\Controllers\\PromotionsController.cs\nJSON body DTO: PromotionCreateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Search / filter promotions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/promotions?q=اشتر&isActive=true&from=2026-11-01T00:00:00Z&to=2026-11-30T23:59:59Z&onlyRunningNow=true&sort=Newest&page=1&pageSize=25",
+            "description": "GET /api/v1/admin/promotions\nController: WebAPI\\Controllers\\PromotionsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Get promotion details and products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{id}}",
+            "description": "GET /api/v1/admin/promotions/{id}\nController: WebAPI\\Controllers\\PromotionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Update promotion",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"erpPgoId\": 900001,\n  \"name\": \"اشترِ 2 واحصل على عرض محدث\",\n  \"notes\": \"خصم 50% على القطعة المؤهلة\",\n  \"startAt\": \"2026-11-01T00:00:00Z\",\n  \"endAt\": \"2026-12-01T00:00:00Z\",\n  \"totalAmount\": 3,\n  \"basicAmount\": 2,\n  \"offerAmount\": 1,\n  \"discountPercent\": 50,\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{id}}",
+            "description": "PUT /api/v1/admin/promotions/{id}\nController: WebAPI\\Controllers\\PromotionsController.cs\nJSON body DTO: PromotionUpdateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate promotion",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{id}}/activate",
+            "description": "PATCH /api/v1/admin/promotions/{id}/activate\nController: WebAPI\\Controllers\\PromotionsController.cs\nJSON body DTO: PromotionActivateDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate promotion",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{id}}/deactivate",
+            "description": "PATCH /api/v1/admin/promotions/{id}/deactivate\nController: WebAPI\\Controllers\\PromotionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Add products",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"erpProductId\": 10001, \"erpOfferId\": 70001 },\n    { \"productId\": 2, \"erpProductId\": 10002, \"erpOfferId\": 70001 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{id}}/products",
+            "description": "POST /api/v1/admin/promotions/{id}/products\nController: WebAPI\\Controllers\\PromotionsController.cs\nJSON body DTO: PromotionAddProductsDto"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove product from promotion",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{id}}/products/{{promotionProductId}}",
+            "description": "DELETE /api/v1/admin/promotions/{id}/products/{promotionProductId}\nController: WebAPI\\Controllers\\PromotionsController.cs\nNo request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Replace product set",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"erpProductId\": 10001, \"erpOfferId\": 70001 },\n    { \"productId\": 2, \"erpProductId\": 10002, \"erpOfferId\": 70001 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{id}}/products",
+            "description": "PUT /api/v1/admin/promotions/{id}/products\nController: WebAPI\\Controllers\\PromotionsController.cs\nJSON body DTO: PromotionReplaceProductsDto"
+          },
+          "response": []
+        },
+        {
+          "name": "List active promotions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/promotions/active?page=1&pageSize=20&sort=Newest",
+            "header": [],
+            "description": "GET /api/v1/promotions/active\nController: WebAPI\\Controllers\\PublicPromotionsController.cs\nNo request body.\nQuery parameters: query"
+          },
+          "response": []
+        },
+        {
+          "name": "Get active promotion detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/promotions/{{id}}",
+            "header": [],
+            "description": "GET /api/v1/promotions/{id}\nController: WebAPI\\Controllers\\PublicPromotionsController.cs\nNo request body."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
