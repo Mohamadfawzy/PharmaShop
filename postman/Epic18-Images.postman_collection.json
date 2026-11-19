@@ -1,0 +1,105 @@
+{
+  "info": {
+    "_postman_id": "cc12c428-4c3a-4823-8616-ec36918357ee",
+    "name": "PharmaShop - Epic 18 Images",
+    "description": "Production image upload, metadata, replacement and soft-delete endpoints. Select local files in Postman form-data before sending.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "adminToken", "value": "" },
+    { "key": "customerToken", "value": "" },
+    { "key": "productId", "value": "1" },
+    { "key": "productImageId", "value": "1" },
+    { "key": "categoryId", "value": "1" },
+    { "key": "prescriptionId", "value": "1" },
+    { "key": "imageIdentifier", "value": "rx-1-image-id" }
+  ],
+  "item": [
+    {
+      "name": "Admin - list product images",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images"
+      }
+    },
+    {
+      "name": "Admin - add product image",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "body": { "mode": "formdata", "formdata": [
+          { "key": "image", "type": "file", "src": "" },
+          { "key": "altText", "type": "text", "value": "صورة المنتج" },
+          { "key": "isPrimary", "type": "text", "value": "true" }
+        ] },
+        "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images?format=Auto"
+      }
+    },
+    {
+      "name": "Admin - update product image metadata",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"altText\": \"صورة العبوة\",\n  \"sortOrder\": 0,\n  \"isPrimary\": true\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images/{{productImageId}}"
+      }
+    },
+    {
+      "name": "Admin - replace product image file",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "body": { "mode": "formdata", "formdata": [
+          { "key": "image", "type": "file", "src": "" }
+        ] },
+        "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images/{{productImageId}}/file?format=Auto"
+      }
+    },
+    {
+      "name": "Admin - soft-delete product image",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/images/{{productImageId}}"
+      }
+    },
+    {
+      "name": "Admin - replace category image",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "body": { "mode": "formdata", "formdata": [
+          { "key": "image", "type": "file", "src": "" }
+        ] },
+        "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}/image?format=Auto"
+      }
+    },
+    {
+      "name": "Customer - upload prescription images",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "body": { "mode": "formdata", "formdata": [
+          { "key": "storeId", "type": "text", "value": "1" },
+          { "key": "files", "type": "file", "src": "" },
+          { "key": "primaryIndex", "type": "text", "value": "0" },
+          { "key": "notes", "type": "text", "value": "الوصفة الطبية" }
+        ] },
+        "url": "{{baseUrl}}/api/v1/prescriptions"
+      }
+    },
+    {
+      "name": "Customer - view own prescription image",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}/images/{{imageIdentifier}}"
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 ﻿using Contracts.Images.Abstractions;
 using Contracts.Images.Dtos;
+using Contracts.Images.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
@@ -117,7 +118,7 @@ public sealed class ImageService : IImageService
         CancellationToken ct = default)
     {
         if (imageData is null) throw new ArgumentNullException(nameof(imageData));
-        if (string.IsNullOrWhiteSpace(imageId)) throw new ArgumentException("ImageId is required.", nameof(imageId));
+        if (!IsSafeImageId(imageId)) throw new ArgumentException("ImageId contains invalid characters.", nameof(imageId));
         if (string.IsNullOrWhiteSpace(rootPath)) throw new ArgumentException("Root path is required.", nameof(rootPath));
 
         // IMPORTANT: lock by id to avoid races with delete/other replaces.
@@ -129,7 +130,10 @@ public sealed class ImageService : IImageService
 
             // Stage & overwrite atomically via storage.
             // We do NOT delete old first. The atomic save will overwrite final files.
-            var result = await SaveWithIdInternalAsync(imageData, imageId, rootPath,  allowOverwrite: true, outputFormat, ct);
+            var result = await SaveWithIdInternalAsync(imageData, imageId, rootPath, allowOverwrite: true, outputFormat, ct);
+            foreach (var oldFormat in new[] { StoredImageFormat.Jpeg, StoredImageFormat.Png, StoredImageFormat.Webp })
+                if (oldFormat != result.Format)
+                    await _storage.DeleteAllAsync(rootPath, imageId, oldFormat, CancellationToken.None);
             return result;
         }
         finally
@@ -140,7 +144,7 @@ public sealed class ImageService : IImageService
 
     public async Task DeleteAsync(string imageId, string rootPath, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(imageId)) throw new ArgumentException("ImageId is required.", nameof(imageId));
+        if (!IsSafeImageId(imageId)) throw new ArgumentException("ImageId contains invalid characters.", nameof(imageId));
         if (string.IsNullOrWhiteSpace(rootPath)) throw new ArgumentException("Root path is required.", nameof(rootPath));
 
         var gate = GetLock(imageId);
@@ -221,6 +225,11 @@ public sealed class ImageService : IImageService
     private static SemaphoreSlim GetLock(string id)
         => _locks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1));
 
+    private static bool IsSafeImageId(string? imageId)
+        => !string.IsNullOrWhiteSpace(imageId)
+           && imageId.Length <= 100
+           && imageId.All(ch => char.IsAsciiLetterOrDigit(ch) || ch is '-' or '_');
+
     private string? SanitizePrefix(string? prefix)
     {
         if (string.IsNullOrWhiteSpace(prefix))
@@ -231,7 +240,7 @@ public sealed class ImageService : IImageService
         // IMPORTANT: keep only safe chars (letters/digits/_/-). Prevent path injection.
         var safe = new string(trimmed
             .Take(_opt.MaxPrefixLength)
-            .Select(ch => char.IsLetterOrDigit(ch) ? ch : (ch == '-' || ch == '_' ? ch : '\0'))
+            .Select(ch => char.IsAsciiLetterOrDigit(ch) ? ch : (ch == '-' || ch == '_' ? ch : '\0'))
             .Where(ch => ch != '\0')
             .ToArray());
 

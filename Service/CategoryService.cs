@@ -314,6 +314,11 @@ public class CategoryService : ICategoryService
             try { await tx.RollbackAsync(CancellationToken.None); } catch { /* best-effort */ }
             throw;
         }
+        catch (ArgumentException ex)
+        {
+            try { await tx.RollbackAsync(CancellationToken.None); } catch { /* best-effort */ }
+            return AppResponse<string>.ValidationError(ex.Message);
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "UpdateCategoryImageAsync failed CategoryId={CategoryId}", categoryId);

@@ -73,6 +73,7 @@ public class AdminCategoriesController : AdminBaseApiController
     // --------------------------------------------
     [HttpPut("{categoryId:int}/image")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
     public async Task<IActionResult> UpdateImage(
         int categoryId,
         [FromForm] IFormFile image,
@@ -111,28 +112,6 @@ public class AdminCategoriesController : AdminBaseApiController
 
 
 
-
-
-    // ============================================
-    // Trash
-    // ============================================
-
-    [HttpPut("{categoryId:int}/my-image")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> MyUpdateImage(int categoryId, [FromForm] IFormFile image, CancellationToken ct)
-    {
-        if (image is null || image.Length == 0)
-            return BadRequest(AppResponse<string>.ValidationError("Image is required"));
-
-        if (image.Length > MaxImageBytes)
-            return BadRequest(AppResponse<string>.ValidationError($"Image size must be <= {MaxImageBytes / (1024 * 1024)}MB"));
-
-        if (!AllowedImageContentTypes.Contains(image.ContentType))
-            return BadRequest(AppResponse<string>.ValidationError("Unsupported image type. Allowed: jpg, png, webp"));
-
-        await using var stream = image.OpenReadStream();
-        return FromAppResponse(await _categoryService.MyUpdateCategoryImageAsync(categoryId, stream, UploadsRootPath, ct));
-    }
 }
 
 

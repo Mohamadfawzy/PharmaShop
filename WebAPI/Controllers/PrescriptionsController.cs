@@ -38,9 +38,16 @@ public sealed class PrescriptionsController : BaseApiController
             }
             if (uploads.Sum(f => f.Length) > 25L * 1024 * 1024)
                 return FromAppResponse(AppResponse<object>.ValidationError("Total upload size cannot exceed 25 MB"));
-            var result = await _service.CreateWithImagesAsync(new PrescriptionCreateRequestDto
-            { StoreId = form.StoreId, Notes = form.Notes, PrimaryIndex = form.PrimaryIndex }, uploads, ct);
-            return FromAppResponse(result);
+            try
+            {
+                var result = await _service.CreateWithImagesAsync(new PrescriptionCreateRequestDto
+                { StoreId = form.StoreId, Notes = form.Notes, PrimaryIndex = form.PrimaryIndex }, uploads, ct);
+                return FromAppResponse(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return FromAppResponse(AppResponse<object>.ValidationError(ex.Message));
+            }
         }
         finally { foreach (var upload in uploads) upload.Content.Dispose(); }
     }
