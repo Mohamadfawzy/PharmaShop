@@ -14,20 +14,31 @@ public class OrderService : IOrderService
 {
     private readonly IUnitOfWork unitOfWork;
     private readonly IDeliveryZoneService _deliveryZoneService;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IPointsService _pointsService;
+    private readonly IInventoryService _inventoryService;
 
     // Simple settings (later move to appsettings.json)
     private const int ConversionRate = 30;          // 30 points = 1 money unit
     private const int MinimumRedeemPoints = 500;    // minimum points
     private const decimal RedeemCapPercent = 0.20m; // 20% cap
 
-    public OrderService(IUnitOfWork unitOfWork, IDeliveryZoneService deliveryZoneService)
+    public OrderService(IUnitOfWork unitOfWork, IDeliveryZoneService deliveryZoneService, ICurrentUserService currentUser, IPointsService pointsService, IInventoryService inventoryService)
     {
         this.unitOfWork = unitOfWork;
         _deliveryZoneService = deliveryZoneService;
+        _currentUser = currentUser;
+        _pointsService = pointsService;
+        _inventoryService = inventoryService;
     }
 
     public async Task<AppResponse<CheckoutPreviewResponseDto>> PreviewAsync(CheckoutPreviewRequestDto dto,CancellationToken ct)
     {
+        if (dto is null) return AppResponse<CheckoutPreviewResponseDto>.ValidationError("Request body is required");
+        var customer = await FindCurrentCustomerAsync(ct);
+        if (customer is null) return AppResponse<CheckoutPreviewResponseDto>.Unauthorized("An active customer account is required");
+        dto.CustomerId = customer.Id;
+
         // 1) Validate request
         var validation = ValidateCheckoutPreviewRequest(dto);
         if (validation is not null) return validation;
@@ -55,6 +66,7 @@ public class OrderService : IOrderService
         var lines = await LoadCheckoutLinesAsync(dto.CustomerId, dto.SourceType, dto.SourceId, ct);
         if (lines.Count == 0)
             return AppResponse<CheckoutPreviewResponseDto>.BusinessRuleViolation("Source has no items");
+        var stockWarnings = GetStockWarnings(lines);
 
         // 4) Build priced items
         var priced = BuildPricedItems(lines);
@@ -82,7 +94,7 @@ public class OrderService : IOrderService
                 redeemedAmount: redeemPreview.RedeemedAmount,
                 deliveryFee: deliveryFee.Value);
 
-            var response = BuildPointsRedemptionPreviewResponse(dto, priced, totals, redeemPreview);
+            var response = BuildPointsRedemptionPreviewResponse(dto, priced, totals, redeemPreview, stockWarnings);
 
             return AppResponse<CheckoutPreviewResponseDto>.Ok(
                 response,
@@ -107,7 +119,7 @@ public class OrderService : IOrderService
         var normalTotals = CalculateTotals(priced, promo.PromotionDiscountTotal, redeemedAmount: 0m, deliveryFee: normalDeliveryFee.Value);
 
         // 10) Build normal response
-        var normalResponse = BuildNormalPreviewResponse(dto, priced, promo, normalTotals, earnedPoints);
+        var normalResponse = BuildNormalPreviewResponse(dto, priced, promo, normalTotals, earnedPoints, stockWarnings);
 
         return AppResponse<CheckoutPreviewResponseDto>.Ok(
             normalResponse,
@@ -121,6 +133,10 @@ public class OrderService : IOrderService
 
     public async Task<AppResponse<CheckoutResultDto>> CheckoutAsync(CheckoutRequestDto dto, CancellationToken ct)
     {
+        if (dto is null) return AppResponse<CheckoutResultDto>.ValidationError("Request body is required");
+        var customer = await FindCurrentCustomerAsync(ct);
+        if (customer is null) return AppResponse<CheckoutResultDto>.Unauthorized("An active customer account is required");
+        dto.CustomerId = customer.Id;
         // 1) Validate request before opening transaction
         var validation = ValidateCheckoutRequest(dto);
         if (validation is not null)
@@ -152,6 +168,14 @@ public class OrderService : IOrderService
             var lines = await LoadCheckoutLinesAsync(dto, ct);
             if (lines.Count == 0)
                 return AppResponse<CheckoutResultDto>.BusinessRuleViolation("Source has no items");
+
+            var stockWarnings = GetStockWarnings(lines);
+            if (stockWarnings.Count > 0)
+                return AppResponse<CheckoutResultDto>.BusinessRuleViolation(string.Join(" ", stockWarnings));
+
+            // Claim the cart or prescription within the checkout transaction to prevent duplicate confirmation.
+            if (!await TryClaimCheckoutSourceAsync(dto, lines, ct))
+                return AppResponse<CheckoutResultDto>.Conflict("This cart or prescription has already been checked out. Refresh the source and try again.");
 
             // 5) Build priced items
             var priced = BuildPricedItems(lines);
@@ -203,8 +227,6 @@ public class OrderService : IOrderService
                     ct);
 
                 await ConsumePointsForOrderAsync(dto.CustomerId, order.Id, points.RedeemedPoints, ct);
-
-                await UpdateSourceAfterCheckoutAsync(dto, lines, ct);
 
                 // 7) Save all pending changes
                 await unitOfWork.CompleteAsync(ct);
@@ -263,8 +285,6 @@ public class OrderService : IOrderService
             await CreatePendingEarnLotIfNeededAsync(dto.CustomerId, normalOrder.Id, earned, ct);
 
             // 17) Update source state
-            await UpdateSourceAfterCheckoutAsync(dto, lines, ct);
-
             // 18) Save all pending changes
             await unitOfWork.CompleteAsync(ct);
 
@@ -291,15 +311,13 @@ public class OrderService : IOrderService
     AdminOrderListQueryDto query, CancellationToken ct)
     {
         // 1) Validate required fields
-        if (query is null || query.StoreId <= 0)
-        {
-            return AppResponse<List<AdminOrderListItemDto>>.ValidationErrors(
-                new Dictionary<string, string[]>
-                {
-                    ["StoreId"] = new[] { "StoreId is required" }
-                },
-                detail: "Validation failed");
-        }
+        if (query is null) return AppResponse<List<AdminOrderListItemDto>>.ValidationError("Query is required");
+        if (query.Status.HasValue && (query.Status < 1 || query.Status > 8))
+            return AppResponse<List<AdminOrderListItemDto>>.ValidationError("Status must be between 1 and 8");
+        if (query.PaymentStatus.HasValue && (query.PaymentStatus < 1 || query.PaymentStatus > 3))
+            return AppResponse<List<AdminOrderListItemDto>>.ValidationError("PaymentStatus must be between 1 and 3");
+        if (query.From.HasValue && query.To.HasValue && query.From > query.To)
+            return AppResponse<List<AdminOrderListItemDto>>.ValidationError("From must be earlier than To");
 
         // 2) Normalize pagination
         if (query.Page < 1) query.Page = 1;
@@ -324,6 +342,38 @@ public class OrderService : IOrderService
         // - Add role-based authorization
     }
 
+    public async Task<AppResponse<List<CustomerOrderListItemDto>>> GetMyOrdersAsync(CustomerOrderListQueryDto query, CancellationToken ct)
+    {
+        var customer = await FindCurrentCustomerAsync(ct);
+        if (customer is null) return AppResponse<List<CustomerOrderListItemDto>>.Unauthorized("An active customer account is required");
+        if (query is null) return AppResponse<List<CustomerOrderListItemDto>>.ValidationError("Query is required");
+        if (query.Status.HasValue && (query.Status < 1 || query.Status > 8))
+            return AppResponse<List<CustomerOrderListItemDto>>.ValidationError("Status must be between 1 and 8");
+        query.Page = Math.Max(1, query.Page);
+        query.PageSize = Math.Clamp(query.PageSize, 1, 100);
+        var result = await unitOfWork.Orders.SearchCustomerAsync(customer.Id, query, ct);
+        return AppResponse<List<CustomerOrderListItemDto>>.Ok(result.Items,
+            PaginationInfo.Create(query.Page, query.PageSize, result.TotalCount), "Customer orders retrieved successfully");
+    }
+
+    public async Task<AppResponse<CustomerOrderDetailsDto>> GetMyOrderAsync(int orderId, CancellationToken ct)
+    {
+        var customer = await FindCurrentCustomerAsync(ct);
+        if (customer is null) return AppResponse<CustomerOrderDetailsDto>.Unauthorized("An active customer account is required");
+        if (orderId <= 0) return AppResponse<CustomerOrderDetailsDto>.ValidationError("Invalid order id");
+        var order = await unitOfWork.Orders.GetCustomerOrderDetailsAsync(orderId, customer.Id, ct);
+        return order is null ? AppResponse<CustomerOrderDetailsDto>.NotFound("Order not found")
+            : AppResponse<CustomerOrderDetailsDto>.Ok(order);
+    }
+
+    public async Task<AppResponse<AdminOrderDetailsDto>> GetAdminOrderAsync(int orderId, CancellationToken ct)
+    {
+        if (orderId <= 0) return AppResponse<AdminOrderDetailsDto>.ValidationError("Invalid order id");
+        var order = await unitOfWork.Orders.GetAdminOrderDetailsAsync(orderId, ct);
+        return order is null ? AppResponse<AdminOrderDetailsDto>.NotFound("Order not found")
+            : AppResponse<AdminOrderDetailsDto>.Ok(order);
+    }
+
 
     // -------------------------
     // Step helpers
@@ -334,14 +384,14 @@ public class OrderService : IOrderService
         // 1) Validate basic fields
         if (dto is null) return AppResponse<CheckoutResultDto>.ValidationError("Request body is required");
 
-        if (dto.CustomerId <= 0)
-            return AppResponse<CheckoutResultDto>.ValidationErrors(new() { ["CustomerId"] = new[] { "CustomerId is required" } }, "Validation failed");
-
         if (dto.SourceId <= 0)
             return AppResponse<CheckoutResultDto>.ValidationErrors(new() { ["SourceId"] = new[] { "SourceId is required" } }, "Validation failed");
 
         if (dto.AddressId <= 0)
             return AppResponse<CheckoutResultDto>.ValidationErrors(new() { ["AddressId"] = new[] { "AddressId is required" } }, "Validation failed");
+
+        if (!Enum.IsDefined(dto.SourceType)) return AppResponse<CheckoutResultDto>.ValidationError("Invalid checkout source type");
+        if (!Enum.IsDefined(dto.PaymentMethod)) return AppResponse<CheckoutResultDto>.ValidationError("Invalid payment method");
 
         return null;
     }
@@ -390,7 +440,10 @@ public class OrderService : IOrderService
                 DiscountAmount = 0m,
                 AppliedPromotionId = null,
 
-                PointsPerUnit = l.Points
+                PointsPerUnit = l.Points,
+                AvailableQuantity = l.UnitLevel == 2 && l.InnerPerOuter.GetValueOrDefault() > 0
+                    ? l.AvailableOuterQuantity * l.InnerPerOuter!.Value : l.AvailableOuterQuantity,
+                IsAvailable = l.IsProductActive && l.IsProductAvailable && l.AvailableOuterQuantity > 0
             });
         }
 
@@ -730,22 +783,35 @@ public class OrderService : IOrderService
         // - Compute EarnedPoints based on your ERP logic
     }
 
-    private async Task UpdateSourceAfterCheckoutAsync(CheckoutRequestDto dto,List<CheckoutLineData> lines,CancellationToken ct)
+    private async Task<bool> TryClaimCheckoutSourceAsync(CheckoutRequestDto dto, List<CheckoutLineData> lines, CancellationToken ct)
     {
-        // 1) Mark normal cart as checked out
-        if (dto.SourceType == CheckoutSourceType.Cart && lines.First().CartId.HasValue)
-            await unitOfWork.Orders.MarkCartCheckedOutAsync(lines.First().CartId!.Value, ct);
+        if (dto.SourceType is CheckoutSourceType.Cart or CheckoutSourceType.PointsRedemption)
+            return lines[0].CartId is int cartId &&
+                await unitOfWork.Orders.MarkCartCheckedOutAsync(cartId, dto.CustomerId, ct) == 1;
+        if (dto.SourceType == CheckoutSourceType.Prescription)
+            return lines[0].PrescriptionId is int prescriptionId &&
+                await unitOfWork.Orders.ClosePrescriptionAsync(prescriptionId, dto.CustomerId, ct) == 1;
+        return false;
+    }
 
-        // 2) Close prescription after checkout
-        if (dto.SourceType == CheckoutSourceType.Prescription && lines.First().PrescriptionId.HasValue)
-            await unitOfWork.Orders.ClosePrescriptionAsync(lines.First().PrescriptionId!.Value, ct);
+    private async Task<Customer?> FindCurrentCustomerAsync(CancellationToken ct)
+    {
+        if (!int.TryParse(_currentUser.UserId, out var userId) || userId <= 0) return null;
+        return await unitOfWork.Customers.FirstOrDefaultAsync(c => c.UserId == userId && c.IsActive, ct: ct);
+    }
 
-        // 3) Mark points redemption cart as checked out
-        if (dto.SourceType == CheckoutSourceType.PointsRedemption && lines.First().CartId.HasValue)
-            await unitOfWork.Orders.MarkCartCheckedOutAsync(lines.First().CartId!.Value, ct);
+    private static List<string> GetStockWarnings(IReadOnlyList<CheckoutLineData> lines)
+    {
+        var warnings = new List<string>();
+        if (lines.Any(l => !l.IsProductActive || !l.IsProductAvailable ||
+            (l.UnitLevel == 2 && (!l.AllowSplitSale || !l.InnerUnitId.HasValue || !l.InnerPerOuter.HasValue || l.InnerPerOuter < 1))))
+            warnings.Add("One or more products are inactive, unavailable, or cannot be sold in the selected unit.");
 
-        // Future improvement:
-        // - Split source update logic by source handler
+        if (lines.Any(l => l.Quantity > (l.UnitLevel == 1
+            ? l.AvailableOuterQuantity
+            : l.InnerPerOuter.HasValue ? l.AvailableOuterQuantity * l.InnerPerOuter.Value : 0m)))
+            warnings.Add("One or more quantities exceed current available stock.");
+        return warnings;
     }
 
     private static CheckoutResultDto BuildCheckoutResponse(Order order, List<PricedCheckoutItem> items, TotalsCalcResult totals, PromotionCalcResult promo, PointsCalcResult points)
@@ -896,6 +962,7 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("Insufficient available points");
 
         var remaining = pointsToConsume;
+        var runningBalance = await unitOfWork.Orders.GetCustomerPointsAsync(customerId, ct);
         var transactions = new List<CustomerPointTransaction>();
 
         // 3) Consume points from lots
@@ -912,6 +979,7 @@ public class OrderService : IOrderService
                 lot.Status = 3; // 3=Used
 
             remaining -= take;
+            runningBalance -= take;
 
             transactions.Add(new CustomerPointTransaction
             {
@@ -921,6 +989,7 @@ public class OrderService : IOrderService
 
                 TransactionType = 3, // 3=Redeem
                 PointsDelta = -take,
+                BalanceAfter = runningBalance,
                 PointsPerEGP = ConversionRate,
                 AmountEGP = Round2(take / (decimal)ConversionRate),
 
@@ -978,7 +1047,8 @@ public class OrderService : IOrderService
         List<PricedCheckoutItem> priced,
         PromotionCalcResult promo,
         TotalsCalcResult totals,
-        int earnedPoints)
+        int earnedPoints,
+        IReadOnlyList<string> stockWarnings)
     {
         // 1) Build normal checkout preview response
         return new CheckoutPreviewResponseDto
@@ -999,15 +1069,17 @@ public class OrderService : IOrderService
             GrandTotal = totals.GrandTotal,
 
             HasPriceChanges = false,
-            Warnings = promo.PromotionDiscountTotal > 0
+            Warnings = (promo.PromotionDiscountTotal > 0
                 ? new List<string> { "Promotions are applied. Points redemption is not allowed in this checkout." }
-                : new List<string>(),
+                : new List<string>()).Concat(stockWarnings).ToList(),
 
             Items = priced.Select(i => new CheckoutPreviewItemDto
             {
                 ProductId = i.ProductId,
                 UnitLevel = i.UnitLevel,
                 Quantity = i.Quantity,
+                AvailableQuantity = i.AvailableQuantity,
+                IsAvailable = i.IsAvailable,
                 UnitPrice = i.UnitPrice,
                 DiscountPercent = i.DiscountPercent,
                 DiscountAmount = i.DiscountAmount,
@@ -1024,7 +1096,8 @@ public class OrderService : IOrderService
         CheckoutPreviewRequestDto dto,
         List<PricedCheckoutItem> priced,
         TotalsCalcResult totals,
-        PointsCalcResult redeem)
+        PointsCalcResult redeem,
+        IReadOnlyList<string> stockWarnings)
     {
         // 1) Build points redemption preview response
         return new CheckoutPreviewResponseDto
@@ -1045,15 +1118,17 @@ public class OrderService : IOrderService
             GrandTotal = totals.GrandTotal,
 
             HasPriceChanges = false,
-            Warnings = redeem.RedeemedPoints == 0
+            Warnings = (redeem.RedeemedPoints == 0
                 ? new List<string> { "Customer does not have enough points to redeem." }
-                : new List<string>(),
+                : new List<string>()).Concat(stockWarnings).ToList(),
 
             Items = priced.Select(i => new CheckoutPreviewItemDto
             {
                 ProductId = i.ProductId,
                 UnitLevel = i.UnitLevel,
                 Quantity = i.Quantity,
+                AvailableQuantity = i.AvailableQuantity,
+                IsAvailable = i.IsAvailable,
                 UnitPrice = i.UnitPrice,
                 DiscountPercent = 0,
                 FinalUnitPrice = i.UnitPrice,
@@ -1071,14 +1146,14 @@ public class OrderService : IOrderService
         // 1) Validate basic fields
         if (dto is null) return AppResponse<CheckoutPreviewResponseDto>.ValidationError("Request body is required");
 
-        if (dto.CustomerId <= 0)
-            return AppResponse<CheckoutPreviewResponseDto>.ValidationErrors(new() { ["CustomerId"] = new[] { "CustomerId is required" } }, "Validation failed");
-
         if (dto.SourceId <= 0)
             return AppResponse<CheckoutPreviewResponseDto>.ValidationErrors(new() { ["SourceId"] = new[] { "SourceId is required" } }, "Validation failed");
 
         if (dto.AddressId <= 0)
             return AppResponse<CheckoutPreviewResponseDto>.ValidationErrors(new() { ["AddressId"] = new[] { "AddressId is required" } }, "Validation failed");
+
+        if (!Enum.IsDefined(dto.SourceType)) return AppResponse<CheckoutPreviewResponseDto>.ValidationError("Invalid checkout source type");
+        if (!Enum.IsDefined(dto.PaymentMethod)) return AppResponse<CheckoutPreviewResponseDto>.ValidationError("Invalid payment method");
 
         return null;
     }
@@ -1179,30 +1254,44 @@ public class OrderService : IOrderService
         if (!IsOrderTransitionAllowed(order.Status, dto.Status))
             return AppResponse<int>.BusinessRuleViolation("Invalid order status transition");
 
-        // 5) Apply status update
-        var now = DateTime.UtcNow;
-
-        order.Status = dto.Status;
-        order.StatusUpdatedAt = now;
-        order.UpdatedAt = now;
-
-        if (!string.IsNullOrWhiteSpace(dto.Notes))
-            order.Notes = dto.Notes.Trim();
-
-        // 6) Make earned points available when order is delivered
-        if (dto.Status == 5) // 5=Delivered
+        await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
+        try
         {
-            var pointsResult = await MakeOrderPointsAvailableAsync(order, now, ct);
-            if (pointsResult is not null)
-                return pointsResult;
+            // 5) Apply status update and keep point settlement atomic with it.
+            var now = DateTime.UtcNow;
+            if (dto.Status == 2)
+                await _inventoryService.ApplyOrderConfirmationAsync(order.Id, ct);
+            if (dto.Status is 6 or 7)
+                await _inventoryService.RestoreOrderStockAsync(order.Id, ct);
+            if (dto.Status is 6 or 7)
+                await _pointsService.RestoreRedeemedPointsAsync(order, now, ct);
+
+            order.Status = dto.Status;
+            order.StatusUpdatedAt = now;
+            order.UpdatedAt = now;
+            if (!string.IsNullOrWhiteSpace(dto.Notes)) order.Notes = dto.Notes.Trim();
+
+            if (dto.Status == 5)
+            {
+                var pointsResult = await MakeOrderPointsAvailableAsync(order, now, ct);
+                if (pointsResult is not null) return pointsResult;
+            }
+
+            unitOfWork.Orders.UpdateOrder(order);
+            await unitOfWork.CompleteAsync(ct);
+            await transaction.CommitAsync(ct);
+            return AppResponse<int>.Ok(order.Id, "Order status updated successfully");
         }
-
-        // 7) Save changes
-        unitOfWork.Orders.UpdateOrder(order);
-        await unitOfWork.CompleteAsync(ct);
-
-        // 8) Return success
-        return AppResponse<int>.Ok(order.Id, "Order status updated successfully");
+        catch (InventoryOperationException ex)
+        {
+            await transaction.RollbackAsync(ct);
+            return AppResponse<int>.BusinessRuleViolation(ex.Message);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
 
         // Future improvements:
         // - Wrap this method in a database transaction
@@ -1270,30 +1359,19 @@ public class OrderService : IOrderService
         customer.Points += totalPoints;
 
         // 8) Create EarnAvailable transactions
-        var transactions = lots.Select(lot => new CustomerPointTransaction
+        var transactions = new List<CustomerPointTransaction>(lots.Count);
+        var runningBalance = customer.Points - totalPoints;
+        foreach (var lot in lots)
         {
-            CustomerId = order.CustomerId,
-            LotId = lot.Id,
-            OrderId = order.Id,
-            OrderItemId = lot.OrderItemId,
-
-            TransactionType = 2, // 2=EarnAvailable
-            PointsDelta = lot.RemainingPoints,
-            BalanceAfter = null,
-
-            PointsPerEGP = null,
-            AmountEGP = null,
-
-            ExpiresAt = lot.ExpiresAt,
-            ReferenceType = 1, // 1=Order
-            ReferenceId = order.Id,
-
-            SourceTransactionId = null,
-            CreatedByEmployeeId = null,
-            Notes = "Earned points became available after delivery",
-
-            CreatedAt = nowUtc
-        }).ToList();
+            runningBalance += lot.RemainingPoints;
+            transactions.Add(new CustomerPointTransaction
+            {
+                CustomerId = order.CustomerId, LotId = lot.Id, OrderId = order.Id, OrderItemId = lot.OrderItemId,
+                TransactionType = 2, PointsDelta = lot.RemainingPoints, BalanceAfter = runningBalance,
+                ExpiresAt = lot.ExpiresAt, ReferenceType = 1, ReferenceId = order.Id,
+                Notes = "Earned points became available after delivery", CreatedAt = nowUtc
+            });
+        }
 
         await unitOfWork.Orders.AddPointTransactionsRangeAsync(transactions, ct);
 

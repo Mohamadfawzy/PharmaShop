@@ -3,6 +3,7 @@ using Contracts.Images.Abstractions;
 using Contracts.Images.Dtos;
 using Contracts.IServices;
 using Entities.Models;
+using Microsoft.EntityFrameworkCore;
 using Shared.Enums.Prescription;
 using Shared.Models.Dtos.Prescription;
 using Shared.Models.ImageDtos;
@@ -14,16 +15,18 @@ public class PrescriptionService: IPrescriptionService
 {
     private readonly IUnitOfWork unitOfWork;
     private readonly IImageService _imageService;
+    private readonly ICurrentUserService _currentUser;
 
     private const string RootPath = "prescriptions";
 
     // 1=Submitted, 2=InReview, 3=ReadyForCheckout, 4=Closed, 5=Rejected
 
 
-    public PrescriptionService(IUnitOfWork unitOfWork, IImageService imageService)
+    public PrescriptionService(IUnitOfWork unitOfWork, IImageService imageService, ICurrentUserService currentUser)
     {
         this.unitOfWork = unitOfWork;
         _imageService = imageService;
+        _currentUser = currentUser;
     }
     public async Task<AppResponse<PrescriptionCreateResultDto>> CreateWithImagesAsync(
     PrescriptionCreateRequestDto dto,
@@ -34,11 +37,8 @@ public class PrescriptionService: IPrescriptionService
         if (dto is null)
             return AppResponse<PrescriptionCreateResultDto>.ValidationError("Request is required");
 
-        if (dto.CustomerId <= 0)
-            return AppResponse<PrescriptionCreateResultDto>.ValidationErrors(
-                new Dictionary<string, string[]> { ["CustomerId"] = new[] { "CustomerId is required" } },
-                detail: "Validation failed"
-            );
+        var customer = await FindCustomerAsync(ct);
+        if (customer is null) return AppResponse<PrescriptionCreateResultDto>.NotFound("Active customer profile not found");
 
         if (dto.StoreId <= 0)
             return AppResponse<PrescriptionCreateResultDto>.ValidationErrors(
@@ -52,15 +52,25 @@ public class PrescriptionService: IPrescriptionService
                 detail: "Validation failed"
             );
 
+        if (files.Count > 5 || files.Any(f => f.Length <= 0 || f.Length > 10 * 1024 * 1024 ||
+            !new[] { "image/jpeg", "image/png", "image/webp" }.Contains(f.ContentType, StringComparer.OrdinalIgnoreCase)) ||
+            files.Sum(f => f.Length) > 25L * 1024 * 1024)
+            return AppResponse<PrescriptionCreateResultDto>.ValidationError("Upload 1 to 5 JPEG, PNG or WebP images, each up to 10 MB and 25 MB total");
+
+        var store = await unitOfWork.Stores.FirstOrDefaultAsync(s => s.Id == dto.StoreId && s.IsActive && s.DeletedAt == null, ct: ct);
+        if (store is null) return AppResponse<PrescriptionCreateResultDto>.ValidationError("An active store is required");
+        if (dto.PrimaryIndex.HasValue && (dto.PrimaryIndex.Value < 0 || dto.PrimaryIndex.Value >= files.Count))
+            return AppResponse<PrescriptionCreateResultDto>.ValidationError("PrimaryIndex must refer to an uploaded image");
+
         // 2) Create prescription entity (Submitted)
         var now = DateTime.UtcNow;
 
         var prescription = new Prescription
         {
-            CustomerId = dto.CustomerId,
+            CustomerId = customer.Id,
             StoreId = dto.StoreId,
 
-            Status = 2, // 1=Submitted
+            Status = 1,
             StatusUpdatedAt = now,
 
             ReviewedBy = null,
@@ -126,7 +136,7 @@ public class PrescriptionService: IPrescriptionService
                     IsPrimary = (i == primaryIndex),
 
                     CreatedAt = now,
-                    CreatedBy = $"customer-{dto.CustomerId}"
+                    CreatedBy = $"customer-{customer.Id}"
                 });
             }
 
@@ -178,11 +188,94 @@ public class PrescriptionService: IPrescriptionService
     }
 
 
+    public async Task<AppResponse<List<CustomerPrescriptionListItemDto>>> GetMyPrescriptionsAsync(CustomerPrescriptionListQueryDto query, CancellationToken ct)
+    {
+        var customer = await FindCustomerAsync(ct);
+        if (customer is null) return AppResponse<List<CustomerPrescriptionListItemDto>>.NotFound("Active customer profile not found");
+        if (query.Status.HasValue && (query.Status < 1 || query.Status > 5))
+            return AppResponse<List<CustomerPrescriptionListItemDto>>.ValidationError("Status must be between 1 and 5");
+        query.Page = Math.Max(1, query.Page);
+        query.PageSize = Math.Clamp(query.PageSize, 1, 100);
+        var result = await unitOfWork.Prescriptions.SearchForCustomerAsync(query, customer.Id, ct);
+        return AppResponse<List<CustomerPrescriptionListItemDto>>.Ok(result.Items,
+            PaginationInfo.Create(query.Page, query.PageSize, result.TotalCount));
+    }
+
+    public async Task<AppResponse<CustomerPrescriptionDetailsDto>> GetMyPrescriptionAsync(int prescriptionId, CancellationToken ct)
+    {
+        var customer = await FindCustomerAsync(ct);
+        if (customer is null) return AppResponse<CustomerPrescriptionDetailsDto>.NotFound("Active customer profile not found");
+        if (prescriptionId <= 0) return AppResponse<CustomerPrescriptionDetailsDto>.ValidationError("Invalid prescription id");
+        var result = await unitOfWork.Prescriptions.GetCustomerDetailsAsync(prescriptionId, customer.Id, ct);
+        return result is null ? AppResponse<CustomerPrescriptionDetailsDto>.NotFound("Prescription not found")
+            : AppResponse<CustomerPrescriptionDetailsDto>.Ok(result);
+    }
+
+    public async Task<AppResponse<List<AdminPrescriptionListItemDto>>> GetEmployeePrescriptionsAsync(AdminPrescriptionListQueryDto query, CancellationToken ct)
+    {
+        if (query is null) return AppResponse<List<AdminPrescriptionListItemDto>>.ValidationError("Query is required");
+        if (query.Status.HasValue && (query.Status < 1 || query.Status > 5))
+            return AppResponse<List<AdminPrescriptionListItemDto>>.ValidationError("Status must be between 1 and 5");
+        if (query.From.HasValue && query.To.HasValue && query.From > query.To)
+            return AppResponse<List<AdminPrescriptionListItemDto>>.ValidationError("From must be earlier than To");
+        query.Page = Math.Max(1, query.Page);
+        query.PageSize = Math.Clamp(query.PageSize, 1, 100);
+        var employee = await FindEmployeeAsync(ct);
+        var isAdmin = _currentUser.IsInRole("Admin");
+        if (employee is null && !isAdmin) return AppResponse<List<AdminPrescriptionListItemDto>>.Forbidden("Active employee profile is required");
+        PagedResult<AdminPrescriptionListItemDto> result;
+        if (employee is not null)
+        {
+            if (query.StoreId.HasValue && !await unitOfWork.Stores.AnyAsync(s => s.Id == query.StoreId && s.PharmacyId == employee.PharmacyId && s.IsActive && s.DeletedAt == null, ct))
+                return AppResponse<List<AdminPrescriptionListItemDto>>.ValidationError("Store is not available to this employee");
+            result = await unitOfWork.Prescriptions.SearchForPharmacyAsync(query, employee.PharmacyId, ct);
+        }
+        else
+        {
+            if (!query.StoreId.HasValue || query.StoreId.Value <= 0) return AppResponse<List<AdminPrescriptionListItemDto>>.ValidationError("StoreId is required for administrators");
+            result = await unitOfWork.Prescriptions.SearchAdminAsync(query, ct);
+        }
+        return AppResponse<List<AdminPrescriptionListItemDto>>.Ok(result.Items,
+            PaginationInfo.Create(query.Page, query.PageSize, result.TotalCount));
+    }
+
+    public async Task<AppResponse<CustomerPrescriptionDetailsDto>> GetEmployeePrescriptionAsync(int prescriptionId, CancellationToken ct)
+    {
+        if (prescriptionId <= 0) return AppResponse<CustomerPrescriptionDetailsDto>.ValidationError("Invalid prescription id");
+        var p = await unitOfWork.Prescriptions.GetForEmployeeReviewAsync(prescriptionId, ct);
+        if (p is null) return AppResponse<CustomerPrescriptionDetailsDto>.NotFound("Prescription not found");
+        if (!await CanAccessPrescriptionAsync(p.Store.PharmacyId, ct)) return AppResponse<CustomerPrescriptionDetailsDto>.Forbidden("Prescription is outside your pharmacy");
+        var details = await unitOfWork.Prescriptions.GetCustomerDetailsAsync(prescriptionId, p.CustomerId, ct);
+        return details is null ? AppResponse<CustomerPrescriptionDetailsDto>.NotFound("Prescription not found")
+            : AppResponse<CustomerPrescriptionDetailsDto>.Ok(details);
+    }
+
+    public async Task<AppResponse<string>> GetPrescriptionImageIdentifierAsync(int prescriptionId, string imageIdentifier, bool employee, CancellationToken ct)
+    {
+        if (prescriptionId <= 0 || string.IsNullOrWhiteSpace(imageIdentifier) ||
+            imageIdentifier.Any(c => !char.IsLetterOrDigit(c) && c != '-'))
+            return AppResponse<string>.ValidationError("Invalid prescription image identifier");
+        var p = await unitOfWork.Prescriptions.GetForEmployeeReviewAsync(prescriptionId, ct);
+        if (p is null) return AppResponse<string>.NotFound("Prescription not found");
+        if (employee)
+        {
+            if (!await CanAccessPrescriptionAsync(p.Store.PharmacyId, ct)) return AppResponse<string>.Forbidden("Prescription is outside your pharmacy");
+        }
+        else
+        {
+            var customer = await FindCustomerAsync(ct);
+            if (customer is null || customer.Id != p.CustomerId) return AppResponse<string>.NotFound("Prescription image not found");
+        }
+        var found = await unitOfWork.Prescriptions.GetImageIdentifierAsync(prescriptionId, imageIdentifier, ct);
+        return found is null ? AppResponse<string>.NotFound("Prescription image not found") : AppResponse<string>.Ok(found);
+    }
+
+
     public async Task<AppResponse<List<AdminPrescriptionListItemDto>>> GetAdminPrescriptionsAsync(
             AdminPrescriptionListQueryDto query, CancellationToken ct)
     {
         // 1) Validate required inputs
-        if (query is null || query.StoreId <= 0)
+        if (query is null || !query.StoreId.HasValue || query.StoreId <= 0)
         {
             return AppResponse<List<AdminPrescriptionListItemDto>>.ValidationErrors(
                 new Dictionary<string, string[]>
@@ -271,9 +364,10 @@ public class PrescriptionService: IPrescriptionService
         }
 
         // 2) Load prescription (admin)
-        var prescription = await unitOfWork.Prescriptions.GetByIdForAdminAsync(prescriptionId, ct);
+        var prescription = await unitOfWork.Prescriptions.GetForEmployeeReviewAsync(prescriptionId, ct);
         if (prescription is null)
             return AppResponse<PrescriptionItemCreatedDto>.NotFound("Prescription not found");
+        if (!await CanAccessPrescriptionAsync(prescription.Store.PharmacyId, ct)) return AppResponse<PrescriptionItemCreatedDto>.Forbidden("Prescription is outside your pharmacy");
 
         // 3) Enforce status rule (MVP)
         // 1=Submitted,2=InReview,3=ReadyForCheckout,4=Closed,5=Rejected
@@ -284,7 +378,7 @@ public class PrescriptionService: IPrescriptionService
         if (dto.ProductId.HasValue)
         {
             // One-line comment: Ensure referenced product exists.
-            var productExists = await unitOfWork.Products.AnyAsync(p => p.Id == dto.ProductId.Value, ct);
+            var productExists = await unitOfWork.Products.AnyAsync(p => p.Id == dto.ProductId.Value && p.StoreId == prescription.StoreId && p.IsActive && p.IsAvailable && p.DeletedAt == null, ct);
             if (!productExists)
             {
                 return AppResponse<PrescriptionItemCreatedDto>.ValidationErrors(
@@ -365,9 +459,10 @@ public class PrescriptionService: IPrescriptionService
         }
 
         // 2) Load prescription (admin)
-        var prescription = await unitOfWork.Prescriptions.GetByIdForAdminAsync(prescriptionId, ct);
+        var prescription = await unitOfWork.Prescriptions.GetForEmployeeReviewAsync(prescriptionId, ct);
         if (prescription is null)
             return AppResponse<PrescriptionItemsBatchCreateResultDto>.NotFound("Prescription not found");
+        if (!await CanAccessPrescriptionAsync(prescription.Store.PharmacyId, ct)) return AppResponse<PrescriptionItemsBatchCreateResultDto>.Forbidden("Prescription is outside your pharmacy");
 
         // 3) Enforce status rule (MVP)
         // 1=Submitted,2=InReview,3=ReadyForCheckout,4=Closed,5=Rejected
@@ -408,7 +503,7 @@ public class PrescriptionService: IPrescriptionService
             // One-line comment: Ensure all referenced products exist.
             var existingIds = await unitOfWork.Products.GetAllAsync(
                 selector: p => p.Id,
-                criteria: p => productIds.Contains(p.Id),
+                criteria: p => productIds.Contains(p.Id) && p.StoreId == prescription.StoreId && p.IsActive && p.IsAvailable && p.DeletedAt == null,
                 asNoTracking: true,
                 ct: ct);
 
@@ -479,6 +574,8 @@ public class PrescriptionService: IPrescriptionService
         var exists = await unitOfWork.Prescriptions.PrescriptionExistsAsync(prescriptionId, ct);
         if (!exists)
             return AppResponse<List<PrescriptionItemListItemDto>>.NotFound("Prescription not found");
+        var scoped = await unitOfWork.Prescriptions.GetForEmployeeReviewAsync(prescriptionId, ct);
+        if (scoped is null || !await CanAccessPrescriptionAsync(scoped.Store.PharmacyId, ct)) return AppResponse<List<PrescriptionItemListItemDto>>.Forbidden("Prescription is outside your pharmacy");
 
         // 3) Load items (with product names)
         var items = await unitOfWork.Prescriptions.GetItemsByPrescriptionIdAsync(prescriptionId, ct);
@@ -523,13 +620,14 @@ public class PrescriptionService: IPrescriptionService
         }
 
         // 2) Ensure prescription exists and check status
-        var status = await unitOfWork.Prescriptions.GetStatusAsync(prescriptionId, ct);
-        if (!status.HasValue)
+        var prescription = await unitOfWork.Prescriptions.GetForEmployeeReviewAsync(prescriptionId, ct);
+        if (prescription is null)
             return AppResponse<int>.NotFound("Prescription not found");
+        if (!await CanAccessPrescriptionAsync(prescription.Store.PharmacyId, ct)) return AppResponse<int>.Forbidden("Prescription is outside your pharmacy");
 
         // 3) Enforce status rule (MVP)
         // 1=Submitted,2=InReview,3=ReadyForCheckout,4=Closed,5=Rejected
-        if (status.Value != 2)
+        if (prescription.Status != 2)
             return AppResponse<int>.BusinessRuleViolation("You can delete items only when prescription is InReview");
 
         // 4) Load item
@@ -580,9 +678,13 @@ public class PrescriptionService: IPrescriptionService
         }
 
         // 2) Load prescription
-        var prescription = await unitOfWork.Prescriptions.GetForStatusUpdateAsync(prescriptionId, ct);
+        var prescription = await unitOfWork.Prescriptions.GetForEmployeeReviewAsync(prescriptionId, ct);
         if (prescription is null)
             return AppResponse<int>.NotFound("Prescription not found");
+        var employee = await FindEmployeeAsync(ct);
+        var isAdmin = _currentUser.IsInRole("Admin");
+        if (employee is null && !isAdmin) return AppResponse<int>.Forbidden("Active employee profile is required");
+        if (employee is not null && employee.PharmacyId != prescription.Store.PharmacyId) return AppResponse<int>.Forbidden("Prescription is outside your pharmacy");
 
         // 3) Validate state transition
         if (!IsTransitionAllowed(prescription.Status, dto.Status))
@@ -591,13 +693,19 @@ public class PrescriptionService: IPrescriptionService
         // 4) Validate ReadyForCheckout requirements
         if (dto.Status == 3)
         {
-            if (!dto.ReviewedBy.HasValue || dto.ReviewedBy.Value <= 0)
-                return AppResponse<int>.ValidationErrors(
-                    new Dictionary<string, string[]>
-                    {
-                        ["ReviewedBy"] = new[] { "ReviewedBy is required for ReadyForCheckout" }
-                    },
-                    detail: "Validation failed");
+            if (employee is null)
+                return AppResponse<int>.BusinessRuleViolation("An active employee profile must approve the prescription");
+            var items = await unitOfWork.Prescriptions.GetItemsByPrescriptionIdAsync(prescriptionId, ct);
+            if (items.Count == 0 || items.Any(i => !i.ProductId.HasValue || !i.RequestedQuantity.HasValue || i.RequestedQuantity <= 0))
+                return AppResponse<int>.BusinessRuleViolation("Add mapped products and positive quantities before marking the prescription ReadyForCheckout");
+            if (await unitOfWork.Prescriptions.GetImageCountAsync(prescriptionId, ct) == 0)
+                return AppResponse<int>.BusinessRuleViolation("A prescription image is required before checkout");
+            var productIds = items.Select(i => i.ProductId!.Value).Distinct().ToList();
+            var validProducts = await unitOfWork.Products.GetAllAsync(selector: p => p.Id,
+                criteria: p => productIds.Contains(p.Id) && p.StoreId == prescription.StoreId && p.IsActive && p.IsAvailable && p.DeletedAt == null,
+                asNoTracking: true, ct: ct);
+            if (validProducts.Count != productIds.Count)
+                return AppResponse<int>.BusinessRuleViolation("All prescription products must be active and available in the prescription store");
         }
 
         // 5) Validate Rejected requirements
@@ -620,8 +728,7 @@ public class PrescriptionService: IPrescriptionService
         prescription.UpdatedAt = now;
 
         // 7) Set reviewer fields
-        if (dto.ReviewedBy.HasValue)
-            prescription.ReviewedBy = dto.ReviewedBy;
+        if (employee is not null) prescription.ReviewedBy = employee.Id;
 
         if (dto.Status == 3)
             prescription.ReadyForCheckoutAt = now;
@@ -655,9 +762,27 @@ public class PrescriptionService: IPrescriptionService
             (1, 2) => true, // Submitted → InReview
             (2, 3) => true, // InReview → ReadyForCheckout
             (2, 5) => true, // InReview → Rejected
-            (3, 4) => true, // Ready → Closed
             _ => false
         };
+    }
+
+    private Task<Customer?> FindCustomerAsync(CancellationToken ct)
+    {
+        if (!int.TryParse(_currentUser.UserId, out var userId) || userId <= 0) return Task.FromResult<Customer?>(null);
+        return unitOfWork.Customers.FirstOrDefaultAsync(c => c.UserId == userId && c.IsActive, ct: ct);
+    }
+
+    private Task<Employee?> FindEmployeeAsync(CancellationToken ct)
+    {
+        if (!int.TryParse(_currentUser.UserId, out var userId) || userId <= 0) return Task.FromResult<Employee?>(null);
+        return unitOfWork.Employees.FirstOrDefaultAsync(e => e.UserId == userId && e.IsActive && e.DeletedAt == null, ct: ct);
+    }
+
+    private async Task<bool> CanAccessPrescriptionAsync(int pharmacyId, CancellationToken ct)
+    {
+        if (_currentUser.IsInRole("Admin")) return true;
+        var employee = await FindEmployeeAsync(ct);
+        return employee is not null && employee.PharmacyId == pharmacyId;
     }
 
 

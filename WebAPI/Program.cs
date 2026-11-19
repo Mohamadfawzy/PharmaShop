@@ -9,6 +9,7 @@ using Shared.Mappings;
 using Shared.Models.Dtos.Product;
 using Shared.Responses;
 using WebAPI.Extensions;
+using WebAPI.BackgroundServices;
 using WebAPI.Filters;
 using WebAPI.Middleware;
 using WebAPI.Services.Security;
@@ -92,6 +93,7 @@ builder.Services.AddOpenApi();
 // add regester servers her
 builder.Services.AddDbContextServices(builder.Configuration);
 builder.Services.AddDependencyInjectionServices();
+builder.Services.AddHostedService<PointExpiryBackgroundService>();
 builder.Services.ConfigureJWT(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 

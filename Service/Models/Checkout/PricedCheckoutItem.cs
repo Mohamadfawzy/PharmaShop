@@ -27,6 +27,8 @@ internal sealed class PricedCheckoutItem
     public decimal LineTotal { get; set; }
 
     public int PointsPerUnit { get; set; }
+    public decimal AvailableQuantity { get; set; }
+    public bool IsAvailable { get; set; }
 
     public ActiveGroupPromotionHit? GroupPromotion { get; set; }
 }

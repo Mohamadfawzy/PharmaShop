@@ -12,7 +12,7 @@ public interface IOrderRepository
     Task AddItemsRangeAsync(IEnumerable<OrderItem> items, CancellationToken ct);
     Task AddOrderAsync(Order order, CancellationToken ct);
     Task AddPointTransactionsRangeAsync(IEnumerable<CustomerPointTransaction> transactions, CancellationToken ct);
-    Task ClosePrescriptionAsync(int prescriptionId, CancellationToken ct);
+    Task<int> ClosePrescriptionAsync(int prescriptionId, int customerId, CancellationToken ct);
     Task<int> DecreaseCustomerPointsAsync(int customerId, int points, CancellationToken ct);
     Task<Dictionary<int, ActiveGroupPromotionHit>> GetActiveGroupPromotionsByProductAsync(List<int> productIds, CancellationToken ct);
     Task<Dictionary<int, decimal>> GetActiveProductPromotionPercentAsync(List<int> productIds, CancellationToken ct);
@@ -26,7 +26,10 @@ public interface IOrderRepository
     Task<List<CheckoutLineData>> GetLinesFromPrescriptionAsync(int prescriptionId, int customerId, CancellationToken ct);
     Task<Order?> GetOrderForStatusUpdateAsync(int orderId, CancellationToken ct);
     Task<List<CustomerPointLot>> GetPendingPointLotsByOrderAsync(int orderId, CancellationToken ct);
-    Task MarkCartCheckedOutAsync(int cartId, CancellationToken ct);
+    Task<int> MarkCartCheckedOutAsync(int cartId, int customerId, CancellationToken ct);
+    Task<AdminOrderDetailsDto?> GetAdminOrderDetailsAsync(int orderId, CancellationToken ct);
+    Task<CustomerOrderDetailsDto?> GetCustomerOrderDetailsAsync(int orderId, int customerId, CancellationToken ct);
+    Task<PagedResult<CustomerOrderListItemDto>> SearchCustomerAsync(int customerId, CustomerOrderListQueryDto query, CancellationToken ct);
     Task<PagedResult<AdminOrderListItemDto>> SearchAdminAsync(AdminOrderListQueryDto q, CancellationToken ct);
     void UpdateOrder(Order order);
 }

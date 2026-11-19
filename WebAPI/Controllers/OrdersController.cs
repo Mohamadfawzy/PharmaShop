@@ -1,73 +1,31 @@
-﻿using Contracts.IServices;
-using Microsoft.AspNetCore.Http;
+using Contracts.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Service;
+using Shared.Constants;
 using Shared.Models.Dtos.Order;
-using Shared.Models.Dtos.Order.order;
-using WebAPI.Controllers.Admin;
 
 namespace WebAPI.Controllers;
 
 [Route("api/v1/orders")]
-[ApiController]
-public class OrdersController : AdminBaseApiController
+[Authorize(Policy = AppPolicies.Customer)]
+public sealed class OrdersController : BaseApiController
 {
-    private readonly IOrderService orderService;
-
-    public OrdersController(IOrderService orderService)
-    {
-        this.orderService = orderService;
-    }
-
-
+    private readonly IOrderService _orderService;
+    public OrdersController(IOrderService orderService) => _orderService = orderService;
 
     [HttpPost("checkout")]
     public async Task<IActionResult> Checkout([FromBody] CheckoutRequestDto dto, CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await orderService.CheckoutAsync(dto, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-    }
+        => FromAppResponse(await _orderService.CheckoutAsync(dto, ct));
 
     [HttpPost("checkout/preview")]
     public async Task<IActionResult> Preview([FromBody] CheckoutPreviewRequestDto dto, CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await orderService.PreviewAsync(dto, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-    }
-
-
-
+        => FromAppResponse(await _orderService.PreviewAsync(dto, ct));
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] AdminOrderListQueryDto query, CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await orderService.GetAdminOrdersAsync(query, ct);
+    public async Task<IActionResult> GetMine([FromQuery] CustomerOrderListQueryDto query, CancellationToken ct)
+        => FromAppResponse(await _orderService.GetMyOrdersAsync(query, ct));
 
-        // 2) Unified response
-        return FromAppResponse(result);
-
-        // Future improvement:
-        // - enforce admin/store authorization
-    }
-
-    [HttpPatch("{id:int}/status")]
-    public async Task<IActionResult> UpdateStatus(int id,[FromBody] OrderStatusUpdateDto dto,CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await orderService.UpdateOrderStatusAsync(id, dto, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-
-        // Future improvement: get employee id from token and store in status history
-    }
-
-
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetMineById(int id, CancellationToken ct)
+        => FromAppResponse(await _orderService.GetMyOrderAsync(id, ct));
 }

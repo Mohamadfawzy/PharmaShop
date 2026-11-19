@@ -68,6 +68,8 @@ public partial class RepositoryContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<ProductInventoryTransaction> ProductInventoryTransactions { get; set; }
+
     public virtual DbSet<ProductImage> ProductImages { get; set; }
 
     public virtual DbSet<ProductTag> ProductTags { get; set; }
@@ -399,9 +401,17 @@ public partial class RepositoryContext : DbContext
 
             entity.HasIndex(e => e.OrderId, "IX_CustomerPointTransactions_OrderId").HasFilter("([OrderId] IS NOT NULL)");
 
-            entity.HasIndex(e => new { e.TransactionType, e.ReferenceType, e.ReferenceId }, "UX_CustomerPointTransactions_Type_Reference")
+            entity.HasIndex(e => new { e.TransactionType, e.ReferenceType, e.ReferenceId, e.LotId }, "UX_CustomerPointTransactions_Type_Reference_Lot")
                 .IsUnique()
-                .HasFilter("([ReferenceType] IS NOT NULL AND [ReferenceId] IS NOT NULL)");
+                .HasFilter("([ReferenceType] IS NOT NULL AND [ReferenceId] IS NOT NULL AND [LotId] IS NOT NULL)");
+
+            entity.HasIndex(e => e.SourceTransactionId, "UX_CustomerPointTransactions_SourceRefund")
+                .IsUnique()
+                .HasFilter("([TransactionType]=(4) AND [SourceTransactionId] IS NOT NULL)");
+
+            entity.HasIndex(e => e.ReferenceId, "UX_CustomerPointTransactions_ManualAdjustmentReference")
+                .IsUnique()
+                .HasFilter("([TransactionType]=(7) AND [ReferenceType]=(3) AND [ReferenceId] IS NOT NULL)");
 
             entity.Property(e => e.AmountEGP).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.CreatedAt)
@@ -731,6 +741,30 @@ public partial class RepositoryContext : DbContext
                 .HasForeignKey(d => d.StoreId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Products_Stores");
+        });
+
+        modelBuilder.Entity<ProductInventoryTransaction>(entity =>
+        {
+            entity.ToTable("ProductInventoryTransactions");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ProductId, e.CreatedAt });
+            entity.HasIndex(e => new { e.OrderId, e.OrderItemId }, "UX_ProductInventoryTransactions_OrderDeduction")
+                .IsUnique().HasFilter("([OrderId] IS NOT NULL AND [OrderItemId] IS NOT NULL AND [TransactionType]=(4))");
+            entity.HasIndex(e => new { e.OrderId, e.OrderItemId }, "UX_ProductInventoryTransactions_OrderRestock")
+                .IsUnique().HasFilter("([OrderId] IS NOT NULL AND [OrderItemId] IS NOT NULL AND [TransactionType]=(5))");
+            entity.Property(e => e.Quantity).HasColumnType("decimal(18, 3)");
+            entity.Property(e => e.QuantityBefore).HasColumnType("decimal(18, 3)");
+            entity.Property(e => e.QuantityAfter).HasColumnType("decimal(18, 3)");
+            entity.Property(e => e.Reason).HasMaxLength(500);
+            entity.Property(e => e.BatchNumber).HasMaxLength(80);
+            entity.Property(e => e.CostPrice).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ExpirationDate).HasPrecision(0);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.HasOne(e => e.Product).WithMany().HasForeignKey(e => e.ProductId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.Employee).WithMany().HasForeignKey(e => e.EmployeeId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(e => e.OrderItem).WithMany().HasForeignKey(e => e.OrderItemId).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne<Unit>().WithMany().HasForeignKey(e => e.ProductUnitId).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<ProductImage>(entity =>

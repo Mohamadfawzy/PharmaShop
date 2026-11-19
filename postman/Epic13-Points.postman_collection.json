@@ -1,0 +1,188 @@
+{
+  "info": {
+    "name": "PharmaShop - Epic 13 Loyalty Points",
+    "description": "Customer points balance, lots, ledger, redeemable catalog, and authorized employee adjustments. Earned points become spendable when the order is delivered; cancelled or returned order redemptions are refunded with a 90-day expiry.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5001"
+    },
+    {
+      "key": "customerToken",
+      "value": ""
+    },
+    {
+      "key": "pointsManagerToken",
+      "value": ""
+    },
+    {
+      "key": "customerId",
+      "value": "1"
+    },
+    {
+      "key": "storeId",
+      "value": "1"
+    },
+    {
+      "key": "referenceId",
+      "value": "261119001"
+    },
+    {
+      "key": "orderAdminToken",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Customer Points",
+      "item": [
+        {
+          "name": "Get my point balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/balance"
+          }
+        },
+        {
+          "name": "List my point lots",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/lots?status=2&page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "List my points ledger",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/transactions?transactionType=2&from=2026-01-01T00:00:00Z&to=2026-12-31T23:59:59Z&page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "List redeemable products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/redeemable-products?storeId={{storeId}}&page=1&pageSize=20"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Points Manager",
+      "item": [
+        {
+          "name": "Grant points to customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pointsManagerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pointsDelta\": 100,\n  \"referenceId\": {{referenceId}},\n  \"reason\": \"تعويض خدمة معتمد\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/points/customers/{{customerId}}/adjust",
+            "description": "ReferenceId must be unique. The caller must have CanManagePoints and an active employee profile for audit. Positive manual points expire after one year."
+          }
+        },
+        {
+          "name": "Deduct points from customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{pointsManagerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pointsDelta\": -50,\n  \"referenceId\": 261119002,\n  \"reason\": \"تصحيح رصيد بموافقة العميل\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/points/customers/{{customerId}}/adjust"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order redemption refunds",
+      "item": [
+        {
+          "name": "Cancel an eligible order to refund redeemed points",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{orderAdminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 6,\n  \"notes\": \"إلغاء الطلب وإعادة نقاط الاستبدال\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status",
+            "description": "Allowed only for valid order-state transitions. Refunded redemption points are put in new lots that expire 90 days after this status update."
+          }
+        },
+        {
+          "name": "Verify refunded points in my ledger",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/points/transactions?transactionType=4&page=1&pageSize=20"
+          }
+        }
+      ]
+    }
+  ]
+}

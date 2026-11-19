@@ -31,7 +31,9 @@ public class UnitOfWork : IUnitOfWork
         ProductTags = new GenericRepository<ProductTag>(_context);
         CartItems = new GenericRepository<CartItem>(_context);
         Orders = new OrderRepository(_context);
+        Points = new PointsRepository(_context);
         Prescriptions = new PrescriptionRepository(_context);
+        Inventory = new InventoryRepository(_context);
     }
 
     public ICustomerRepository Customers { get; private set; }
@@ -48,7 +50,9 @@ public class UnitOfWork : IUnitOfWork
     public ICartRepository Carts { get; private set; }
     public IPromotionRepository Promotions { get; private set; }
     public IOrderRepository Orders { get; private set; }
+    public IPointsRepository Points { get; private set; }
     public IPrescriptionRepository Prescriptions { get; private set; }
+    public IInventoryRepository Inventory { get; private set; }
 
     public IGenericRepository<Unit> Units { get; private set; }
     public IGenericRepository<Company> Companies { get; private set; }

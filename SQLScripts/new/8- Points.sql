@@ -208,3 +208,15 @@ CREATE INDEX [IX_CustomerPointTransactions_CustomerId_ExpiresAt]
 ON [dbo].[CustomerPointTransactions] ([CustomerId], [ExpiresAt])
 WHERE [ExpiresAt] IS NOT NULL;
 GO
+
+/* A redemption transaction can be refunded at most once. */
+CREATE UNIQUE INDEX [UX_CustomerPointTransactions_SourceRefund]
+ON [dbo].[CustomerPointTransactions] ([SourceTransactionId])
+WHERE [TransactionType] = (4) AND [SourceTransactionId] IS NOT NULL;
+GO
+
+/* Manual adjustment reference IDs are idempotency keys supplied by the caller. */
+CREATE UNIQUE INDEX [UX_CustomerPointTransactions_ManualAdjustmentReference]
+ON [dbo].[CustomerPointTransactions] ([ReferenceId])
+WHERE [TransactionType] = (7) AND [ReferenceType] = (3) AND [ReferenceId] IS NOT NULL;
+GO

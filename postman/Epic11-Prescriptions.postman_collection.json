@@ -1,0 +1,302 @@
+{
+  "info": {
+    "name": "PharmaShop - Epic 11 Prescriptions",
+    "description": "Customer prescription upload and tracking, plus pharmacy employee review. Set customerToken and employeeToken before use. Checkout remains responsible for closing a prescription after a successful order.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5001"
+    },
+    {
+      "key": "customerToken",
+      "value": ""
+    },
+    {
+      "key": "employeeToken",
+      "value": ""
+    },
+    {
+      "key": "storeId",
+      "value": "1"
+    },
+    {
+      "key": "prescriptionId",
+      "value": "1"
+    },
+    {
+      "key": "itemId",
+      "value": "1"
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    },
+    {
+      "key": "imageIdentifier",
+      "value": "rx-1-image-key"
+    }
+  ],
+  "item": [
+    {
+      "name": "Customer",
+      "item": [
+        {
+          "name": "Create prescription with image (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "storeId",
+                  "value": "{{storeId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "notes",
+                  "value": "يرجى مراجعة الوصفة الطبية",
+                  "type": "text"
+                },
+                {
+                  "key": "primaryIndex",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/prescriptions",
+            "description": "اختَر ملفًا للصورة في حقل files في Postman. يقبل JPEG/PNG/WebP حتى 5 صور، 10MB للصورة و25MB إجمالًا. customerId يؤخذ من JWT."
+          }
+        },
+        {
+          "name": "List my prescriptions (optional status/page filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/prescriptions?status=1&page=1&pageSize=20&newestFirst=true"
+          }
+        },
+        {
+          "name": "Get my prescription details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}"
+          }
+        },
+        {
+          "name": "Download my prescription image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}/images/{{imageIdentifier}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pharmacy employee review",
+      "item": [
+        {
+          "name": "Search review queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions?status=1&storeId={{storeId}}&page=1&pageSize=20&sort=Newest"
+          }
+        },
+        {
+          "name": "Start review (Submitted to InReview)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 2,\n  \"notes\": \"تم بدء مراجعة الوصفة\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}/status"
+          }
+        },
+        {
+          "name": "Get prescription items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}/items"
+          }
+        },
+        {
+          "name": "Add one mapped medicine",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{productId}},\n  \"requestedName\": \"اسم الدواء\",\n  \"requestedQuantity\": 1,\n  \"notes\": \"الجرعة حسب الوصفة\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}/items"
+          }
+        },
+        {
+          "name": "Add several medicines",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"requestedName\": \"اسم الدواء الأول\", \"requestedQuantity\": 1 },\n    { \"productId\": 2, \"requestedName\": \"اسم الدواء الثاني\", \"requestedQuantity\": 2 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}/items/batch"
+          }
+        },
+        {
+          "name": "Delete an item while InReview",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}/items/{{itemId}}"
+          }
+        },
+        {
+          "name": "Mark ready for checkout",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 3,\n  \"notes\": \"تم اعتماد الأصناف والكميات\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}/status",
+            "description": "يتطلب صورة واحدة على الأقل، وكل صنف مربوط بمنتج متاح بالمتجر وكمية موجبة."
+          }
+        },
+        {
+          "name": "Reject prescription",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 5,\n  \"rejectReason\": \"الصورة غير واضحة، يرجى إعادة الرفع\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}/status"
+          }
+        },
+        {
+          "name": "Get prescription review details and images",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}"
+          }
+        },
+        {
+          "name": "Download prescription image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/employee/prescriptions/{{prescriptionId}}/images/{{imageIdentifier}}"
+          }
+        }
+      ]
+    }
+  ]
+}

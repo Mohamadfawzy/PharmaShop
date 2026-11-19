@@ -1,0 +1,104 @@
+{
+  "info": {
+    "name": "PharmaShop - Epic 12 Checkout and Orders",
+    "description": "Customer checkout and order history, plus administrator order search and status updates. CustomerId is resolved from the JWT and is intentionally absent from request bodies.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:5001" },
+    { "key": "customerToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "cartId", "value": "1" },
+    { "key": "prescriptionId", "value": "1" },
+    { "key": "addressId", "value": "1" },
+    { "key": "orderId", "value": "1" },
+    { "key": "storeId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Customer Checkout and Order History",
+      "item": [
+        {
+          "name": "Preview regular cart checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{cartId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}" },
+            "url": "{{baseUrl}}/api/v1/orders/checkout/preview",
+            "description": "SourceType: 1=Cart, 2=Prescription, 3=PointsRedemption. PaymentMethod 1=COD. No CustomerId is sent."
+          }
+        },
+        {
+          "name": "Confirm regular cart checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{cartId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}" },
+            "url": "{{baseUrl}}/api/v1/orders/checkout"
+          }
+        },
+        {
+          "name": "Preview prescription checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 2,\n  \"sourceId\": {{prescriptionId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}" },
+            "url": "{{baseUrl}}/api/v1/orders/checkout/preview"
+          }
+        },
+        {
+          "name": "Confirm prescription checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 2,\n  \"sourceId\": {{prescriptionId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}" },
+            "url": "{{baseUrl}}/api/v1/orders/checkout"
+          }
+        },
+        {
+          "name": "Preview points-redemption checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 3,\n  \"sourceId\": {{cartId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}" },
+            "url": "{{baseUrl}}/api/v1/orders/checkout/preview"
+          }
+        },
+        {
+          "name": "Confirm points-redemption checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 3,\n  \"sourceId\": {{cartId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}" },
+            "url": "{{baseUrl}}/api/v1/orders/checkout"
+          }
+        },
+        {
+          "name": "List my orders",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }], "url": "{{baseUrl}}/api/v1/orders?status=1&page=1&pageSize=20&newestFirst=true" }
+        },
+        {
+          "name": "Get my order details",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }], "url": "{{baseUrl}}/api/v1/orders/{{orderId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Administrator Order Management",
+      "item": [
+        {
+          "name": "Search all orders (optional filters)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/v1/admin/orders?storeId={{storeId}}&status=1&paymentStatus=1&orderNumber=&page=1&pageSize=20" }
+        },
+        {
+          "name": "Get order details for administrator",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}" }
+        },
+        {
+          "name": "Move pending order to confirmed",
+          "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": 2,\n  \"notes\": \"تم تأكيد الطلب\"\n}" }, "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status", "description": "Status values: 1 Pending, 2 Confirmed, 3 Preparing, 4 OutForDelivery, 5 Delivered, 6 Cancelled, 7 Returned, 8 PendingApproval. Use only allowed transitions." }
+        }
+      ]
+    }
+  ]
+}

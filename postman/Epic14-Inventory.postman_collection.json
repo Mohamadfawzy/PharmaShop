@@ -1,0 +1,71 @@
+{
+  "info": {
+    "_postman_id": "a3c7f83c-72c1-4d80-8c93-3b407e4d1414",
+    "name": "PharmaShop - Epic 14 Inventory",
+    "description": "Receive stock, adjust stock, search inventory ledger, and update order statuses to verify automatic stock deduction/restoration.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "token", "value": "" },
+    { "key": "productId", "value": "1" },
+    { "key": "storeId", "value": "1" },
+    { "key": "productUnitId", "value": "1" },
+    { "key": "orderId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Receive stock",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"storeId\": {{storeId}},\n  \"productUnitId\": {{productUnitId}},\n  \"quantity\": 25,\n  \"batchNumber\": \"BATCH-2026-001\",\n  \"expirationDate\": \"2028-06-30T00:00:00Z\",\n  \"costPrice\": 18.50,\n  \"reason\": \"توريد فاتورة مورد رقم 4581\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/inventory/products/{{productId}}/receipts"
+      }
+    },
+    {
+      "name": "Increase stock adjustment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"productId\": {{productId}},\n  \"quantityDelta\": 3,\n  \"reason\": \"تسوية جرد بالزيادة\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/inventory/adjustments"
+      }
+    },
+    {
+      "name": "Decrease stock adjustment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"productId\": {{productId}},\n  \"quantityDelta\": -2,\n  \"reason\": \"تالف حسب محضر الجرد رقم 22\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/inventory/adjustments"
+      }
+    },
+    {
+      "name": "Search inventory transactions",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/admin/inventory/transactions?productId={{productId}}&page=1&pageSize=25&fromUtc=2026-01-01T00:00:00Z&toUtc=2027-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "Confirm order (deduct once)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"status\": 2,\n  \"notes\": \"تم التأكيد وتجهيز الطلب للمخزن\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status"
+      }
+    },
+    {
+      "name": "Cancel confirmed/preparing order (restore once)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"status\": 6,\n  \"notes\": \"إلغاء الطلب وإعادة الكميات للمخزون\"\n}" },
+        "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status"
+      }
+    }
+  ]
+}

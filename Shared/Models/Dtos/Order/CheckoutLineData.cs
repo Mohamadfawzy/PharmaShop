@@ -28,4 +28,7 @@ public sealed class CheckoutLineData
 
     public bool IsRedeemableByPoints { get; set; }
     public byte? CartItemSourceType { get; set; }
+    public bool IsProductActive { get; set; }
+    public bool IsProductAvailable { get; set; }
+    public decimal AvailableOuterQuantity { get; set; }
 }

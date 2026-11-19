@@ -57,6 +57,75 @@ public class PrescriptionRepository : GenericRepository<Prescription>, IPrescrip
         // Future improvement: include StoreId scoping for admin permissions
     }
 
+    public Task<Prescription?> GetForEmployeeReviewAsync(int prescriptionId, CancellationToken ct)
+        => _db.Prescriptions.Include(p => p.Store)
+            .FirstOrDefaultAsync(p => p.Id == prescriptionId, ct);
+
+    public Task<int> GetImageCountAsync(int prescriptionId, CancellationToken ct)
+        => _db.PrescriptionImages.CountAsync(i => i.PrescriptionId == prescriptionId, ct);
+
+    public Task<string?> GetImageIdentifierAsync(int prescriptionId, string imageIdentifier, CancellationToken ct)
+        => _db.PrescriptionImages.AsNoTracking()
+            .Where(i => i.PrescriptionId == prescriptionId && i.ImageUrl == imageIdentifier)
+            .Select(i => i.ImageUrl).FirstOrDefaultAsync(ct);
+
+    public async Task<CustomerPrescriptionDetailsDto?> GetCustomerDetailsAsync(int prescriptionId, int customerId, CancellationToken ct)
+    {
+        var p = await _db.Prescriptions.AsNoTracking()
+            .Include(x => x.PrescriptionImages)
+            .Where(x => x.Id == prescriptionId && x.CustomerId == customerId)
+            .FirstOrDefaultAsync(ct);
+        if (p is null) return null;
+
+        return new CustomerPrescriptionDetailsDto
+        {
+            Id = p.Id, StoreId = p.StoreId, Status = p.Status, StatusUpdatedAt = p.StatusUpdatedAt,
+            CreatedAt = p.CreatedAt, ReadyForCheckoutAt = p.ReadyForCheckoutAt,
+            RejectReason = p.RejectReason, Notes = p.Notes,
+            PrimaryImageUrl = p.PrescriptionImages.FirstOrDefault(i => i.IsPrimary)?.ImageUrl,
+            Images = p.PrescriptionImages.OrderBy(i => i.SortOrder).Select(i => new PrescriptionCreatedImageDto
+            { Id = i.Id, ImageUrl = i.ImageUrl, ThumbnailUrl = i.ThumbnailUrl, IsPrimary = i.IsPrimary, SortOrder = i.SortOrder }).ToList(),
+            Items = await GetItemsByPrescriptionIdAsync(p.Id, ct)
+        };
+    }
+
+    public async Task<PagedResult<AdminPrescriptionListItemDto>> SearchForPharmacyAsync(AdminPrescriptionListQueryDto q, int pharmacyId, CancellationToken ct)
+    {
+        IQueryable<Prescription> query = _db.Prescriptions.AsNoTracking().Where(p => p.Store.PharmacyId == pharmacyId);
+        if (q.StoreId.HasValue) query = query.Where(p => p.StoreId == q.StoreId.Value);
+        if (q.Status.HasValue) query = query.Where(p => p.Status == q.Status.Value);
+        if (q.CustomerId.HasValue) query = query.Where(p => p.CustomerId == q.CustomerId.Value);
+        if (q.ReviewedBy.HasValue) query = query.Where(p => p.ReviewedBy == q.ReviewedBy.Value);
+        if (q.From.HasValue) query = query.Where(p => p.CreatedAt >= q.From.Value);
+        if (q.To.HasValue) query = query.Where(p => p.CreatedAt <= q.To.Value);
+        var total = await query.CountAsync(ct);
+        query = q.Sort switch
+        {
+            PrescriptionSortOption.Oldest => query.OrderBy(p => p.CreatedAt),
+            PrescriptionSortOption.Newest => query.OrderByDescending(p => p.CreatedAt),
+            _ => query.OrderByDescending(p => p.StatusUpdatedAt)
+        };
+        var items = await query.Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
+            .Select(p => new AdminPrescriptionListItemDto { Id = p.Id, CustomerId = p.CustomerId, StoreId = p.StoreId,
+                Status = p.Status, StatusUpdatedAt = p.StatusUpdatedAt, ReviewedBy = p.ReviewedBy,
+                ReadyForCheckoutAt = p.ReadyForCheckoutAt, CreatedAt = p.CreatedAt }).ToListAsync(ct);
+        return new PagedResult<AdminPrescriptionListItemDto> { Items = items, TotalCount = total };
+    }
+
+    public async Task<PagedResult<CustomerPrescriptionListItemDto>> SearchForCustomerAsync(CustomerPrescriptionListQueryDto q, int customerId, CancellationToken ct)
+    {
+        IQueryable<Prescription> query = _db.Prescriptions.AsNoTracking().Where(p => p.CustomerId == customerId);
+        if (q.Status.HasValue) query = query.Where(p => p.Status == q.Status.Value);
+        var total = await query.CountAsync(ct);
+        query = q.NewestFirst ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt);
+        var items = await query.Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
+            .Select(p => new CustomerPrescriptionListItemDto { Id = p.Id, StoreId = p.StoreId, Status = p.Status,
+                StatusUpdatedAt = p.StatusUpdatedAt, CreatedAt = p.CreatedAt, ReadyForCheckoutAt = p.ReadyForCheckoutAt,
+                RejectReason = p.RejectReason, PrimaryImageUrl = p.PrescriptionImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault() })
+            .ToListAsync(ct);
+        return new PagedResult<CustomerPrescriptionListItemDto> { Items = items, TotalCount = total };
+    }
+
     public async Task AddItemAsync(PrescriptionItem item, CancellationToken ct)
     {
         // 1) Add prescription item (tracked)

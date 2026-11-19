@@ -44,6 +44,8 @@ public static class ServiceExtensions
         services.AddTransient<IPromotionService, PromotionService>();
         services.AddTransient<IOrderService, OrderService>();
         services.AddTransient<IPrescriptionService, PrescriptionService>();
+        services.AddTransient<IPointsService, PointsService>();
+        services.AddTransient<IInventoryService, InventoryService>();
         services.AddTransient<IPharmacyService, PharmacyService>();
         services.AddTransient<IStoreService, StoreService>();
         services.AddTransient<IEmployeeService, EmployeeService>();

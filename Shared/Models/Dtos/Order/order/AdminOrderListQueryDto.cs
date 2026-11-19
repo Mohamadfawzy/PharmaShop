@@ -8,7 +8,7 @@ namespace Shared.Models.Dtos.Order.order;
 
 public sealed class AdminOrderListQueryDto
 {
-    public int StoreId { get; set; }           // Required
+    public int? StoreId { get; set; }          // Optional admin filter
 
     public byte? Status { get; set; }          // Optional
     public byte? PaymentStatus { get; set; }   // Optional

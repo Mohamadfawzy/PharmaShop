@@ -11,6 +11,11 @@ public interface IPrescriptionService
     Task<AppResponse<PrescriptionItemsBatchCreateResultDto>> AddPrescriptionItemsBatchAsync(int prescriptionId, PrescriptionItemsBatchCreateDto dto, CancellationToken ct);
     Task<AppResponse<PrescriptionCreateResultDto>> CreateWithImagesAsync(PrescriptionCreateRequestDto dto, IReadOnlyList<UploadStreamFile> files, CancellationToken ct);
     Task<AppResponse<int>> DeletePrescriptionItemAsync(int prescriptionId, int itemId, CancellationToken ct);
+    Task<AppResponse<List<CustomerPrescriptionListItemDto>>> GetMyPrescriptionsAsync(CustomerPrescriptionListQueryDto query, CancellationToken ct);
+    Task<AppResponse<CustomerPrescriptionDetailsDto>> GetMyPrescriptionAsync(int prescriptionId, CancellationToken ct);
+    Task<AppResponse<List<AdminPrescriptionListItemDto>>> GetEmployeePrescriptionsAsync(AdminPrescriptionListQueryDto query, CancellationToken ct);
+    Task<AppResponse<CustomerPrescriptionDetailsDto>> GetEmployeePrescriptionAsync(int prescriptionId, CancellationToken ct);
+    Task<AppResponse<string>> GetPrescriptionImageIdentifierAsync(int prescriptionId, string imageIdentifier, bool employee, CancellationToken ct);
     Task<AppResponse<List<PrescriptionItemListItemDto>>> GetAdminPrescriptionItemsAsync(int prescriptionId, CancellationToken ct);
     Task<AppResponse<List<AdminPrescriptionListItemDto>>> GetAdminPrescriptionsAsync(AdminPrescriptionListQueryDto query, CancellationToken ct);
     Task<AppResponse<int>> UpdatePrescriptionStatusAsync(int prescriptionId, PrescriptionStatusUpdateDto dto, CancellationToken ct);

@@ -1,5 +1,6 @@
 ﻿using Shared.Enums.Cart;
 using Shared.Enums.Order;
+using System.Text.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,8 @@ namespace Shared.Models.Dtos.Order;
 
 public sealed class CheckoutPreviewRequestDto
 {
-    public int CustomerId { get; set; }           // For now (later: from token)
+    [JsonIgnore]
+    public int CustomerId { get; set; }           // Set from the authenticated customer by the service
     public CheckoutSourceType SourceType { get; set; }
     public int SourceId { get; set; }             // CartId or PrescriptionId
     public int AddressId { get; set; }
@@ -46,6 +48,8 @@ public sealed class CheckoutPreviewItemDto
     public int ProductId { get; set; }
     public byte UnitLevel { get; set; }           // 1=Outer,2=Inner
     public decimal Quantity { get; set; }
+    public decimal AvailableQuantity { get; set; }
+    public bool IsAvailable { get; set; }
 
     public decimal UnitPrice { get; set; }        // Current unit price
     public decimal DiscountPercent { get; set; }  // 0..100

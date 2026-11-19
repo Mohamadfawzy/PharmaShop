@@ -3,7 +3,7 @@
 namespace Shared.Models.Dtos.Prescription;
 public sealed class AdminPrescriptionListQueryDto
 {
-    public int StoreId { get; set; }                 // Required for admin queue
+    public int? StoreId { get; set; }                // Optional narrowing within employee pharmacy
     public byte? Status { get; set; }                // 1..5, null=all
     public int? CustomerId { get; set; }             // Optional filter
     public int? ReviewedBy { get; set; }             // Optional filter (employee)

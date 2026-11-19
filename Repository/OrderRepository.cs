@@ -64,7 +64,10 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
                 Points = p.Points,
 
                 IsRedeemableByPoints = p.IsRedeemableByPoints,
-                CartItemSourceType = ci.SourceType
+                CartItemSourceType = ci.SourceType,
+                IsProductActive = p.IsActive && p.DeletedAt == null,
+                IsProductAvailable = p.IsAvailable,
+                AvailableOuterQuantity = p.Quantity
             }
         ).ToListAsync(ct);
 
@@ -82,6 +85,7 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
                   && pr.CustomerId == customerId
                   && pr.Status == 3                      // 3=ReadyForCheckout
                   && pi.ProductId != null
+                  && p.StoreId == pr.StoreId
             select new CheckoutLineData
             {
                 PrescriptionId = pr.Id,
@@ -100,7 +104,10 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
                 InnerPerOuter = p.InnerPerOuter,
 
                 AllowSplitSale = p.AllowSplitSale,
-                Points = p.Points
+                Points = p.Points,
+                IsProductActive = p.IsActive && p.DeletedAt == null,
+                IsProductAvailable = p.IsAvailable,
+                AvailableOuterQuantity = p.Quantity
             }
         ).ToListAsync(ct);
 
@@ -139,7 +146,10 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
                 Points = p.Points,
 
                 IsRedeemableByPoints = p.IsRedeemableByPoints,
-                CartItemSourceType = ci.SourceType
+                CartItemSourceType = ci.SourceType,
+                IsProductActive = p.IsActive && p.DeletedAt == null,
+                IsProductAvailable = p.IsAvailable,
+                AvailableOuterQuantity = p.Quantity
             }
         ).ToListAsync(ct);
 
@@ -173,8 +183,8 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         // 1) Base query
         IQueryable<Order> query = _db.Orders.AsNoTracking();
 
-        // 2) Required Store filter
-        query = query.Where(o => o.StoreId == q.StoreId);
+        // 2) Optional store filter
+        if (q.StoreId.HasValue) query = query.Where(o => o.StoreId == q.StoreId.Value);
 
         // 3) Optional filters
         if (q.Status.HasValue)
@@ -233,6 +243,69 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         // - Add join with Customer to return name/phone
         // - Add index-based filtering optimizations
     }
+
+    public async Task<PagedResult<CustomerOrderListItemDto>> SearchCustomerAsync(int customerId, CustomerOrderListQueryDto q, CancellationToken ct)
+    {
+        IQueryable<Order> query = _db.Orders.AsNoTracking().Where(o => o.CustomerId == customerId);
+        if (q.Status.HasValue) query = query.Where(o => o.Status == q.Status.Value);
+        var total = await query.CountAsync(ct);
+        query = q.NewestFirst ? query.OrderByDescending(o => o.CreatedAt) : query.OrderBy(o => o.CreatedAt);
+        var items = await query.Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
+            .Select(o => new CustomerOrderListItemDto
+            {
+                Id = o.Id, OrderNumber = o.OrderNumber, StoreId = o.StoreId, OrderSource = o.OrderSource,
+                Status = o.Status, StatusUpdatedAt = o.StatusUpdatedAt, PaymentStatus = o.PaymentStatus,
+                GrandTotal = o.GrandTotal, CreatedAt = o.CreatedAt
+            }).ToListAsync(ct);
+        return new PagedResult<CustomerOrderListItemDto> { Items = items, TotalCount = total };
+    }
+
+    public Task<CustomerOrderDetailsDto?> GetCustomerOrderDetailsAsync(int orderId, int customerId, CancellationToken ct)
+        => _db.Orders.AsNoTracking().Where(o => o.Id == orderId && o.CustomerId == customerId)
+            .Select(o => new CustomerOrderDetailsDto
+            {
+                Id = o.Id, OrderNumber = o.OrderNumber, StoreId = o.StoreId, OrderSource = o.OrderSource,
+                Status = o.Status, StatusUpdatedAt = o.StatusUpdatedAt, PaymentStatus = o.PaymentStatus,
+                GrandTotal = o.GrandTotal, CreatedAt = o.CreatedAt, PaymentMethod = o.PaymentMethod,
+                Subtotal = o.Subtotal, ItemsDiscountTotal = o.ItemsDiscountTotal, DeliveryFee = o.DeliveryFee,
+                RedeemedPoints = o.RedeemedPoints, RedeemedAmount = o.RedeemedAmount, EarnedPoints = o.EarnedPoints,
+                PrescriptionId = o.PrescriptionId, DeliveryTitle = o.DeliveryTitle, DeliveryCity = o.DeliveryCity,
+                DeliveryRegion = o.DeliveryRegion, DeliveryStreet = o.DeliveryStreet, DeliveryLatitude = o.DeliveryLatitude,
+                DeliveryLongitude = o.DeliveryLongitude, DeliveryPhone = o.DeliveryPhone, Notes = o.Notes,
+                Items = o.OrderItems.OrderBy(i => i.Id).Select(i => new OrderItemSnapshotDto
+                {
+                    Id = i.Id, ProductId = i.ProductId, ProductNameAr = i.Product.NameAr, ProductNameEn = i.Product.NameEn,
+                    UnitLevel = i.UnitLevel, Quantity = i.Quantity, OuterUnitIdSnapshot = i.OuterUnitIdSnapshot,
+                    InnerUnitIdSnapshot = i.InnerUnitIdSnapshot, InnerPerOuterSnapshot = i.InnerPerOuterSnapshot,
+                    UnitPriceSnapshot = i.UnitPriceSnapshot, DiscountPercentSnapshot = i.DiscountPercentSnapshot,
+                    FinalUnitPriceSnapshot = i.FinalUnitPriceSnapshot, LineTotal = i.LineTotal,
+                    PointsSnapshot = i.PointsSnapshot, EarnedPoints = i.EarnedPoints, AppliedPromotionId = i.AppliedPromotionId
+                }).ToList()
+            }).FirstOrDefaultAsync(ct);
+
+    public Task<AdminOrderDetailsDto?> GetAdminOrderDetailsAsync(int orderId, CancellationToken ct)
+        => _db.Orders.AsNoTracking().Where(o => o.Id == orderId)
+            .Select(o => new AdminOrderDetailsDto
+            {
+                Id = o.Id, OrderNumber = o.OrderNumber, StoreId = o.StoreId, OrderSource = o.OrderSource,
+                Status = o.Status, StatusUpdatedAt = o.StatusUpdatedAt, PaymentStatus = o.PaymentStatus,
+                GrandTotal = o.GrandTotal, CreatedAt = o.CreatedAt, PaymentMethod = o.PaymentMethod,
+                Subtotal = o.Subtotal, ItemsDiscountTotal = o.ItemsDiscountTotal, DeliveryFee = o.DeliveryFee,
+                RedeemedPoints = o.RedeemedPoints, RedeemedAmount = o.RedeemedAmount, EarnedPoints = o.EarnedPoints,
+                PrescriptionId = o.PrescriptionId, DeliveryTitle = o.DeliveryTitle, DeliveryCity = o.DeliveryCity,
+                DeliveryRegion = o.DeliveryRegion, DeliveryStreet = o.DeliveryStreet, DeliveryLatitude = o.DeliveryLatitude,
+                DeliveryLongitude = o.DeliveryLongitude, DeliveryPhone = o.DeliveryPhone, Notes = o.Notes,
+                CustomerId = o.CustomerId, CustomerNameAr = o.Customer.FullNameAr, CustomerPhone = o.Customer.PhoneNumber,
+                Items = o.OrderItems.OrderBy(i => i.Id).Select(i => new OrderItemSnapshotDto
+                {
+                    Id = i.Id, ProductId = i.ProductId, ProductNameAr = i.Product.NameAr, ProductNameEn = i.Product.NameEn,
+                    UnitLevel = i.UnitLevel, Quantity = i.Quantity, OuterUnitIdSnapshot = i.OuterUnitIdSnapshot,
+                    InnerUnitIdSnapshot = i.InnerUnitIdSnapshot, InnerPerOuterSnapshot = i.InnerPerOuterSnapshot,
+                    UnitPriceSnapshot = i.UnitPriceSnapshot, DiscountPercentSnapshot = i.DiscountPercentSnapshot,
+                    FinalUnitPriceSnapshot = i.FinalUnitPriceSnapshot, LineTotal = i.LineTotal,
+                    PointsSnapshot = i.PointsSnapshot, EarnedPoints = i.EarnedPoints, AppliedPromotionId = i.AppliedPromotionId
+                }).ToList()
+            }).FirstOrDefaultAsync(ct);
 
     //================== 2
     public async Task<Dictionary<int, ActiveGroupPromotionHit>> GetActiveGroupPromotionsByProductAsync(List<int> productIds, CancellationToken ct)
@@ -302,23 +375,21 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
 
     // ==========================3
 
-    public async Task MarkCartCheckedOutAsync(int cartId, CancellationToken ct)
+    public async Task<int> MarkCartCheckedOutAsync(int cartId, int customerId, CancellationToken ct)
     {
-        // 1) Update cart status to CheckedOut (2)
-        await _db.Carts.Where(c => c.Id == cartId)
+        // Compare-and-set prevents two concurrent checkouts from consuming the same cart.
+        return await _db.Carts.Where(c => c.Id == cartId && c.CustomerId == customerId && c.Status == 1)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(c => c.Status, (byte)2)
                 .SetProperty(c => c.StatusUpdatedAt, DateTime.UtcNow)
                 .SetProperty(c => c.UpdatedAt, DateTime.UtcNow),
                 ct);
-
-        // Future improvement: also archive cart items if needed
     }
 
-    public async Task ClosePrescriptionAsync(int prescriptionId, CancellationToken ct)
+    public async Task<int> ClosePrescriptionAsync(int prescriptionId, int customerId, CancellationToken ct)
     {
-        // 1) Update prescription status to Closed (4)
-        await _db.Prescriptions.Where(p => p.Id == prescriptionId)
+        // Compare-and-set ensures only a ready prescription can be checked out once.
+        return await _db.Prescriptions.Where(p => p.Id == prescriptionId && p.CustomerId == customerId && p.Status == 3)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(p => p.Status, (byte)4)
                 .SetProperty(p => p.StatusUpdatedAt, DateTime.UtcNow)
@@ -330,30 +401,19 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
 
     public async Task<int> GetCustomerPointsAsync(int customerId, CancellationToken ct)
     {
-        // 1) Read fast points balance
-        return await _db.Customers
+        // Redeemable balance excludes expired lots even if the scheduled sweep has not run yet.
+        return await _db.CustomerPointLots
             .AsNoTracking()
-            .Where(c => c.Id == customerId)
-            .Select(c => c.Points)
-            .FirstOrDefaultAsync(ct);
-
-        // Future improvement: compare periodically with lots sum for reconciliation
+            .Where(l => l.CustomerId == customerId && l.Status == 2 && l.RemainingPoints > 0 && l.ExpiresAt > DateTime.UtcNow)
+            .SumAsync(l => (int?)l.RemainingPoints, ct) ?? 0;
     }
 
     public async Task<List<CustomerPointLot>> GetAvailablePointLotsForUpdateAsync(int customerId,DateTime nowUtc,CancellationToken ct)
     {
-        // 1) Load available point lots using FEFO order
+        // Lock FEFO lots while redeeming so concurrent checkouts cannot consume the same balance.
         return await _db.CustomerPointLots
-            .Where(x =>
-                x.CustomerId == customerId &&
-                x.Status == 2 &&
-                x.RemainingPoints > 0 &&
-                x.ExpiresAt > nowUtc)
-            .OrderBy(x => x.ExpiresAt)
-            .ThenBy(x => x.Id)
-            .ToListAsync(ct);
-
-        // Future improvement: use UPDLOCK query for stronger SQL Server concurrency protection
+            .FromSqlInterpolated($"SELECT * FROM [dbo].[CustomerPointLots] WITH (UPDLOCK, ROWLOCK, READPAST) WHERE [CustomerId] = {customerId} AND [Status] = 2 AND [RemainingPoints] > 0 AND [ExpiresAt] > {nowUtc}")
+            .OrderBy(x => x.ExpiresAt).ThenBy(x => x.Id).ToListAsync(ct);
     }
 
     public async Task AddPointTransactionsRangeAsync(

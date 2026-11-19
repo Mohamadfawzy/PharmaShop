@@ -1,149 +1,64 @@
-﻿using Contracts.IServices;
+using Contracts.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Enums.Prescription;
+using Shared.Constants;
 using Shared.Models.Dtos.Prescription;
 using Shared.Models.ImageDtos;
 using Shared.Responses;
-using WebAPI.Controllers.Admin;
 using WebAPI.SpecificDtos;
 
 namespace WebAPI.Controllers;
 
 [Route("api/v1/prescriptions")]
-[ApiController]
-public class PrescriptionsController : AdminBaseApiController
+[Authorize(Policy = AppPolicies.Customer)]
+public sealed class PrescriptionsController : BaseApiController
 {
-
-    private readonly IPrescriptionService _prescriptionService;
-
-    public PrescriptionsController(IPrescriptionService prescriptionService)
-    {
-        _prescriptionService = prescriptionService;
-    }
+    private readonly IPrescriptionService _service;
+    private readonly IWebHostEnvironment _environment;
+    public PrescriptionsController(IPrescriptionService service, IWebHostEnvironment environment)
+    { _service = service; _environment = environment; }
 
     [HttpPost]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(26 * 1024 * 1024)]
     public async Task<IActionResult> Create([FromForm] PrescriptionCreateFormData form, CancellationToken ct)
     {
-        // 1) Basic input guard (controller-level)
-        if (form.Files is null || form.Files.Count == 0)
-            return FromAppResponse(AppResponse<object>.ValidationError("At least one image is required"));
-
-        // 2) Map form fields to contracts DTO (no ASP.NET types)
-        var dto = new PrescriptionCreateRequestDto
-        {
-            CustomerId = form.CustomerId,
-            StoreId = form.StoreId,
-            Notes = form.Notes,
-            PrimaryIndex = form.PrimaryIndex
-        };
-
-        // 3) Convert IFormFile to Stream wrappers (ASP.NET stays here only)
-        var files = new List<UploadStreamFile>(form.Files.Count);
+        if (form.Files is null || form.Files.Count is < 1 or > 5)
+            return FromAppResponse(AppResponse<object>.ValidationError("Upload between 1 and 5 images"));
+        var uploads = new List<UploadStreamFile>(form.Files.Count);
         try
         {
-            for (var i = 0; i < form.Files.Count; i++)
+            foreach (var file in form.Files)
             {
-                var f = form.Files[i];
-
-                files.Add(new UploadStreamFile
-                {
-                    Content = f.OpenReadStream(),
-                    FileName = f.FileName,
-                    ContentType = f.ContentType,
-                    Length = f.Length
-                });
+                if (file.Length <= 0 || file.Length > 10 * 1024 * 1024 ||
+                    !new[] { "image/jpeg", "image/png", "image/webp" }.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
+                    return FromAppResponse(AppResponse<object>.ValidationError("Each file must be JPEG, PNG or WebP and no larger than 10 MB"));
+                uploads.Add(new UploadStreamFile { Content = file.OpenReadStream(), FileName = file.FileName,
+                    ContentType = file.ContentType, Length = file.Length });
             }
-
-            // 4) Delegate to service
-            var result = await _prescriptionService.CreateWithImagesAsync(dto, files, ct);
-
-            // 5) Unified response
+            if (uploads.Sum(f => f.Length) > 25L * 1024 * 1024)
+                return FromAppResponse(AppResponse<object>.ValidationError("Total upload size cannot exceed 25 MB"));
+            var result = await _service.CreateWithImagesAsync(new PrescriptionCreateRequestDto
+            { StoreId = form.StoreId, Notes = form.Notes, PrimaryIndex = form.PrimaryIndex }, uploads, ct);
             return FromAppResponse(result);
         }
-        finally
-        {
-            // 6) Dispose streams to avoid leaks
-            foreach (var x in files)
-                x.Content.Dispose();
-        }
-
-        // Future improvement: validate file types/sizes before calling service
+        finally { foreach (var upload in uploads) upload.Content.Dispose(); }
     }
-
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] AdminPrescriptionListQueryDto query, CancellationToken ct)
+    public async Task<IActionResult> GetMine([FromQuery] CustomerPrescriptionListQueryDto query, CancellationToken ct)
+        => FromAppResponse(await _service.GetMyPrescriptionsAsync(query, ct));
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetMineById(int id, CancellationToken ct)
+        => FromAppResponse(await _service.GetMyPrescriptionAsync(id, ct));
+
+    [HttpGet("{id:int}/images/{imageIdentifier}")]
+    public async Task<IActionResult> GetMyImage(int id, string imageIdentifier, CancellationToken ct)
     {
-        // 1) Delegate to service
-        var result = await _prescriptionService.GetAdminPrescriptionsAsync(query, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-
-        // Future improvement: enforce admin authorization policy
+        var access = await _service.GetPrescriptionImageIdentifierAsync(id, imageIdentifier, employee: false, ct);
+        if (!access.IsSuccess) return FromAppResponse(access);
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "prescriptions", "medium", access.Data + ".jpg");
+        return System.IO.File.Exists(path) ? PhysicalFile(path, "image/jpeg") : NotFound();
     }
-
-
-    [HttpPost("{id:int}/items")]
-    public async Task<IActionResult> AddItem(int id, [FromBody] PrescriptionItemCreateDto dto, CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await _prescriptionService.AddPrescriptionItemAsync(id, dto, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-
-        // Future improvement: enforce pharmacist/admin authorization policy
-    }
-
-    [HttpPost("{id:int}/items/batch")]
-    public async Task<IActionResult> AddItemsBatch(int id, [FromBody] PrescriptionItemsBatchCreateDto dto, CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await _prescriptionService.AddPrescriptionItemsBatchAsync(id, dto, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-
-        // Future improvement: enforce pharmacist/admin authorization policy
-    }
-
-
-    [HttpGet("{id:int}/items")]
-    public async Task<IActionResult> GetItems(int id, CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await _prescriptionService.GetAdminPrescriptionItemsAsync(id, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-
-        // Future improvement: add admin authorization policy
-    }
-
-    [HttpDelete("{id:int}/items/{itemId:int}")]
-    public async Task<IActionResult> DeleteItem(int id, int itemId, CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await _prescriptionService.DeletePrescriptionItemAsync(id, itemId, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-
-        // Future improvement: enforce pharmacist/admin authorization policy
-    }
-
-
-    [HttpPatch("{id:int}/status")]
-    public async Task<IActionResult> UpdateStatus(int id, [FromBody] PrescriptionStatusUpdateDto dto, CancellationToken ct)
-    {
-        // 1) Delegate to service
-        var result = await _prescriptionService.UpdatePrescriptionStatusAsync(id, dto, ct);
-
-        // 2) Unified response
-        return FromAppResponse(result);
-
-        // Future improvement: extract ReviewedBy from token instead of body
-    }
-
 }
