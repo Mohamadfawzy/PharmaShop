@@ -25,6 +25,33 @@ public class ProductsController : AdminBaseApiController
     public async Task<IActionResult> Create([FromBody] ProductCreateDto dto, CancellationToken ct)
        => FromAppResponse(await _productService.CreateProductAsync(dto, ct));
 
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] ProductCreateDto dto, CancellationToken ct)
+        => FromAppResponse(await _productService.UpdateProductAsync(id, dto, ct));
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
+        => FromAppResponse(await _productService.GetProductAsync(id, true, ct));
+
+    [HttpGet("deleted")]
+    public async Task<IActionResult> GetDeleted([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
+    {
+        return FromAppResponse(await _productService.GetDeletedProductsAsync(page, pageSize, ct));
+    }
+
+    [HttpPatch("{id:int}/activate")]
+    public async Task<IActionResult> Activate(int id, CancellationToken ct) => FromAppResponse(await _productService.SetProductStateAsync(id, "activate", ct));
+
+    [HttpPatch("{id:int}/deactivate")]
+    public async Task<IActionResult> Deactivate(int id, CancellationToken ct) => FromAppResponse(await _productService.SetProductStateAsync(id, "deactivate", ct));
+
+    [HttpPatch("{id:int}/restore")]
+    public async Task<IActionResult> Restore(int id, CancellationToken ct) => FromAppResponse(await _productService.SetProductStateAsync(id, "restore", ct));
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+        => FromAppResponse(await _productService.SetProductStateAsync(id, "delete", ct));
+
 
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] ProductSearchQueryParams query, CancellationToken ct)

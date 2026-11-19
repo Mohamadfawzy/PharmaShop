@@ -1,0 +1,63 @@
+{
+  "info": {
+    "name": "PharmaShop - Epics 6, 7, 8",
+    "description": "Product catalog and admin CRUD for products, images, tags, categories, companies and units. Set baseUrl, token, storeId and IDs in collection variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:5001" },
+    { "key": "token", "value": "" },
+    { "key": "storeId", "value": "1" },
+    { "key": "productId", "value": "1" },
+    { "key": "imageId", "value": "1" },
+    { "key": "categoryId", "value": "1" },
+    { "key": "tagId", "value": "1" },
+    { "key": "companyId", "value": "1" },
+    { "key": "unitId", "value": "1" }
+  ],
+  "item": [
+    { "name": "Epic 6 - Public catalog", "item": [
+      { "name": "Search products (advanced)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/v1/products?storeId={{storeId}}&q=باراسيتامول&categoryId={{categoryId}}&companyId={{companyId}}&unitId={{unitId}}&tagIds={{tagId}}&tagMatch=Any&minPrice=10&maxPrice=250&requiresPrescription=false&hasPromotion=true&isAvailable=true&isFeatured=true&allowSplitSale=false&minPoints=0&sort=PriceAsc&page=1&pageSize=20", "host": ["{{baseUrl}}"], "path": ["api", "v1", "products"], "query": [{"key":"storeId","value":"{{storeId}}"},{"key":"q","value":"باراسيتامول"},{"key":"categoryId","value":"{{categoryId}}"},{"key":"companyId","value":"{{companyId}}"},{"key":"unitId","value":"{{unitId}}"},{"key":"tagIds","value":"{{tagId}}"},{"key":"tagMatch","value":"Any"},{"key":"minPrice","value":"10"},{"key":"maxPrice","value":"250"},{"key":"requiresPrescription","value":"false"},{"key":"hasPromotion","value":"true"},{"key":"isAvailable","value":"true"},{"key":"isFeatured","value":"true"},{"key":"allowSplitSale","value":"false"},{"key":"minPoints","value":"0"},{"key":"sort","value":"PriceAsc"},{"key":"page","value":"1"},{"key":"pageSize","value":"20"}] } } },
+      { "name": "Product details", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/products/{{productId}}" } },
+      { "name": "Categories list", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/categories?pageNumber=1&pageSize=50" } },
+      { "name": "Category tree", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/categories/tree" } },
+      { "name": "Tags list", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/tags?page=1&pageSize=100&q=مسكن" } },
+      { "name": "Companies list", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/companies" } },
+      { "name": "Units list", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/units" } }
+    ]},
+    { "name": "Epic 7 - Admin products", "item": [
+      { "name": "Create product", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "body": { "mode":"raw", "raw":"{\n  \"storeId\": {{storeId}},\n  \"categoryId\": {{categoryId}},\n  \"companyId\": {{companyId}},\n  \"internationalCode\": \"6281000000012\",\n  \"nameAr\": \"باراسيتامول 500 مجم\",\n  \"nameEn\": \"Paracetamol 500 mg\",\n  \"outerUnitId\": {{unitId}},\n  \"outerUnitPrice\": 35.00,\n  \"minOrderQty\": 1,\n  \"quantity\": 25,\n  \"isAvailable\": true,\n  \"isActive\": true,\n  \"requiresPrescription\": false,\n  \"hasPromotion\": false,\n  \"promotionDiscountPercent\": 0\n}" }, "url":"{{baseUrl}}/api/v1/admin/Products" } },
+      { "name": "Admin search", "request": { "method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/Products/search?storeId={{storeId}}&q=باراسيتامول&page=1&pageSize=25&sort=Newest" } },
+      { "name": "Admin product details", "request": { "method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/Products/{{productId}}" } },
+      { "name": "Update product", "request": { "method":"PUT", "header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "body":{"mode":"raw","raw":"{\n  \"storeId\": {{storeId}},\n  \"categoryId\": {{categoryId}},\n  \"companyId\": {{companyId}},\n  \"internationalCode\": \"6281000000012\",\n  \"nameAr\": \"باراسيتامول 500 مجم - محدث\",\n  \"nameEn\": \"Paracetamol 500 mg\",\n  \"outerUnitId\": {{unitId}},\n  \"outerUnitPrice\": 37.50,\n  \"minOrderQty\": 1,\n  \"quantity\": 25,\n  \"isAvailable\": true,\n  \"isActive\": true,\n  \"requiresPrescription\": false,\n  \"hasPromotion\": false,\n  \"promotionDiscountPercent\": 0\n}"},"url":"{{baseUrl}}/api/v1/admin/Products/{{productId}}" } },
+      { "name": "Deactivate product", "request": { "method":"PATCH", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/Products/{{productId}}/deactivate" } },
+      { "name": "Activate product", "request": { "method":"PATCH", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/Products/{{productId}}/activate" } },
+      { "name": "Soft-delete product", "request": { "method":"DELETE", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/Products/{{productId}}" } },
+      { "name": "List deleted products", "request": { "method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/Products/deleted?page=1&pageSize=50" } },
+      { "name": "Restore product", "request": { "method":"PATCH", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/Products/{{productId}}/restore" } },
+      { "name": "List product images", "request": { "method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/products/{{productId}}/images" } },
+      { "name": "Upload product image (choose a local file)", "request": { "method":"POST", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "body":{"mode":"formdata","formdata":[{"key":"image","type":"file","src":""},{"key":"altText","type":"text","value":"عبوة المنتج"},{"key":"isPrimary","type":"text","value":"true"}]}, "url":"{{baseUrl}}/api/v1/admin/products/{{productId}}/images" } },
+      { "name": "Update image order / primary", "request": { "method":"PUT", "header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "body":{"mode":"raw","raw":"{\n  \"altText\": \"صورة العبوة\",\n  \"sortOrder\": 0,\n  \"isPrimary\": true\n}"}, "url":"{{baseUrl}}/api/v1/admin/products/{{productId}}/images/{{imageId}}" } },
+      { "name": "Delete product image (soft)", "request": { "method":"DELETE", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/v1/admin/products/{{productId}}/images/{{imageId}}" } },
+      { "name": "Replace product tags", "request": { "method":"PUT", "header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "body":{"mode":"raw","raw":"{\n  \"tagIds\": [{{tagId}}]\n}"},"url":"{{baseUrl}}/api/v1/admin/products/{{productId}}/tags" } }
+    ]},
+    { "name": "Epic 8 - Admin reference data", "item": [
+      { "name": "Create category", "request": {"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"name\": \"مسكنات الألم\",\n  \"nameEn\": \"Pain relief\",\n  \"description\": \"مسكنات وخافضات حرارة\",\n  \"parentCategoryId\": null\n}"},"url":"{{baseUrl}}/api/v1/admin/categories"}},
+      { "name": "Update category", "request": {"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"id\": {{categoryId}},\n  \"name\": \"مسكنات الألم\",\n  \"nameEn\": \"Pain relief\",\n  \"description\": \"تحديث الوصف\",\n  \"parentCategoryId\": null\n}"},"url":"{{baseUrl}}/api/v1/admin/categories/{{categoryId}}"}},
+      { "name": "Delete category (soft)", "request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/api/v1/admin/categories/{{categoryId}}"}},
+      { "name": "Restore category", "request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/api/v1/admin/categories/{{categoryId}}/restore"}},
+      { "name": "Deactivate category", "request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/api/v1/admin/categories/{{categoryId}}/deactivate"}},
+      { "name": "Create tag", "request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"nameAr\": \"مسكن\",\n  \"nameEn\": \"Analgesic\",\n  \"isActive\": true\n}"},"url":"{{baseUrl}}/api/v1/admin/Tags"}},
+      { "name": "Update tag", "request":{"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"nameAr\": \"مسكن\",\n  \"nameEn\": \"Analgesic\",\n  \"isActive\": true\n}"},"url":"{{baseUrl}}/api/v1/admin/Tags/{{tagId}}"}},
+      { "name": "Deactivate tag", "request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/api/v1/admin/Tags/{{tagId}}"}},
+      { "name": "Create company", "request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"nameAr\": \"شركة دوائية\",\n  \"nameEn\": \"Pharma Company\",\n  \"isActive\": true\n}"},"url":"{{baseUrl}}/api/v1/admin/companies"}},
+      { "name": "Update company", "request":{"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"nameAr\": \"شركة دوائية محدثة\",\n  \"nameEn\": \"Pharma Company Updated\",\n  \"isActive\": true\n}"},"url":"{{baseUrl}}/api/v1/admin/companies/{{companyId}}"}},
+      { "name": "Delete company (soft)", "request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/api/v1/admin/companies/{{companyId}}"}},
+      { "name": "Restore company", "request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/api/v1/admin/companies/{{companyId}}/restore"}},
+      { "name": "Create unit", "request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"code\": \"BOX\",\n  \"nameAr\": \"علبة\",\n  \"nameEn\": \"Box\",\n  \"isActive\": true\n}"},"url":"{{baseUrl}}/api/v1/admin/units"}},
+      { "name": "Update unit", "request":{"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"code\": \"BOX\",\n  \"nameAr\": \"علبة\",\n  \"nameEn\": \"Box\",\n  \"isActive\": true\n}"},"url":"{{baseUrl}}/api/v1/admin/units/{{unitId}}"}},
+      { "name": "Deactivate unit", "request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/api/v1/admin/units/{{unitId}}"}},
+      { "name": "Activate unit", "request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{token}}"}],"url":"{{baseUrl}}/api/v1/admin/units/{{unitId}}/activate"}}
+    ]}
+  ]
+}

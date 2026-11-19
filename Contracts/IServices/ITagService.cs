@@ -12,4 +12,7 @@ public interface ITagService
 {
     Task<AppResponse<int>> CreateTagAsync(TagCreateDto dto, CancellationToken ct);
     Task<AppResponse<List<TagListItemDto>>> GetTagsAsync(TagQueryDto query, CancellationToken ct);
+    Task<AppResponse<TagListItemDto>> GetTagAsync(int id, CancellationToken ct);
+    Task<AppResponse<bool>> UpdateTagAsync(int id, TagCreateDto dto, CancellationToken ct);
+    Task<AppResponse<bool>> SetTagActiveAsync(int id, bool active, CancellationToken ct);
 }

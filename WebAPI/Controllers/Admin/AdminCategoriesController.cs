@@ -101,6 +101,14 @@ public class AdminCategoriesController : AdminBaseApiController
     public async Task<IActionResult> Deactivate(int categoryId, CancellationToken ct)
         => FromAppResponse(await _categoryService.SetCategoryActiveStatusAsync(categoryId, false, ct));
 
+    [HttpDelete("{categoryId:int}")]
+    public async Task<IActionResult> Delete(int categoryId, CancellationToken ct)
+        => FromAppResponse(await _categoryService.SetCategoryDeletedAsync(categoryId, true, ct));
+
+    [HttpPatch("{categoryId:int}/restore")]
+    public async Task<IActionResult> Restore(int categoryId, CancellationToken ct)
+        => FromAppResponse(await _categoryService.SetCategoryDeletedAsync(categoryId, false, ct));
+
 
 
 

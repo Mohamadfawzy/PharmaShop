@@ -81,14 +81,18 @@ GO
 CREATE TABLE [dbo].[CustomerAddresses] (
     [Id] int NOT NULL IDENTITY(1,1),
     [CustomerId] int NOT NULL,
+    [GovernorateAreaId] int NOT NULL,
     [Title] nvarchar(100) NOT NULL,
     [City] nvarchar(100) NOT NULL,
     [Region] nvarchar(100) NULL,
     [Street] nvarchar(300) NOT NULL,
+    [Landmark] nvarchar(200) NULL,
     [Latitude] float NULL,
     [Longitude] float NULL,
     [IsDefault] bit NOT NULL CONSTRAINT [DF_CustomerAddresses_IsDefault] DEFAULT ((0)),
     [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_CustomerAddresses_CreatedAt] DEFAULT (sysdatetime()),
+    [UpdatedAt] datetime2(0) NULL,
+    [DeletedAt] datetime2(0) NULL,
     CONSTRAINT [PK_CustomerAddresses] PRIMARY KEY ([Id]),
     CONSTRAINT [FK_CustomerAddresses_Customers_CustomerId] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers] ([Id]) ON DELETE NO ACTION
 );
@@ -105,10 +109,18 @@ CREATE INDEX [IX_CustomerAddresses_CustomerId_IsDefault]
 ON [dbo].[CustomerAddresses] ([CustomerId], [IsDefault]);
 GO
 
+CREATE INDEX [IX_CustomerAddresses_GovernorateAreaId]
+ON [dbo].[CustomerAddresses] ([GovernorateAreaId]);
+GO
+
+CREATE INDEX [IX_CustomerAddresses_CustomerId_DeletedAt_CreatedAt]
+ON [dbo].[CustomerAddresses] ([CustomerId], [DeletedAt], [CreatedAt]);
+GO
+
 -- Enforce a single default address per customer  
 CREATE UNIQUE INDEX [UX_CustomerAddresses_CustomerId_Default]
 ON [dbo].[CustomerAddresses] ([CustomerId])
-WHERE [IsDefault] = (1);
+WHERE [IsDefault] = (1) AND [DeletedAt] IS NULL;
 GO
 GO
 
@@ -151,6 +163,11 @@ GO
 
 CREATE INDEX [IX_GovernorateAreas_GovernorateId_IsActive_DisplayOrder]
 ON [dbo].[GovernorateAreas] ([GovernorateId], [IsActive], [DisplayOrder]);
+GO
+
+ALTER TABLE [dbo].[CustomerAddresses]
+ADD CONSTRAINT [FK_CustomerAddresses_GovernorateAreas_GovernorateAreaId]
+    FOREIGN KEY ([GovernorateAreaId]) REFERENCES [dbo].[GovernorateAreas] ([Id]) ON DELETE NO ACTION;
 GO
 
 -- =======================================

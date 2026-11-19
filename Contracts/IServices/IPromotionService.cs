@@ -8,6 +8,8 @@ public interface IPromotionService
     Task<AppResponse<PromotionAddProductsResultDto>> AddProductsToPromotionAsync(int promotionId, PromotionAddProductsDto dto, CancellationToken ct);
     Task<AppResponse<int>> CreatePromotionAsync(PromotionCreateDto dto, CancellationToken ct);
     Task<AppResponse<PromotionDetailsDto>> GetPromotionByIdAsync(int id, CancellationToken ct);
+    Task<AppResponse<PublicPromotionDetailsDto>> GetActivePromotionByIdAsync(int id, CancellationToken ct);
+    Task<AppResponse<List<PublicPromotionListItemDto>>> GetActivePromotionsAsync(PromotionListQueryDto query, CancellationToken ct);
     Task<AppResponse<List<PromotionListItemDto>>> GetPromotionsAsync(PromotionListQueryDto query, CancellationToken ct);
     Task<AppResponse<int>> RemoveProductFromPromotionAsync(int promotionId, int promotionProductId, CancellationToken ct);
     Task<AppResponse<PromotionReplaceProductsResultDto>> ReplacePromotionProductsAsync(int promotionId, PromotionReplaceProductsDto dto, CancellationToken ct);

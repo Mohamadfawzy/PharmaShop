@@ -16,6 +16,7 @@ public interface ICategoryService
     Task<AppResponse<string>> MyUpdateCategoryImageAsync(int categoryId, Stream newImageStream, string rootPath, CancellationToken ct);
 
     Task<AppResponse<bool>> SetCategoryActiveStatusAsync(int categoryId, bool isActive, CancellationToken ct);
+    Task<AppResponse<bool>> SetCategoryDeletedAsync(int categoryId, bool isDeleted, CancellationToken ct);
 
     // Public / Shared: Queries
     Task<AppResponse<CategoryDto>> GetCategoryByIdAsync(int categoryId, CancellationToken ct);

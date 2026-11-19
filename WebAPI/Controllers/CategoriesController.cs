@@ -14,6 +14,18 @@ public class CategoriesController : BaseApiController
         _categoryService = categoryService;
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] RequestParameters query, CancellationToken ct)
+    {
+        query.IsActive = true;
+        query.IsDeleted = false;
+        return FromAppResponse(await _categoryService.GetAllCategoriesAsync(query, ct));
+    }
+
+    [HttpGet("{categoryId:int}")]
+    public async Task<IActionResult> GetById(int categoryId, CancellationToken ct)
+        => FromAppResponse(await _categoryService.GetCategoryByIdAsync(categoryId, ct));
+
     // ========================= Queries =========================
 
     [HttpGet("root")]

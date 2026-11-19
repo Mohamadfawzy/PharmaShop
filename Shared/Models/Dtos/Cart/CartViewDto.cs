@@ -10,7 +10,6 @@ namespace Shared.Models.Dtos.Cart;
 public sealed class CartViewDto
 {
     public int? CartId { get; set; }
-    public int CustomerId { get; set; }
     public int? StoreId { get; set; }
 
     public byte? Status { get; set; } // Keep simple (can map to enum in UI)

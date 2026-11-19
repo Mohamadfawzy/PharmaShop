@@ -34,6 +34,9 @@ public class TagService : ITagService
         //    return AppResponse<int>.ValidationErrors(fieldErrors, detail: "Validation failed");
         //}
 
+        if (string.IsNullOrWhiteSpace(dto.NameAr))
+            return AppResponse<int>.ValidationError("NameAr is required");
+
         // Normalize
         var nameAr = string.IsNullOrWhiteSpace(dto.NameAr) ? null : dto.NameAr.Trim();
         var nameEn = string.IsNullOrWhiteSpace(dto.NameEn) ? null : dto.NameEn.Trim();
@@ -41,21 +44,9 @@ public class TagService : ITagService
         // 2) Uniqueness check
         var term = nameAr?.Trim();
 
-        //var exists = await unitOfWork.Tags.AnyAsync(t =>
-        //    t.NameAr == term
-        //    || (t.NameEn != null && t.NameEn == term),
-        //    ct);
+        var exists = await unitOfWork.Tags.AnyAsync(t => t.NameAr == term || (!string.IsNullOrWhiteSpace(nameEn) && t.NameEn == nameEn), ct);
         
-        //if (exists)
-        //{
-        //    return AppResponse<int>.ValidationErrors(
-        //        new Dictionary<string, string[]>
-        //        {
-        //            ["Name"] = new[] { "Tag name already exists" }
-        //        },
-        //        detail: "Validation failed"
-        //    );
-        //}
+        if (exists) return AppResponse<int>.ValidationErrors(new Dictionary<string, string[]> { ["NameAr"] = ["Tag name already exists"] });
 
         // 3) Create entity
         var tag = new Tag
@@ -146,6 +137,35 @@ public class TagService : ITagService
         // 7) PaginationInfo (حسب كلاس PaginationInfo عندك)
         var pagination = PaginationInfo.Create(page, pageSize, totalCount);
         return AppResponse<List<TagListItemDto>>.Ok(items, pagination, title: "Tags retrieved successfully");
+    }
+
+    public async Task<AppResponse<TagListItemDto>> GetTagAsync(int id, CancellationToken ct)
+    {
+        var tag = await unitOfWork.Tags.GetByIdNoTrackingAsync(id, ct);
+        if (tag is null) return AppResponse<TagListItemDto>.NotFound("Tag not found");
+        return AppResponse<TagListItemDto>.Ok(new TagListItemDto { Id = tag.Id, NameAr = tag.NameAr, NameEn = tag.NameEn, IsActive = tag.IsActive, CreatedAt = tag.CreatedAt });
+    }
+
+    public async Task<AppResponse<bool>> UpdateTagAsync(int id, TagCreateDto dto, CancellationToken ct)
+    {
+        var tag = await unitOfWork.Tags.GetByIdAsync(id, ct);
+        if (tag is null) return AppResponse<bool>.NotFound("Tag not found");
+        if (string.IsNullOrWhiteSpace(dto.NameAr)) return AppResponse<bool>.ValidationError("NameAr is required");
+        var nameAr = dto.NameAr.Trim(); var nameEn = dto.NameEn?.Trim();
+        if (await unitOfWork.Tags.AnyAsync(x => x.Id != id && (x.NameAr == nameAr || (!string.IsNullOrWhiteSpace(nameEn) && x.NameEn == nameEn)), ct)) return AppResponse<bool>.ValidationError("Tag name already exists");
+        tag.NameAr = nameAr; tag.NameEn = nameEn;
+        if (dto.IsActive.HasValue) tag.IsActive = dto.IsActive.Value;
+        await unitOfWork.Tags.UpdateAsync(tag, ct); await unitOfWork.CompleteAsync(ct);
+        return AppResponse<bool>.Ok(true, "Tag updated");
+    }
+
+    public async Task<AppResponse<bool>> SetTagActiveAsync(int id, bool active, CancellationToken ct)
+    {
+        var tag = await unitOfWork.Tags.GetByIdAsync(id, ct);
+        if (tag is null) return AppResponse<bool>.NotFound("Tag not found");
+        tag.IsActive = active;
+        await unitOfWork.Tags.UpdateAsync(tag, ct); await unitOfWork.CompleteAsync(ct);
+        return AppResponse<bool>.Ok(true, active ? "Tag activated" : "Tag deactivated");
     }
 
 

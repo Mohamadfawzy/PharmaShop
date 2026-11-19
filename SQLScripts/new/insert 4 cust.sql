@@ -43,13 +43,39 @@ GO
 USE [pharma_shope_db];
 GO
 
+DECLARE @GovernorateId int;
+SELECT @GovernorateId = [Id]
+FROM [dbo].[Governorates]
+WHERE [NameAr] = N'القاهرة';
+
+IF @GovernorateId IS NULL
+BEGIN
+    INSERT INTO [dbo].[Governorates] ([NameAr], [NameEn], [DisplayOrder])
+    VALUES (N'القاهرة', N'Cairo', 1);
+    SET @GovernorateId = CONVERT(int, SCOPE_IDENTITY());
+END;
+
+DECLARE @GovernorateAreaId int;
+SELECT @GovernorateAreaId = [Id]
+FROM [dbo].[GovernorateAreas]
+WHERE [GovernorateId] = @GovernorateId AND [NameAr] = N'مدينة نصر';
+
+IF @GovernorateAreaId IS NULL
+BEGIN
+    INSERT INTO [dbo].[GovernorateAreas] ([GovernorateId], [NameAr], [NameEn], [DisplayOrder])
+    VALUES (@GovernorateId, N'مدينة نصر', N'Nasr City', 1);
+    SET @GovernorateAreaId = CONVERT(int, SCOPE_IDENTITY());
+END;
+
 INSERT INTO [dbo].[CustomerAddresses]
 (
     [CustomerId],
+    [GovernorateAreaId],
     [Title],
     [City],
     [Region],
     [Street],
+    [Landmark],
     [Latitude],
     [Longitude],
     [IsDefault],
@@ -58,10 +84,12 @@ INSERT INTO [dbo].[CustomerAddresses]
 VALUES
 (
     1,                                      -- CustomerId (لازم يكون موجود في جدول Customers)
+    @GovernorateAreaId,                     -- selected area (مدينة نصر)
     N'المنزل',                              -- Title (Home / Work / ...)
     N'القاهرة',                             -- City
     N'مدينة نصر',                           -- Region
     N'شارع عباس العقاد، بجوار سيتي ستارز', -- Street
+    N'بجوار سيتي ستارز',                    -- Landmark
     30.0728,                                -- Latitude
     31.3460,                                -- Longitude
     1,                                      -- IsDefault (العنوان الافتراضي)

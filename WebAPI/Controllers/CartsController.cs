@@ -1,15 +1,16 @@
 ﻿using Contracts.IServices;
 using Microsoft.AspNetCore.Mvc;
-using Service;
 using Shared.Enums.Cart;
 using Shared.Models.Dtos.Cart;
-using WebAPI.Controllers.Admin;
+using Shared.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WebAPI.Controllers;
 
-[Route("api/v1/Carts")]
+[Route("api/v1/cart")]
 [ApiController]
-public class CartsController : AdminBaseApiController
+[Authorize(Policy = AppPolicies.Customer)]
+public class CartsController : BaseApiController
 {
     private readonly ICartService cartService;
 
@@ -45,10 +46,10 @@ public class CartsController : AdminBaseApiController
 
 
     [HttpGet]
-    public async Task<IActionResult> GetMyCart([FromQuery] int customerId, CancellationToken ct)
+    public async Task<IActionResult> GetMyCart(CancellationToken ct)
     {
         // 1) Delegate to service
-        var result = await cartService.GetMyCartAsync(customerId, ct);
+        var result = await cartService.GetMyCartAsync(ct);
 
         // 2) Unified response
         return FromAppResponse(result);
@@ -66,35 +67,27 @@ public class CartsController : AdminBaseApiController
         return FromAppResponse(result);
     }
 
-    // Future improvements:
-    // - Get CustomerId from token and remove it from dto
-
-
     [HttpDelete("items/{cartItemId:int}")]
-    public async Task<IActionResult> RemoveItem(int cartItemId, [FromQuery] int customerId, CancellationToken ct)
+    public async Task<IActionResult> RemoveItem(int cartItemId, CancellationToken ct)
     {
         // 1) Delegate to service
-        var result = await cartService.RemoveItemAsync(cartItemId, customerId, ct);
+        var result = await cartService.RemoveItemAsync(cartItemId, ct);
 
         // 2) Unified response
         return FromAppResponse(result);
 
-        // Future improvements:
-        // - Get customerId from token claims instead of query parameter
     }
 
 
-    [HttpDelete("customers/{customerId:int}")]
-    public async Task<IActionResult> ClearCart(int customerId, CancellationToken ct)
+    [HttpDelete]
+    public async Task<IActionResult> ClearCart(CancellationToken ct)
     {
         // 1) Delegate to service
-        var result = await cartService.ClearCartAsync(customerId, ct);
+        var result = await cartService.ClearCartAsync(ct);
 
         // 2) Unified response
         return FromAppResponse(result);
 
-        // Future improvement:
-        // - Get CustomerId from token claims instead of body
     }
 
 

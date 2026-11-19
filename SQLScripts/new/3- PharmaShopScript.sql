@@ -167,6 +167,60 @@ WHERE [DeletedAt] IS NULL;
 GO
 
 -- ===========================================================
+-- Store-specific delivery zones and covered governorate areas
+-- ===========================================================
+CREATE TABLE [dbo].[DeliveryZones] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [StoreId] int NOT NULL,
+    [NameAr] nvarchar(150) NOT NULL,
+    [NameEn] nvarchar(150) NOT NULL,
+    [DeliveryFee] decimal(18,2) NOT NULL,
+    [FreeDeliveryMinimumAmount] decimal(18,2) NULL,
+    [IsActive] bit NOT NULL CONSTRAINT [DF_DeliveryZones_IsActive] DEFAULT ((1)),
+    [CreatedAt] datetime2(0) NOT NULL CONSTRAINT [DF_DeliveryZones_CreatedAt] DEFAULT (sysutcdatetime()),
+    [UpdatedAt] datetime2(0) NULL,
+    CONSTRAINT [PK_DeliveryZones] PRIMARY KEY ([Id]),
+    CONSTRAINT [AK_DeliveryZones_Id_StoreId] UNIQUE ([Id], [StoreId]),
+    CONSTRAINT [FK_DeliveryZones_Stores_StoreId]
+        FOREIGN KEY ([StoreId]) REFERENCES [dbo].[Stores] ([Id]) ON DELETE NO ACTION,
+    CONSTRAINT [CK_DeliveryZones_DeliveryFee_NonNegative] CHECK ([DeliveryFee] >= 0),
+    CONSTRAINT [CK_DeliveryZones_FreeDeliveryMinimumAmount_NonNegative]
+        CHECK ([FreeDeliveryMinimumAmount] IS NULL OR [FreeDeliveryMinimumAmount] >= 0)
+);
+GO
+
+CREATE UNIQUE INDEX [UX_DeliveryZones_StoreId_NameAr]
+ON [dbo].[DeliveryZones] ([StoreId], [NameAr]);
+GO
+
+CREATE INDEX [IX_DeliveryZones_StoreId_IsActive]
+ON [dbo].[DeliveryZones] ([StoreId], [IsActive]);
+GO
+
+CREATE TABLE [dbo].[DeliveryZoneAreas] (
+    [Id] int NOT NULL IDENTITY(1,1),
+    [DeliveryZoneId] int NOT NULL,
+    [StoreId] int NOT NULL,
+    [GovernorateAreaId] int NOT NULL,
+    CONSTRAINT [PK_DeliveryZoneAreas] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_DeliveryZoneAreas_DeliveryZones_ZoneId_StoreId]
+        FOREIGN KEY ([DeliveryZoneId], [StoreId])
+        REFERENCES [dbo].[DeliveryZones] ([Id], [StoreId]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_DeliveryZoneAreas_GovernorateAreas_AreaId]
+        FOREIGN KEY ([GovernorateAreaId]) REFERENCES [dbo].[GovernorateAreas] ([Id]) ON DELETE NO ACTION
+);
+GO
+
+-- A governorate area can belong to only one zone per store.
+CREATE UNIQUE INDEX [UX_DeliveryZoneAreas_StoreId_GovernorateAreaId]
+ON [dbo].[DeliveryZoneAreas] ([StoreId], [GovernorateAreaId]);
+GO
+
+CREATE INDEX [IX_DeliveryZoneAreas_GovernorateAreaId]
+ON [dbo].[DeliveryZoneAreas] ([GovernorateAreaId]);
+GO
+
+-- ===========================================================
 -- Products
 -- =========================================================== 
 

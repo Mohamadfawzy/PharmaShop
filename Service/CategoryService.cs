@@ -476,6 +476,19 @@ public class CategoryService : ICategoryService
         }
     }
 
+    public async Task<AppResponse<bool>> SetCategoryDeletedAsync(int categoryId, bool isDeleted, CancellationToken ct)
+    {
+        var category = await unitOfWork.Categories.GetByIdAsync(categoryId, ct);
+        if (category is null) return AppResponse<bool>.NotFound("Category not found");
+        category.IsDeleted = isDeleted;
+        if (isDeleted) category.IsActive = false;
+        category.UpdatedAt = DateTime.UtcNow;
+        await unitOfWork.Categories.UpdateAsync(category, ct);
+        await unitOfWork.CompleteAsync(ct);
+        InvalidateCategoryCaches();
+        return AppResponse<bool>.Ok(true, isDeleted ? "Category deleted" : "Category restored");
+    }
+
 
     // ===================================================================================
     // Helpers

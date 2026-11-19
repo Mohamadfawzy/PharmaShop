@@ -14,6 +14,13 @@ public sealed class ProductSearchQueryParams
     // Filters
     public int? CategoryId { get; set; }
     public int? CompanyId { get; set; }
+    public int? UnitId { get; set; }
+    public bool? IsFeatured { get; set; }
+    public bool? AllowSplitSale { get; set; }
+    public decimal? MinQuantity { get; set; }
+    public decimal? MaxQuantity { get; set; }
+    public int? MinPoints { get; set; }
+    public int? MaxPoints { get; set; }
     public bool? RequiresPrescription { get; set; }
     public bool? HasPromotion { get; set; }
     public bool? IsAvailable { get; set; }

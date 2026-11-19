@@ -31,6 +31,8 @@ public partial class Store
 
     public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();
 
+    public virtual ICollection<DeliveryZone> DeliveryZones { get; set; } = new List<DeliveryZone>();
+
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     public virtual Pharmacy Pharmacy { get; set; } = null!;

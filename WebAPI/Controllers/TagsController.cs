@@ -31,4 +31,20 @@ public class TagsController : AdminBaseApiController
         return FromAppResponse(await _tagService.GetTagsAsync(query, ct));
     }
 
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
+        => FromAppResponse(await _tagService.GetTagAsync(id, ct));
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] TagCreateDto dto, CancellationToken ct)
+        => FromAppResponse(await _tagService.UpdateTagAsync(id, dto, ct));
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+        => FromAppResponse(await _tagService.SetTagActiveAsync(id, false, ct));
+
+    [HttpPatch("{id:int}/activate")]
+    public async Task<IActionResult> Activate(int id, CancellationToken ct)
+        => FromAppResponse(await _tagService.SetTagActiveAsync(id, true, ct));
+
 }

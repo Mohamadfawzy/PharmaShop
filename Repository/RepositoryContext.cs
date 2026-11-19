@@ -44,6 +44,10 @@ public partial class RepositoryContext : DbContext
 
     public virtual DbSet<CustomerPointTransaction> CustomerPointTransactions { get; set; }
 
+    public virtual DbSet<DeliveryZone> DeliveryZones { get; set; }
+
+    public virtual DbSet<DeliveryZoneArea> DeliveryZoneAreas { get; set; }
+
     public virtual DbSet<Employee> Employees { get; set; }
 
     public virtual DbSet<Governorate> Governorates { get; set; }
@@ -299,23 +303,61 @@ public partial class RepositoryContext : DbContext
         modelBuilder.Entity<CustomerAddress>(entity =>
         {
             entity.HasIndex(e => e.CustomerId, "IX_CustomerAddresses_CustomerId");
+            entity.HasIndex(e => new { e.CustomerId, e.DeletedAt, e.CreatedAt }, "IX_CustomerAddresses_CustomerId_DeletedAt_CreatedAt");
+            entity.HasIndex(e => e.GovernorateAreaId, "IX_CustomerAddresses_GovernorateAreaId");
 
             entity.HasIndex(e => new { e.CustomerId, e.IsDefault }, "IX_CustomerAddresses_CustomerId_IsDefault");
 
             entity.HasIndex(e => e.CustomerId, "UX_CustomerAddresses_CustomerId_Default")
                 .IsUnique()
-                .HasFilter("([IsDefault]=(1))");
+                .HasFilter("([IsDefault]=(1) AND [DeletedAt] IS NULL)");
 
             entity.Property(e => e.City).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasPrecision(0);
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.Landmark).HasMaxLength(200);
             entity.Property(e => e.Region).HasMaxLength(100);
             entity.Property(e => e.Street).HasMaxLength(300);
             entity.Property(e => e.Title).HasMaxLength(100);
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
-            entity.HasOne(d => d.Customer).WithOne(p => p.CustomerAddress)
-                .HasForeignKey<CustomerAddress>(d => d.CustomerId)
+            entity.HasOne(d => d.Customer).WithMany(p => p.CustomerAddresses)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(d => d.GovernorateArea).WithMany(p => p.CustomerAddresses)
+                .HasForeignKey(d => d.GovernorateAreaId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<DeliveryZone>(entity =>
+        {
+            entity.HasAlternateKey(e => new { e.Id, e.StoreId }).HasName("AK_DeliveryZones_Id_StoreId");
+            entity.HasIndex(e => new { e.StoreId, e.IsActive }, "IX_DeliveryZones_StoreId_IsActive");
+            entity.HasIndex(e => new { e.StoreId, e.NameAr }, "UX_DeliveryZones_StoreId_NameAr").IsUnique();
+            entity.Property(e => e.NameAr).HasMaxLength(150);
+            entity.Property(e => e.NameEn).HasMaxLength(150);
+            entity.Property(e => e.DeliveryFee).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.FreeDeliveryMinimumAmount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.HasOne(d => d.Store).WithMany(p => p.DeliveryZones)
+                .HasForeignKey(d => d.StoreId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+        modelBuilder.Entity<DeliveryZoneArea>(entity =>
+        {
+            entity.HasIndex(e => new { e.StoreId, e.GovernorateAreaId }, "UX_DeliveryZoneAreas_StoreId_GovernorateAreaId").IsUnique();
+            entity.HasIndex(e => e.GovernorateAreaId, "IX_DeliveryZoneAreas_GovernorateAreaId");
+            entity.HasOne(d => d.DeliveryZone).WithMany(p => p.Areas)
+                .HasForeignKey(d => new { d.DeliveryZoneId, d.StoreId })
+                .HasPrincipalKey(p => new { p.Id, p.StoreId })
+                .OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(d => d.GovernorateArea).WithMany(p => p.DeliveryZoneAreas)
+                .HasForeignKey(d => d.GovernorateAreaId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
         });
 

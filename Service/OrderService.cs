@@ -13,16 +13,17 @@ namespace Service;
 public class OrderService : IOrderService
 {
     private readonly IUnitOfWork unitOfWork;
+    private readonly IDeliveryZoneService _deliveryZoneService;
 
     // Simple settings (later move to appsettings.json)
     private const int ConversionRate = 30;          // 30 points = 1 money unit
     private const int MinimumRedeemPoints = 500;    // minimum points
     private const decimal RedeemCapPercent = 0.20m; // 20% cap
-    private const decimal DeliveryFeeFixed = 0.00m;
 
-    public OrderService(IUnitOfWork unitOfWork)
+    public OrderService(IUnitOfWork unitOfWork, IDeliveryZoneService deliveryZoneService)
     {
         this.unitOfWork = unitOfWork;
+        _deliveryZoneService = deliveryZoneService;
     }
 
     public async Task<AppResponse<CheckoutPreviewResponseDto>> PreviewAsync(CheckoutPreviewRequestDto dto,CancellationToken ct)
@@ -32,7 +33,7 @@ public class OrderService : IOrderService
         if (validation is not null) return validation;
 
         // 2) Load address snapshot
-        var (addressOk, _) = await unitOfWork.Orders.GetAddressSnapshotAsync(dto.AddressId, dto.CustomerId, ct);
+        var (addressOk, addressSnap) = await unitOfWork.Orders.GetAddressSnapshotAsync(dto.AddressId, dto.CustomerId, ct);
         if (!addressOk)
             return AppResponse<CheckoutPreviewResponseDto>.ValidationError("Invalid address");
 
@@ -67,6 +68,10 @@ public class OrderService : IOrderService
 
             var subtotal = Round2(priced.Sum(x => x.LineSubtotal));
 
+            var deliveryFee = await _deliveryZoneService.ResolveDeliveryFeeAsync(lines[0].StoreId, addressSnap, subtotal, ct);
+            if (!deliveryFee.HasValue)
+                return AppResponse<CheckoutPreviewResponseDto>.BusinessRuleViolation("The store does not have an active delivery zone covering this address");
+
             var availablePoints = await unitOfWork.Orders.GetCustomerPointsAsync(dto.CustomerId, ct);
 
             var redeemPreview = CalculateRedeemPreview(subtotal, availablePoints);
@@ -74,7 +79,8 @@ public class OrderService : IOrderService
             var totals = CalculateTotals(
                 priced,
                 promoDiscountTotal: 0m,
-                redeemedAmount: redeemPreview.RedeemedAmount);
+                redeemedAmount: redeemPreview.RedeemedAmount,
+                deliveryFee: deliveryFee.Value);
 
             var response = BuildPointsRedemptionPreviewResponse(dto, priced, totals, redeemPreview);
 
@@ -92,8 +98,13 @@ public class OrderService : IOrderService
         // 8) Calculate earned points preview only
         var earnedPoints = CalculateEarnedPoints(priced);
 
+        var discountedSubtotal = Round2(priced.Sum(x => x.LineTotal));
+        var normalDeliveryFee = await _deliveryZoneService.ResolveDeliveryFeeAsync(lines[0].StoreId, addressSnap, discountedSubtotal, ct);
+        if (!normalDeliveryFee.HasValue)
+            return AppResponse<CheckoutPreviewResponseDto>.BusinessRuleViolation("The store does not have an active delivery zone covering this address");
+
         // 9) Calculate totals without redeem points
-        var normalTotals = CalculateTotals(priced, promo.PromotionDiscountTotal, redeemedAmount: 0m);
+        var normalTotals = CalculateTotals(priced, promo.PromotionDiscountTotal, redeemedAmount: 0m, deliveryFee: normalDeliveryFee.Value);
 
         // 10) Build normal response
         var normalResponse = BuildNormalPreviewResponse(dto, priced, promo, normalTotals, earnedPoints);
@@ -154,13 +165,18 @@ public class OrderService : IOrderService
 
                 var subtotal = Round2(priced.Sum(x => x.LineSubtotal));
 
+                var deliveryFee = await _deliveryZoneService.ResolveDeliveryFeeAsync(lines[0].StoreId, addressSnap, subtotal, ct);
+                if (!deliveryFee.HasValue)
+                    return AppResponse<CheckoutResultDto>.BusinessRuleViolation("The store does not have an active delivery zone covering this address");
+
                 var availablePoints = await unitOfWork.Orders.GetCustomerPointsAsync(dto.CustomerId, ct);
                 var redeemPreview = CalculateRedeemPreview(subtotal, availablePoints);
 
                 if (redeemPreview.RedeemedPoints <= 0)
                     return AppResponse<CheckoutResultDto>.BusinessRuleViolation("Customer does not have enough points to redeem");
 
-                var totals = CalculateTotals(priced, promoDiscountTotal: 0m, redeemedAmount: redeemPreview.RedeemedAmount);
+                var totals = CalculateTotals(priced, promoDiscountTotal: 0m,
+                    redeemedAmount: redeemPreview.RedeemedAmount, deliveryFee: deliveryFee.Value);
 
                 var points = new PointsCalcResult
                 {
@@ -214,6 +230,11 @@ public class OrderService : IOrderService
             // 12) Calculate earned points
             var earned = CalculateEarnedPoints(priced);
 
+            var discountedSubtotal = Round2(priced.Sum(x => x.LineTotal));
+            var normalDeliveryFee = await _deliveryZoneService.ResolveDeliveryFeeAsync(lines[0].StoreId, addressSnap, discountedSubtotal, ct);
+            if (!normalDeliveryFee.HasValue)
+                return AppResponse<CheckoutResultDto>.BusinessRuleViolation("The store does not have an active delivery zone covering this address");
+
             // 13) Build normal points result
             var normalPoints = new PointsCalcResult
             {
@@ -223,7 +244,8 @@ public class OrderService : IOrderService
             };
 
             // 14) Calculate totals
-            var normalTotals = CalculateTotals(priced, normalPromo.PromotionDiscountTotal, redeemedAmount: 0m);
+            var normalTotals = CalculateTotals(priced, normalPromo.PromotionDiscountTotal,
+                redeemedAmount: 0m, deliveryFee: normalDeliveryFee.Value);
 
             // 15) Create normal order
             var normalOrder = await CreateOrderAsync(
@@ -582,7 +604,8 @@ public class OrderService : IOrderService
         // - Support allowing points with some promotions by policy flag
     }
 
-    private static TotalsCalcResult CalculateTotals(List<PricedCheckoutItem> items, decimal promoDiscountTotal, decimal redeemedAmount)
+    private static TotalsCalcResult CalculateTotals(
+        List<PricedCheckoutItem> items, decimal promoDiscountTotal, decimal redeemedAmount, decimal deliveryFee)
     {
         // 1) Subtotal from current prices
         var subtotal = Round2(items.Sum(x => x.LineSubtotal));
@@ -592,7 +615,7 @@ public class OrderService : IOrderService
         if (afterPromos < 0) afterPromos = 0;
 
         // 3) Delivery and grand total
-        var delivery = Round2(DeliveryFeeFixed);
+        var delivery = Round2(deliveryFee);
         var grand = Round2(afterPromos - redeemedAmount + delivery);
         if (grand < 0) grand = 0;
 
@@ -605,7 +628,7 @@ public class OrderService : IOrderService
             GrandTotal = grand
         };
     }
-    
+
     private async Task<Order> CreateOrderAsync(
             CheckoutRequestDto dto,
             List<CheckoutLineData> sourceLines,

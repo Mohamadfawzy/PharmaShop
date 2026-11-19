@@ -10,10 +10,16 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<Employee> Employees { get; }
     IGenericRepository<Governorate> Governorates { get; }
     IGenericRepository<GovernorateArea> GovernorateAreas { get; }
+    IGenericRepository<DeliveryZone> DeliveryZones { get; }
+    IGenericRepository<DeliveryZoneArea> DeliveryZoneAreas { get; }
+    IGenericRepository<CustomerAddress> CustomerAddresses { get; }
     IProductRepository Products { get; }
 
     IGenericRepository<Entities.Models.Unit> Units { get; }
+    IGenericRepository<Company> Companies { get; }
     IGenericRepository<Tag> Tags { get; }
+    IGenericRepository<ProductImage> ProductImages { get; }
+    IGenericRepository<ProductTag> ProductTags { get; }
     IGenericRepository<CartItem> CartItems { get; }
 
     ICategoryRepository Categories { get; }

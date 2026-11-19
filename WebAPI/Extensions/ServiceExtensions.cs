@@ -35,9 +35,11 @@ public static class ServiceExtensions
 
         //services.AddTransient<ICustomerRepository, CustomerRepository>();
         services.AddTransient<ICustomerService, CustomerService>();
+        services.AddTransient<ICustomerAddressService, CustomerAddressService>();
         services.AddTransient<IProductService, ProductService>();
         services.AddTransient<ICategoryService, CategoryService>();
         services.AddTransient<ITagService, TagService>();
+        services.AddTransient<IReferenceDataService, ReferenceDataService>();
         services.AddTransient<ICartService, CartService>();
         services.AddTransient<IPromotionService, PromotionService>();
         services.AddTransient<IOrderService, OrderService>();
@@ -46,6 +48,7 @@ public static class ServiceExtensions
         services.AddTransient<IStoreService, StoreService>();
         services.AddTransient<IEmployeeService, EmployeeService>();
         services.AddTransient<ILocationService, LocationService>();
+        services.AddTransient<IDeliveryZoneService, DeliveryZoneService>();
 
 
         services.AddScoped<IAuthService, AuthService>();

@@ -17,12 +17,18 @@ public class UnitOfWork : IUnitOfWork
         Employees = new GenericRepository<Employee>(_context);
         Governorates = new GenericRepository<Governorate>(_context);
         GovernorateAreas = new GenericRepository<GovernorateArea>(_context);
+        DeliveryZones = new GenericRepository<DeliveryZone>(_context);
+        DeliveryZoneAreas = new GenericRepository<DeliveryZoneArea>(_context);
+        CustomerAddresses = new GenericRepository<CustomerAddress>(_context);
         Products = new ProductRepository(_context);
         Categories = new CategoryRepository(_context);
         Promotions = new PromotionRepository(_context);
         Carts = new CartRepository(_context);
         Units = new GenericRepository<Unit>(_context);
+        Companies = new GenericRepository<Company>(_context);
         Tags = new GenericRepository<Tag>(_context);
+        ProductImages = new GenericRepository<ProductImage>(_context);
+        ProductTags = new GenericRepository<ProductTag>(_context);
         CartItems = new GenericRepository<CartItem>(_context);
         Orders = new OrderRepository(_context);
         Prescriptions = new PrescriptionRepository(_context);
@@ -34,6 +40,9 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<Employee> Employees { get; private set; }
     public IGenericRepository<Governorate> Governorates { get; private set; }
     public IGenericRepository<GovernorateArea> GovernorateAreas { get; private set; }
+    public IGenericRepository<DeliveryZone> DeliveryZones { get; private set; }
+    public IGenericRepository<DeliveryZoneArea> DeliveryZoneAreas { get; private set; }
+    public IGenericRepository<CustomerAddress> CustomerAddresses { get; private set; }
     public IProductRepository Products { get; private set; }
     public ICategoryRepository Categories { get; private set; }
     public ICartRepository Carts { get; private set; }
@@ -42,9 +51,12 @@ public class UnitOfWork : IUnitOfWork
     public IPrescriptionRepository Prescriptions { get; private set; }
 
     public IGenericRepository<Unit> Units { get; private set; }
+    public IGenericRepository<Company> Companies { get; private set; }
     public IGenericRepository<CartItem> CartItems { get; private set; }
 
     public IGenericRepository<Tag> Tags { get; private set; }
+    public IGenericRepository<ProductImage> ProductImages { get; private set; }
+    public IGenericRepository<ProductTag> ProductTags { get; private set; }
 
     // METHODS
     public void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class

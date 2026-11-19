@@ -39,7 +39,7 @@ public partial class Customer
 
     public virtual Cart? Cart { get; set; }
 
-    public virtual CustomerAddress? CustomerAddress { get; set; }
+    public virtual ICollection<CustomerAddress> CustomerAddresses { get; set; } = new List<CustomerAddress>();
 
     public virtual ICollection<CustomerPointLot> CustomerPointLots { get; set; } = new List<CustomerPointLot>();
 

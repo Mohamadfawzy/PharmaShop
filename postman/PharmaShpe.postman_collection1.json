@@ -1,0 +1,3022 @@
+{
+  "info": {
+    "_postman_id": "ee7d3b8f-c848-4b65-8c4c-72852d841dcd",
+    "name": "PharmaShpe",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12028365"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"Email\": \"mofawzyhelal@gmail.com\",\r\n  \"Password\": \"Aa11@modern.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/auth/register",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm-email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"userId\": 1,\r\n  \"token\": \"CfDJ8JGhgZa5bMpOjUcO7uYM9Hp5RP4iAMyvO0r8rdv0yN3h36Sc2WZ6JKLoOR5sY8omT4Yy1lnVoawGE3Hf%2FXz0aN29OIqpov7HY1UXXrflz%2BtKdl%2F22OTILuglOLZe%2FjaQemY%2FvHEApQtryOGnf5BechNZkrqFkBJ%2Bd%2FTZs7yAM%2Bim1LIROjVX1%2FOnT1AL5nEo%2Fw%3D%3D\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/auth/confirm-email",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "auth",
+                "confirm-email"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm-email by Params",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/auth/confirm-email?userId=1&token=CfDJ8DVOxiAFcnpGmYPATMp90KOxEZyE31co8bXOyUo1CRgtsFKeIqepmFILF3LJ8V7bOds74pXd973F7PLQ9nCt1xWT0HbKLebynlszrBvbi8btIq9%2FfYlRf6S33SAd82s23lVDgnnB6JrR5xu53PzGV8C0UJAitVA8GjnQiJidZ81qgo4JwQKqW24nmJooinp4TQ%3D%3D",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "auth",
+                "confirm-email"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "1"
+                },
+                {
+                  "key": "token",
+                  "value": "CfDJ8DVOxiAFcnpGmYPATMp90KOxEZyE31co8bXOyUo1CRgtsFKeIqepmFILF3LJ8V7bOds74pXd973F7PLQ9nCt1xWT0HbKLebynlszrBvbi8btIq9%2FfYlRf6S33SAd82s23lVDgnnB6JrR5xu53PzGV8C0UJAitVA8GjnQiJidZ81qgo4JwQKqW24nmJooinp4TQ%3D%3D"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set User Roles",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"roles\": [\"Admin\",\"Employee\"]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/admin/users/1/roles",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "1",
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set User Permissions",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"permissions\": [\"CanReviewPrescriptions\"]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/admin/users/1/permissions",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "1",
+                "permissions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"Identifier\":\"mofawzyhelal@gmail.com\",\r\n  \"Password\": \"Aa11@modern.com\",\r\n  \"RememberMe\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/auth/login",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/admin/roles",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "admin",
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UserInfo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/me",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/me/permissions",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "me",
+                "permissions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/admin/users/1/roles",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "1",
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ResendConfirmEmail",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"mofawzyhelal@gmail.com\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/auth/resend-confirm-email",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "auth",
+                "resend-confirm-email"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "forgot-password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"mofawzyhelal@gmail.com\" }\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/auth/forgot-password",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "reset-password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"userId\": 1,\r\n  \"token\": \"CfDJ8DVOxiAFcnpGmYPATMp90KNlW1FOwEEKejJlYuD62HXqhoIs1309zRJ9t6qDrV0P0YGjs%2FcHqPGPZtrbqyZb7n%2FPWzrI0Em0ubL%2FNMYILsrYungyd3Yt3RYDD336qhV14rKM7%2B%2B%2BHHM5X%2B%2F2MGKBilppG3zFRVz7mhAdmMP7U08WkHhpLiVf0xkoRB6XnvZSAw%3D%3D\",\r\n  \"newPassword\": \"NewStrongPassword!123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/auth/reset-password",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "change-password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"currentPassword\": \"NewStrongPassword!123\",\r\n  \"newPassword\": \"Aa11@modern.com\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/auth/change-password",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current Employee Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/me/employee",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "me",
+                "employee"
+              ]
+            },
+            "description": "Returns the currently authenticated employee profile using UserToken."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer",
+      "item": [
+        {
+          "name": "Get All",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/Customers",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "Customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "upload-multiple",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "uuid": "80d84f9e-8eb8-4c14-bad0-7fb8dd4c9324",
+                  "src": [
+                    "/C:/Users/devhe/OneDrive/Desktop/wallpapers/pexels-jessef11-1213294.jpg",
+                    "/C:/Users/devhe/OneDrive/Desktop/wallpapers/pexels-maxandrey-1366630.jpg",
+                    "/C:/Users/devhe/OneDrive/Desktop/wallpapers/pexels-roy-135943799-18709679.jpg"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BaseURI}}/Customers/upload-multiple",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "Customers",
+                "upload-multiple"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Category",
+      "item": [
+        {
+          "name": "Admin",
+          "item": [
+            {
+              "name": "Create Category",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"name\": \"Medicines  with 1\",\r\n  \"nameEn\": \"Medicines with 1\",\r\n  \"parentCategoryId\": 1\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Category",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"id\": 28,\r\n  \"name\": \"Update Medicines 1\",\r\n  \"nameEn\": \"Update Medicines 1\",\r\n  \"description\": \"update Description 1\",\r\n  \"parentCategoryId\": 2\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories/28",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories",
+                    "28"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change Category Parent",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories/12/parent?newParentCategoryId=19",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories",
+                    "12",
+                    "parent"
+                  ],
+                  "query": [
+                    {
+                      "key": "newParentCategoryId",
+                      "value": "19"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Category Image",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "uuid": "7e128aba-a897-4605-aa43-59aa86cd32e9",
+                      "src": "/C:/Users/MohamedFawzy/Pictures/dan-freeman-wAn4RfmXtxU-unsplash.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories/1/image?format=1",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories",
+                    "1",
+                    "image"
+                  ],
+                  "query": [
+                    {
+                      "key": "format",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Categories",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories?pageNumber=1&pageSize=10&IsActive=true",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories"
+                  ],
+                  "query": [
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10"
+                    },
+                    {
+                      "key": "IsActive",
+                      "value": "true"
+                    },
+                    {
+                      "key": "isDeleted",
+                      "value": "true",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Category By Id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories/1",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Deactivate Category",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories/1/deactivate",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories",
+                    "1",
+                    "deactivate"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Activate Category",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories/1/activate",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories",
+                    "1",
+                    "activate"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Soft Delete Category",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/admin/Categories/",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "Categories",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Public",
+          "item": [
+            {
+              "name": "Get Root Categories",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/v1/Categories/root",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "Categories",
+                    "root"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Category Tree",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/v1/Categories/tree",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "Categories",
+                    "tree"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Trash",
+          "item": [
+            {
+              "name": "Update Category Image",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "uuid": "7e128aba-a897-4605-aa43-59aa86cd32e9",
+                      "src": "/C:/Users/MohamedFawzy/Pictures/pexels-maxandrey-1366630.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{BaseURI}}/v1/admin/Categories/1/my-image",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "Categories",
+                    "1",
+                    "my-image"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Active Root Categories",
+              "request": {
+                "method": "OPTIONS",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/Categories",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "Categories"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Active Category Tree",
+              "request": {
+                "method": "OPTIONS",
+                "header": [],
+                "url": {
+                  "raw": "{{BaseURI}}/Categories",
+                  "host": [
+                    "{{BaseURI}}"
+                  ],
+                  "path": [
+                    "Categories"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "boom",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/Categories/boom",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "Categories",
+                "boom"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Product",
+      "item": [
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"storeId\": 1,\r\n    \"categoryId\": 1,\r\n    \"companyId\": null,\r\n    \"erpProductId\": 555010,\r\n    \"erpStoreId\": 1,\r\n    \"internationalCode\": \"INT-ABC-010\",\r\n    \"nameAr\": \"براستامول 10 جرام\",\r\n    \"nameEn\": \"brastamol 10 gram\",\r\n    \"descriptionAr\": \"مضاد حيوي واسع المدى\",\r\n    \"descriptionEn\": \"Broad-spectrum antibiotic\",\r\n    \"searchKeywords\": \"augmentin,مضاد حيوي,اوجمنتين\",\r\n    \"outerUnitId\": 1,\r\n    \"innerUnitId\": 2,\r\n    \"innerPerOuter\": 2,\r\n    \"outerUnitPrice\": 30,\r\n    \"innerUnitPrice\": 15,\r\n    \"minOrderQty\": 1,\r\n    \"maxOrderQty\": 3,\r\n    \"maxPerDayQty\": 3,\r\n    \"isReturnable\": true,\r\n    \"IsRedeemableByPoints\": true,\r\n    \"allowSplitSale\": true,\r\n    \"quantity\": 100.00,\r\n    \"hasExpiry\": true,\r\n    \"nearestExpiryDate\": \"2028-11-30\",\r\n    \"lastStockSyncAt\": \"2026-06-21T04:00:00Z\",\r\n    \"hasPromotion\": false,\r\n    \"promotionDiscountPercent\": 0,\r\n    \"promotionStartsAt\": null,\r\n    \"promotionEndsAt\": null,\r\n    \"isFeatured\": true,\r\n    \"points\": 20,\r\n    \"requiresPrescription\": false,\r\n    \"isAvailable\": true,\r\n    \"isActive\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/products",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/Products/search?sort=6",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "Products",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "storeId",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "augmentin",
+                  "disabled": true
+                },
+                {
+                  "key": "categoryId",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "6"
+                },
+                {
+                  "key": "page",
+                  "value": "7",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "يمكن شراءه باستبدال النقاط؟",
+                  "value": "true/false",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search with tages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/Products/search?tagIds=1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "Products",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "storeId",
+                  "value": "0",
+                  "disabled": true
+                },
+                {
+                  "key": "tagIds",
+                  "value": "1"
+                },
+                {
+                  "key": "tagIds",
+                  "value": "7",
+                  "disabled": true
+                },
+                {
+                  "key": "tagMatch",
+                  "value": "Any",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "Newest",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "augmentin",
+                  "disabled": true
+                },
+                {
+                  "key": "categoryId",
+                  "value": "10",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Carts",
+      "item": [
+        {
+          "name": "add item in cart",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customerId\": 2,\r\n  \"storeId\": 1,\r\n  \"productId\": 1,\r\n  \"unitLevel\": 1,\r\n  \"quantity\": 1,\r\n  \"deviceId\": \"android-123\",\r\n  \"appInstanceId\": \"install-xyz\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Carts/items",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Carts",
+                "items"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add redeem item in cart",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customerId\": 7,\r\n  \"storeId\": 1,\r\n  \"productId\": 10,\r\n  \"unitLevel\": 1,\r\n  \"quantity\": 1,\r\n  \"deviceId\": \"android-123\",\r\n  \"appInstanceId\": \"install-xyz\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Carts/redeem/items",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Carts",
+                "redeem",
+                "items"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get cart",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/Carts?customerId=1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Carts"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "preview",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\r\n{\r\n  \"cartId\": 4,\r\n  \"customerId\": 1,\r\n  \"addressId\": 1,\r\n  \"paymentMethod\": 1\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Carts/preview",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Carts",
+                "preview"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update quntity",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\r\n{\r\n  \"customerId\": 2,\r\n  \"quantity\": 2\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Carts/items/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Carts",
+                "items",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Carts/items/2?customerId=2",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Carts",
+                "items",
+                "2"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "clear",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Carts/customers/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Carts",
+                "customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tage",
+      "item": [
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"nameAr\": \"فيتامينات\",\r\n  \"nameEn\": \"Vitamins\",\r\n  \"isActive\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/Tags",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "Tags"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"nameAr\": \"فيتامينات\",\r\n  \"nameEn\": \"Vitamins\",\r\n  \"isActive\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/Tags?q=vit&isActive=true&sort=name:asc&page=1&pageSize=20",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "Tags"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "vit"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                },
+                {
+                  "key": "sort",
+                  "value": "name:asc"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Promotions",
+      "item": [
+        {
+          "name": "Add",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"erpPgoId\": null,\r\n  \"name\": \"Buy 3 git 4th free\",\r\n  \"notes\": \"Group promotion example\",\r\n  \"startAt\": \"2026-06-13T00:00:00Z\",\r\n  \"endAt\": \"2026-09-01T23:59:59Z\",\r\n  \"totalAmount\": 3,\r\n  \"basicAmount\": 2,\r\n  \"offerAmount\": 1,\r\n  \"discountPercent\": 100,\r\n  \"isActive\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Promotions",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Promotions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"erpPgoId\": null,\r\n  \"name\": \"Buy 3 git 4th free\",\r\n  \"notes\": \"Group promotion example\",\r\n  \"startAt\": \"2026-06-13T00:00:00Z\",\r\n  \"endAt\": \"2026-09-01T23:59:59Z\",\r\n  \"totalAmount\": 3,\r\n  \"basicAmount\": 2,\r\n  \"offerAmount\": 1,\r\n  \"discountPercent\": 50,\r\n  \"isActive\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Promotions/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Promotions",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add products",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"items\": [\r\n    { \"productId\": 1, \"erpProductId\": 1001, \"erpOfferId\": 9001 },\r\n    { \"productId\": 3, \"erpProductId\": 1003, \"erpOfferId\": 9002 },\r\n    { \"productId\": 5, \"erpProductId\": 1005, \"erpOfferId\": 9003 }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Promotions/1/products",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Promotions",
+                "1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update products",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"items\": [\r\n    { \"productId\": 1, \"erpProductId\": 1001, \"erpOfferId\": 9001 },\r\n    { \"productId\": 2, \"erpProductId\": 1002, \"erpOfferId\": 9002 },\r\n    { \"productId\": 3, \"erpProductId\": 1003, \"erpOfferId\": 9003 }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Promotions/1/products",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Promotions",
+                "1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Active & InActive",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"isActive\": true\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Promotions/1/activate",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Promotions",
+                "1",
+                "activate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Promotions/1/products/5",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Promotions",
+                "1",
+                "products",
+                "5"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get info by id",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"erpPgoId\": 10001,\r\n  \"name\": \"Buy 3 get 4th free\",\r\n  \"notes\": \"Group promotion example\",\r\n  \"startAt\": \"2026-04-16T00:00:00Z\",\r\n  \"endAt\": \"2026-05-01T23:59:59Z\",\r\n  \"totalAmount\": 4,\r\n  \"basicAmount\": 3,\r\n  \"offerAmount\": 1,\r\n  \"discountPercent\": 100,\r\n  \"isActive\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/promotions/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "promotions",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GetAll",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"erpPgoId\": 10001,\r\n  \"name\": \"Buy 3 get 4th free\",\r\n  \"notes\": \"Group promotion example\",\r\n  \"startAt\": \"2026-04-16T00:00:00Z\",\r\n  \"endAt\": \"2026-05-01T23:59:59Z\",\r\n  \"totalAmount\": 4,\r\n  \"basicAmount\": 3,\r\n  \"offerAmount\": 1,\r\n  \"discountPercent\": 100,\r\n  \"isActive\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Promotions",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Promotions"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "got",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "StartAtDesc",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "onlyRunningNow",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "2026-04-01T00:00:00Z",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "2026-05-01T00:00:00Z",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Image",
+      "item": [
+        {
+          "name": "Save",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "7e128aba-a897-4605-aa43-59aa86cd32e9",
+                  "src": "/C:/Users/MohamedFawzy/Pictures/pexels-jessef11-1213294.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BaseURI}}/dev/images/save?format=Jpeg",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "dev",
+                "images",
+                "save"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "Jpeg"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "replace",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "7e128aba-a897-4605-aa43-59aa86cd32e9",
+                  "src": "/C:/Users/MohamedFawzy/Pictures/pexels-umkreisel-app-1146134.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BaseURI}}/dev/images/133947b722634ab6abb2e7b1884a528e/replace?format=Jpeg",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "dev",
+                "images",
+                "133947b722634ab6abb2e7b1884a528e",
+                "replace"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "Jpeg"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "7e128aba-a897-4605-aa43-59aa86cd32e9",
+                  "src": "/C:/Users/MohamedFawzy/Pictures/pexels-umkreisel-app-1146134.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BaseURI}}/dev/images/133947b722634ab6abb2e7b1884a528e",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "dev",
+                "images",
+                "133947b722634ab6abb2e7b1884a528e"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Batch",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "uuid": "7e128aba-a897-4605-aa43-59aa86cd32e9",
+                  "src": [
+                    "/C:/Users/MohamedFawzy/Pictures/pexels-dzikilechu-9122577.jpg",
+                    "/C:/Users/MohamedFawzy/Pictures/pexels-fauxels-3183132.jpg",
+                    "/C:/Users/MohamedFawzy/Pictures/pexels-jessef11-1213294.jpg",
+                    "/C:/Users/MohamedFawzy/Pictures/pexels-maxandrey-1366630.jpg"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BaseURI}}/dev/images/batch?format=Jpeg&prefix=Cat",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "dev",
+                "images",
+                "batch"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "Jpeg"
+                },
+                {
+                  "key": "prefix",
+                  "value": "Cat"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "variant",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "7e128aba-a897-4605-aa43-59aa86cd32e9",
+                  "src": "/C:/Users/MohamedFawzy/Pictures/pexels-umkreisel-app-1146134.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BaseURI}}/dev/images/Cat-8b5dfc8c3b814ccea4bdbf23616d2531/small?formatHint=jpg",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "dev",
+                "images",
+                "Cat-8b5dfc8c3b814ccea4bdbf23616d2531",
+                "small"
+              ],
+              "query": [
+                {
+                  "key": "formatHint",
+                  "value": "jpg"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "checkout preview",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customerId\": 1,\r\n  \"sourceType\": 1,\r\n  \"sourceId\": 22,\r\n  \"addressId\": 1,\r\n  \"paymentMethod\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/orders/checkout/preview",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "orders",
+                "checkout",
+                "preview"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Checkout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customerId\": 1,\r\n  \"sourceType\": 1,\r\n  \"sourceId\": 19,\r\n  \"addressId\": 1,\r\n  \"paymentMethod\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/orders/checkout",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "orders",
+                "checkout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"status\": 5,\r\n  \"notes\": \"Order confirmed by pharmacy\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/orders/3/status",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "orders",
+                "3",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Prescriptions",
+      "item": [
+        {
+          "name": "admin",
+          "item": []
+        },
+        {
+          "name": "create with image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "customerId",
+                  "value": " 1",
+                  "type": "text"
+                },
+                {
+                  "key": "storeId",
+                  "value": " 1",
+                  "type": "text"
+                },
+                {
+                  "key": "notes",
+                  "value": "ملاحظة",
+                  "type": "text"
+                },
+                {
+                  "key": "primaryIndex",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/C:/Users/MohamedFawzy/Pictures/pexels-fauxels-3183132.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Prescriptions",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Prescriptions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get all",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/prescriptions/?storeId=1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "prescriptions",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "storeId",
+                  "value": "1"
+                },
+                {
+                  "key": "reviewedBy",
+                  "value": "7",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "2026-03-01T00:00:00Z",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "2026-03-31T23:59:59Z",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "StatusUpdatedDesc",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add item",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\r\n{\r\n  \"productId\": 1,\r\n  \"requestedName\": \"Augmentin 1g\",\r\n  \"requestedQuantity\": 1,\r\n  \"notes\": \"Use the matched product if available\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Prescriptions/1/items",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Prescriptions",
+                "1",
+                "items"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add items",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"items\": [\r\n    {\r\n      \"productId\": 1,\r\n      \"requestedName\": \"Augmentin 1g\",\r\n      \"requestedQuantity\": 1,\r\n      \"notes\": \"Matched product\"\r\n    },\r\n    {\r\n      \"productId\": 2,\r\n      \"requestedName\": \"Vitamin C\",\r\n      \"requestedQuantity\": 2\r\n    },\r\n    {\r\n      \"productId\": 3,\r\n      \"requestedName\": \"دواء غير واضح بالروشتة\",\r\n      \"requestedQuantity\": 1,\r\n      \"notes\": \"Call customer for clarification\"\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/Prescriptions/2/items/batch",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "Prescriptions",
+                "2",
+                "items",
+                "batch"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get items by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/prescriptions/2/items",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "prescriptions",
+                "2",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "reviewedBy",
+                  "value": "7",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "2026-03-01T00:00:00Z",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "2026-03-31T23:59:59Z",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "StatusUpdatedDesc",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete an item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/prescriptions/2/items/8",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "prescriptions",
+                "2",
+                "items",
+                "8"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UpdateStatus",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"status\": 5,\r\n  \"rejectReason\": \"Prescription unclear\",\r\n  \"notes\": \"Please re-upload\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/prescriptions/2/status",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "prescriptions",
+                "2",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "InReview",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\r\n{\r\n  \"status\": 2\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/prescriptions/2/status",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "prescriptions",
+                "2",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pharmacies",
+      "item": [
+        {
+          "name": "Get All",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/pharmacies",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "pharmacies"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get info By id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/pharmacies/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "pharmacies",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"صيدلية النور\",\r\n  \"nameEn\": \"Al Nour Pharmacy\",\r\n  \"ownerName\": \"محمد أحمد\",\r\n  \"licenseNumber\": \"PH-1001\",\r\n  \"phoneNumber\": \"01012345678\",\r\n  \"email\": \"info@example.com\",\r\n  \"address\": \"القاهرة\",\r\n  \"latitude\": 30.0444,\r\n  \"longitude\": 31.2357\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/pharmacies",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "pharmacies"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n        \"name\": \"صيدلية الشفاء\",\r\n        \"nameEn\": \"Al Shifa Pharmacy\",\r\n        \"ownerName\": \"محمد أحمد\",\r\n        \"licenseNumber\": \"PH-2024-001\",\r\n        \"phoneNumber\": \"01012345678\",\r\n        \"email\": \"info@alshifa.com\",\r\n        \"address\": \"القاهرة - مدينة نصر - شارع مصطفى النحاس\",\r\n        \"latitude\": 30.0566100,\r\n        \"longitude\": 31.3304300,\r\n        \"isActive\": true\r\n}\r\n\r\n\r\n        \r\n\r\n        ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/pharmacies/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "pharmacies",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stores",
+      "item": [
+        {
+          "name": "Get All",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/stores?pharmacyId=1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "stores"
+              ],
+              "query": [
+                {
+                  "key": "pharmacyId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get info By id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/stores?pharmacyId=1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "stores"
+              ],
+              "query": [
+                {
+                  "key": "pharmacyId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"pharmacyId\": 1,\r\n  \"nameAr\": \"فرع مدينة قباء\",\r\n  \"nameEn\": \"Nasr City Branch\",\r\n  \"code\": \"Qupaa\",\r\n  \"address\": \"شارع مثال\",\r\n  \"isDefault\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/stores",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "stores"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"nameAr\": \"فرع مدينة نصر\",\r\n  \"nameEn\": \"Nasr City Branch\",\r\n  \"code\": \"NASR-01\",\r\n  \"address\": \"شارع مثال\",\r\n  \"isActive\": true,\r\n  \"rowVersion\": \"AAAAAAAAB/E=\"\r\n}\r\n\r\n        \r\n\r\n        ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/stores/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "stores",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set Store As Default",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/stores/{{storeId}}/default",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "stores",
+                "{{storeId}}",
+                "default"
+              ]
+            },
+            "description": "Makes the selected store the default store. Uses AdminToken from the collection."
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Store",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/stores/{{storeId}}",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "stores",
+                "{{storeId}}"
+              ]
+            },
+            "description": "Soft deletes the selected store. Uses AdminToken from the collection."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "Get Employees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/employees?pharmacyId=1&includeInactive=true",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "employees"
+              ],
+              "query": [
+                {
+                  "key": "pharmacyId",
+                  "value": "1"
+                },
+                {
+                  "key": "includeInactive",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Returns employees for a pharmacy. Set includeInactive=true to include inactive employees."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pharmacyId\": 1,\n  \"fullNameAr\": \"أحمد علي\",\n  \"fullNameEn\": \"Ahmed Ali\",\n  \"phoneNumber\": \"01012345678\",\n  \"email\": \"ahmed@example.com\",\n  \"nationalId\": \"29001011234567\",\n  \"jobTitle\": \"صيدلي\",\n  \"employeeCode\": \"EMP-001\",\n  \"userName\": \"ahmed.pharmacist\",\n  \"initialPassword\": \"Pharma@12345\",\n  \"roleName\": \"Employee\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/employees",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "employees"
+              ]
+            },
+            "description": "Creates an employee. Adjust the JSON body to match EmployeeCreateDto in the API."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Employee",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pharmacyId\": 1,\n  \"fullNameAr\": \" 2 أحمد علي\",\n  \"fullNameEn\": \"Ahmed Ali\",\n  \"phoneNumber\": \"01012345678\",\n  \"email\": \"ahmed@example.com\",\n  \"nationalId\": \"29001011234567\",\n  \"jobTitle\": \"صيدلي\",\n  \"employeeCode\": \"EMP-001\",\n  \"userName\": \"ahmed.pharmacist\",\n  \"initialPassword\": \"Pharma@12345\",\n  \"roleName\": \"Employee\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/employees/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "employees",
+                "1"
+              ]
+            },
+            "description": "Updates an employee. Adjust the JSON body to match EmployeeUpdateDto in the API."
+          },
+          "response": []
+        },
+        {
+          "name": "Set Employee Active Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/employees/1/active",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "employees",
+                "1",
+                "active"
+              ]
+            },
+            "description": "Activates or deactivates an employee. Set isActive to true or false."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Employee Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/employees/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "employees",
+                "1"
+              ]
+            },
+            "description": "Returns employee details, including inactive or soft-deleted employees."
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Employee",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/employees/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "employees",
+                "1"
+              ]
+            },
+            "description": "Soft deletes an employee."
+          },
+          "response": []
+        },
+        {
+          "name": "Restore Deleted Employee",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/employees/1/restore",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "employees",
+                "1",
+                "restore"
+              ]
+            },
+            "description": "Restores a soft-deleted employee and reactivates the account."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Deleted Employees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/employees/deleted?pharmacyId=1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "employees",
+                "deleted"
+              ],
+              "query": [
+                {
+                  "key": "pharmacyId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Returns soft-deleted employees and deletion timestamps."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Public Locations",
+      "item": [
+        {
+          "name": "Get Active Governorates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/locations/governorates",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "locations",
+                "governorates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Areas By Governorate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/locations/governorates/{{governorateId}}/areas",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "locations",
+                "governorates",
+                "{{governorateId}}",
+                "areas"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Admin Governorates",
+      "item": [
+        {
+          "name": "Get Governorates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/governorates",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "governorates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Governorate Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/governorates/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "governorates",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Governorate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"القاهرة\",\n  \"nameEn\": \"Cairo\",\n  \"displayOrder\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/governorates",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "governorates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Governorate",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \" 1 القاهرة\",\n  \"nameEn\": \"Cairo\",\n  \"displayOrder\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/governorates/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "governorates",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set Governorate Active Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/governorates/1/active",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "governorates",
+                "1",
+                "active"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin Areas",
+      "item": [
+        {
+          "name": "Get Areas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/api/v1/admin/areas?governorateId=1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "areas"
+              ],
+              "query": [
+                {
+                  "key": "governorateId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Area Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/areas/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "areas",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Area",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"governorateId\": 1,\n  \"nameAr\": \"مدينة نصر\",\n  \"nameEn\": \"Nasr City\",\n  \"displayOrder\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/areas",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "areas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Area",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"governorateId\": 1,\n  \"nameAr\": \"مدينة نصر\",\n  \"nameEn\": \"Nasr City\",\n  \"displayOrder\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/areas/1",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "areas",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set Area Active Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BaseURI}}/v1/admin/areas/1/active",
+              "host": [
+                "{{BaseURI}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "areas",
+                "1",
+                "active"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{shoptoken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

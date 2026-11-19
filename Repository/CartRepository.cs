@@ -53,7 +53,6 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
             return new CartViewDto
             {
                 CartId = null,
-                CustomerId = customerId,
                 StoreId = null,
                 Status = null,
                 StatusUpdatedAt = null,
@@ -74,6 +73,7 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
             {
                 CartItemId = x.i.Id,
                 ProductId = x.i.ProductId,
+                SourceType = (CartItemSourceType)x.i.SourceType,
                 UnitLevel = x.i.UnitLevel,
                 Quantity = x.i.Quantity,
 
@@ -126,7 +126,6 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
         return new CartViewDto
         {
             CartId = cart.Id,
-            CustomerId = cart.CustomerId,
             StoreId = cart.StoreId,
             Status = cart.Status,
             StatusUpdatedAt = cart.StatusUpdatedAt,
@@ -205,6 +204,7 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
             .Select(c => new CartPreviewData
             {
                 CartId = c.Id,
+                StoreId = c.StoreId,
                 Status = c.Status
             })
             .FirstOrDefaultAsync(ct);
@@ -295,7 +295,7 @@ public sealed class CartRepository : GenericRepository<Cart>, ICartRepository
         // 1) Validate address ownership (simple)
         return _db.CustomerAddresses
             .AsNoTracking()
-            .AnyAsync(a => a.Id == addressId && a.CustomerId == customerId, ct);
+            .AnyAsync(a => a.Id == addressId && a.CustomerId == customerId && a.DeletedAt == null, ct);
 
         // Future improvements:
         // - Add address status checks (deleted/disabled)

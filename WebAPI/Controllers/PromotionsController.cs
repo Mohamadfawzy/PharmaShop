@@ -5,7 +5,7 @@ using WebAPI.Controllers.Admin;
 
 namespace WebAPI.Controllers;
 
-[Route("api/v1/promotions")]
+[Route("api/v1/admin/promotions")]
 [ApiController]
 public class PromotionsController : AdminBaseApiController
 {
@@ -78,6 +78,10 @@ public class PromotionsController : AdminBaseApiController
 
         // Future improvement: enforce admin authorization policy
     }
+
+    [HttpPatch("{id:int}/deactivate")]
+    public async Task<IActionResult> Deactivate(int id, CancellationToken ct)
+        => FromAppResponse(await promotionService.SetPromotionActiveAsync(id, new PromotionActivateDto { IsActive = false }, ct));
 
     // =============================================== products
 

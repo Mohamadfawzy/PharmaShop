@@ -1,0 +1,74 @@
+{
+  "info": {
+    "name": "PharmaShop - Epic 9 Promotions",
+    "description": "Public active promotions and protected admin endpoints. Set baseUrl, token, promotionId and promotionProductId.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:5001" },
+    { "key": "token", "value": "" },
+    { "key": "promotionId", "value": "1" },
+    { "key": "promotionProductId", "value": "1" },
+    { "key": "productId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Public - Active promotions",
+      "item": [
+        { "name": "List active promotions", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/promotions/active?page=1&pageSize=20&sort=Newest" } },
+        { "name": "Get active promotion detail", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/promotions/{{promotionId}}" } }
+      ]
+    },
+    {
+      "name": "Admin - Promotion CRUD",
+      "item": [
+        {
+          "name": "Create group promotion (Buy 2, get offer 1)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"erpPgoId\": 900001,\n  \"name\": \"اشترِ 2 واحصل على عرض\",\n  \"notes\": \"خصم 50% على القطعة المؤهلة\",\n  \"startAt\": \"2026-11-01T00:00:00Z\",\n  \"endAt\": \"2026-12-01T00:00:00Z\",\n  \"totalAmount\": 3,\n  \"basicAmount\": 2,\n  \"offerAmount\": 1,\n  \"discountPercent\": 50,\n  \"isActive\": true\n}" },
+            "url": "{{baseUrl}}/api/v1/admin/promotions"
+          }
+        },
+        { "name": "Search / filter promotions", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/admin/promotions?q=اشتر&isActive=true&from=2026-11-01T00:00:00Z&to=2026-11-30T23:59:59Z&onlyRunningNow=true&sort=Newest&page=1&pageSize=25" } },
+        { "name": "Get promotion details and products", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/admin/promotions/{{promotionId}}" } },
+        {
+          "name": "Update promotion",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"erpPgoId\": 900001,\n  \"name\": \"اشترِ 2 واحصل على عرض محدث\",\n  \"notes\": \"خصم 50% على القطعة المؤهلة\",\n  \"startAt\": \"2026-11-01T00:00:00Z\",\n  \"endAt\": \"2026-12-01T00:00:00Z\",\n  \"totalAmount\": 3,\n  \"basicAmount\": 2,\n  \"offerAmount\": 1,\n  \"discountPercent\": 50,\n  \"isActive\": true\n}" },
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{promotionId}}"
+          }
+        },
+        { "name": "Activate promotion", "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"isActive\": true\n}" }, "url": "{{baseUrl}}/api/v1/admin/promotions/{{promotionId}}/activate" } },
+        { "name": "Deactivate promotion", "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/admin/promotions/{{promotionId}}/deactivate" } }
+      ]
+    },
+    {
+      "name": "Admin - Promotion products",
+      "item": [
+        {
+          "name": "Add products",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"erpProductId\": 10001, \"erpOfferId\": 70001 },\n    { \"productId\": 2, \"erpProductId\": 10002, \"erpOfferId\": 70001 }\n  ]\n}" },
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{promotionId}}/products"
+          }
+        },
+        {
+          "name": "Replace product set",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"erpProductId\": 10001, \"erpOfferId\": 70001 },\n    { \"productId\": 2, \"erpProductId\": 10002, \"erpOfferId\": 70001 }\n  ]\n}" },
+            "url": "{{baseUrl}}/api/v1/admin/promotions/{{promotionId}}/products"
+          }
+        },
+        { "name": "Remove product from promotion", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/admin/promotions/{{promotionId}}/products/{{promotionProductId}}" } }
+      ]
+    }
+  ]
+}

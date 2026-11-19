@@ -9,6 +9,7 @@ namespace Shared.Models.Dtos.Order;
 public sealed class CustomerAddressSnapshot
 {
     public int AddressId { get; set; }
+    public int GovernorateAreaId { get; set; }
     public string? Title { get; set; }
     public string City { get; set; } = default!;
     public string? Region { get; set; }

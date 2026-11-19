@@ -31,7 +31,7 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         var now = DateTime.UtcNow;
 
         // 2) Base query (scope + tracking)
-        IQueryable<Product> query = context.Products.AsNoTracking();
+        IQueryable<Product> query = context.Products.AsNoTracking().Where(p => p.DeletedAt == null);
 
         // Store scope (recommended)
         if (q.StoreId.HasValue && q.StoreId > 0)
@@ -44,6 +44,16 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         if (q.CompanyId.HasValue)
             query = query.Where(p => p.CompanyId == q.CompanyId.Value);
 
+        if (q.UnitId.HasValue)
+            query = query.Where(p => p.OuterUnitId == q.UnitId.Value || p.InnerUnitId == q.UnitId.Value);
+
+        if (q.IsFeatured.HasValue) query = query.Where(p => p.IsFeatured == q.IsFeatured.Value);
+        if (q.AllowSplitSale.HasValue) query = query.Where(p => p.AllowSplitSale == q.AllowSplitSale.Value);
+        if (q.MinQuantity.HasValue) query = query.Where(p => p.Quantity >= q.MinQuantity.Value);
+        if (q.MaxQuantity.HasValue) query = query.Where(p => p.Quantity <= q.MaxQuantity.Value);
+        if (q.MinPoints.HasValue) query = query.Where(p => p.Points >= q.MinPoints.Value);
+        if (q.MaxPoints.HasValue) query = query.Where(p => p.Points <= q.MaxPoints.Value);
+
         if (q.RequiresPrescription.HasValue)
             query = query.Where(p => p.RequiresPrescription == q.RequiresPrescription.Value);
 
@@ -55,6 +65,9 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
 
         if (q.IsActive.HasValue)
             query = query.Where(p => p.IsActive == q.IsActive.Value);
+
+        if (q.IsActive == true)
+            query = query.Where(p => p.Store.IsActive && p.Store.DeletedAt == null);
 
         if (q.MinPrice.HasValue)
             query = query.Where(p => p.OuterUnitPrice >= q.MinPrice.Value);
@@ -125,9 +138,16 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
                 Id = p.Id,
                 NameAr = p.NameAr,
                 NameEn = p.NameEn,
+                PrimaryImageUrl = p.ProductImages.Where(i => i.DeletedAt == null && i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault(),
+                CategoryNameAr = p.Category.NameAr,
+                CompanyNameAr = p.Company != null ? p.Company.NameAr : null,
+                OuterUnitNameAr = p.OuterUnit.NameAr,
                 OuterUnitPrice = p.OuterUnitPrice,
                 HasPromotion = p.HasPromotion,
                 PromotionDiscountPercent = p.PromotionDiscountPercent,
+                PromotionStartsAt = p.PromotionStartsAt,
+                PromotionEndsAt = p.PromotionEndsAt,
+                IsFeatured = p.IsFeatured,
                 Points = p.Points,
                 RequiresPrescription = p.RequiresPrescription,
                 IsAvailable = p.IsAvailable,

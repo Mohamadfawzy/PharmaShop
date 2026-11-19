@@ -5,6 +5,7 @@ using Contracts.IServices;
 using Entities.Models;
 using FluentValidation;
 using Shared.Models.Dtos.Promotion;
+using Shared.Extensions;
 using Shared.Responses;
 
 public sealed class PromotionService : IPromotionService
@@ -152,6 +153,34 @@ public sealed class PromotionService : IPromotionService
         // Future improvements:
         // - Add RowVersion to response to support optimistic concurrency on update
         // - Add computed flags: IsCurrentlyActive (date window + IsActive)
+    }
+
+    public async Task<AppResponse<List<PublicPromotionListItemDto>>> GetActivePromotionsAsync(PromotionListQueryDto query, CancellationToken ct)
+    {
+        query.IsActive = true;
+        query.OnlyRunningNow = true;
+        var response = await GetPromotionsAsync(query, ct);
+        if (!response.IsSuccess || response.Data is null) return response.FromError<List<PublicPromotionListItemDto>>();
+        var items = response.Data.Select(x => new PublicPromotionListItemDto { Id = x.Id, Name = x.Name, StartAt = x.StartAt, EndAt = x.EndAt, TotalAmount = x.TotalAmount, BasicAmount = x.BasicAmount, OfferAmount = x.OfferAmount, DiscountPercent = x.DiscountPercent }).ToList();
+        return AppResponse<List<PublicPromotionListItemDto>>.Ok(items, response.Pagination!, "Active promotions retrieved");
+    }
+
+    public async Task<AppResponse<PublicPromotionDetailsDto>> GetActivePromotionByIdAsync(int id, CancellationToken ct)
+    {
+        var response = await GetPromotionByIdAsync(id, ct);
+        var promotion = response.Data;
+        var now = DateTime.UtcNow;
+        if (!response.IsSuccess || promotion is null || !promotion.IsActive ||
+            !promotion.StartAt.HasValue || !promotion.EndAt.HasValue ||
+            promotion.StartAt.Value > now || promotion.EndAt.Value < now)
+            return AppResponse<PublicPromotionDetailsDto>.NotFound("Active promotion not found");
+        return AppResponse<PublicPromotionDetailsDto>.Ok(new PublicPromotionDetailsDto
+        {
+            Id = promotion.Id, Name = promotion.Name, StartAt = promotion.StartAt, EndAt = promotion.EndAt,
+            TotalAmount = promotion.TotalAmount, BasicAmount = promotion.BasicAmount, OfferAmount = promotion.OfferAmount,
+            DiscountPercent = promotion.DiscountPercent,
+            ProductIds = promotion.Products.Where(x => x.ProductId.HasValue).Select(x => x.ProductId!.Value).Distinct().ToList()
+        }, "Active promotion retrieved");
     }
 
 
@@ -304,6 +333,10 @@ public sealed class PromotionService : IPromotionService
             );
         }
 
+        var localProductIds = requested.Where(x => x.ProductId.HasValue).Select(x => x.ProductId!.Value).Distinct().ToList();
+        if (localProductIds.Count > 0 && await unitOfWork.Products.CountAsync(p => localProductIds.Contains(p.Id) && p.DeletedAt == null, ct) != localProductIds.Count)
+            return AppResponse<PromotionAddProductsResultDto>.ValidationError("One or more ProductId values do not exist or are deleted");
+
         var requestedErpIds = requested.Select(x => x.ErpProductId).ToList();
 
         // 4) Load active duplicates (already added)
@@ -314,6 +347,8 @@ public sealed class PromotionService : IPromotionService
 
         // 6) Restore soft-deleted rows (if any)
         var restoredCount = await unitOfWork.Promotions.RestorePromotionProductsAsync(softDeletedIds, ct);
+        // Refresh after restore so the next insert does not create a second active row for the same ERP product.
+        var activeAfterRestore = await unitOfWork.Promotions.GetActiveErpProductIdsAsync(promotionId, requestedErpIds, ct);
 
         // 7) Build new entities excluding active duplicates
         var toInsert = new List<PromotionProduct>();
@@ -321,7 +356,7 @@ public sealed class PromotionService : IPromotionService
 
         foreach (var item in requested)
         {
-            if (activeSet.Contains(item.ErpProductId))
+            if (activeAfterRestore.Contains(item.ErpProductId))
             {
                 skipped.Add(item.ErpProductId);
                 continue;
@@ -457,6 +492,10 @@ public sealed class PromotionService : IPromotionService
         }
 
         var requestedErpIds = requestedMap.Keys.ToList();
+
+        var localProductIds = requestedMap.Values.Where(x => x.ProductId.HasValue).Select(x => x.ProductId!.Value).Distinct().ToList();
+        if (localProductIds.Count > 0 && await unitOfWork.Products.CountAsync(p => localProductIds.Contains(p.Id) && p.DeletedAt == null, ct) != localProductIds.Count)
+            return AppResponse<PromotionReplaceProductsResultDto>.ValidationError("One or more ProductId values do not exist or are deleted");
 
         // 4) Load existing rows for this promotion
         var existingRows = await unitOfWork.Promotions.GetPromotionProductsRowsAsync(promotionId, ct);

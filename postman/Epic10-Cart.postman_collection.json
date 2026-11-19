@@ -1,0 +1,96 @@
+{
+  "info": {
+    "name": "PharmaShop - Epic 10 Customer Cart",
+    "description": "Customer-authenticated cart and points-redemption cart requests. CustomerId comes from the JWT and is not included in request bodies or URLs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:5001" },
+    { "key": "token", "value": "" },
+    { "key": "storeId", "value": "1" },
+    { "key": "productId", "value": "1" },
+    { "key": "cartId", "value": "1" },
+    { "key": "cartItemId", "value": "1" },
+    { "key": "addressId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Customer cart",
+      "item": [
+        {
+          "name": "Get my active cart",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/v1/cart"
+          }
+        },
+        {
+          "name": "Add normal cart item",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"storeId\": {{storeId}},\n  \"productId\": {{productId}},\n  \"unitLevel\": \"Outer\",\n  \"quantity\": 2,\n  \"deviceId\": \"android-device-01\",\n  \"appInstanceId\": \"pharmashop-mobile\"\n}" },
+            "url": "{{baseUrl}}/api/v1/cart/items"
+          }
+        },
+        {
+          "name": "Update cart item quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"quantity\": 3\n}" },
+            "url": "{{baseUrl}}/api/v1/cart/items/{{cartItemId}}"
+          }
+        },
+        {
+          "name": "Remove one item",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/v1/cart/items/{{cartItemId}}"
+          }
+        },
+        {
+          "name": "Preview cart and delivery",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"cartId\": {{cartId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": \"CashOnDelivery\"\n}" },
+            "url": "{{baseUrl}}/api/v1/cart/preview"
+          }
+        },
+        {
+          "name": "Clear my active cart",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/v1/cart"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Points redemption cart (separate source)",
+      "item": [
+        {
+          "name": "Add points-redemption item",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"storeId\": {{storeId}},\n  \"productId\": {{productId}},\n  \"unitLevel\": \"Outer\",\n  \"quantity\": 1\n}" },
+            "url": "{{baseUrl}}/api/v1/cart/redeem/items"
+          }
+        },
+        {
+          "name": "Get my cart and verify SourceType",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/v1/cart"
+          }
+        }
+      ]
+    }
+  ]
+}

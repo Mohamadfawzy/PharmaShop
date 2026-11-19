@@ -150,10 +150,11 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
         // 1) Load address and validate ownership
         var addr = await _db.CustomerAddresses.AsNoTracking()
-            .Where(a => a.Id == addressId && a.CustomerId == customerId)
+            .Where(a => a.Id == addressId && a.CustomerId == customerId && a.DeletedAt == null)
             .Select(a => new CustomerAddressSnapshot
             {
                 AddressId = a.Id,
+                GovernorateAreaId = a.GovernorateAreaId,
                 Title = a.Title,
                 City = a.City,
                 Region = a.Region,

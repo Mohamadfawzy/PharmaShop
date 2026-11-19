@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Shared.Enums.Cart;
 
 namespace Shared.Models.Dtos.Cart;
 
@@ -10,6 +11,7 @@ public sealed class CartItemViewDto
 {
     public int CartItemId { get; set; }
     public int ProductId { get; set; }
+    public CartItemSourceType SourceType { get; set; }
 
     public byte UnitLevel { get; set; }          // 1=Outer,2=Inner
     public decimal Quantity { get; set; }

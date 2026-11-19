@@ -10,7 +10,6 @@ namespace Shared.Models.Dtos.Cart;
 
 public sealed class CartAddItemDto
 {
-    public int CustomerId { get; set; }     // For now (later: from token)
     public int StoreId { get; set; }
 
     public int ProductId { get; set; }

@@ -12,11 +12,18 @@ public sealed class ProductListItemDto
 
     public string NameAr { get; set; } = default!;
     public string? NameEn { get; set; }
+    public string? PrimaryImageUrl { get; set; }
+    public string? CategoryNameAr { get; set; }
+    public string? CompanyNameAr { get; set; }
+    public string? OuterUnitNameAr { get; set; }
 
     public decimal OuterUnitPrice { get; set; }
 
     public bool HasPromotion { get; set; }
     public decimal PromotionDiscountPercent { get; set; }
+    public DateTime? PromotionStartsAt { get; set; }
+    public DateTime? PromotionEndsAt { get; set; }
+    public bool IsFeatured { get; set; }
 
     public int Points { get; set; }
 

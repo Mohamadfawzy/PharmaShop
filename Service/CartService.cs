@@ -13,17 +13,20 @@ namespace Service;
 public class CartService : ICartService
 {
     private readonly IUnitOfWork unitOfWork;
+    private readonly ICurrentUserService _currentUser;
 
     // Simple settings (later move to appsettings.json)
     private const int ConversionRate = 30;          // 30 points = 1 money unit
     private const int MinimumRedeemPoints = 500;    // minimum points to redeem
     private const decimal RedeemCapPercent = 0.20m; // 20% cap
-    private const decimal DeliveryFeeFixed = 20.00m;
+    private readonly IDeliveryZoneService _deliveryZoneService;
 
 
-    public CartService(IUnitOfWork unitOfWork)
+    public CartService(IUnitOfWork unitOfWork, IDeliveryZoneService deliveryZoneService, ICurrentUserService currentUser)
     {
         this.unitOfWork = unitOfWork;
+        _deliveryZoneService = deliveryZoneService;
+        _currentUser = currentUser;
     }
 
 
@@ -38,10 +41,21 @@ public class CartService : ICartService
         if (validation is not null)
             return validation;
 
+        var customer = await GetAuthenticatedCustomerAsync(ct);
+        if (customer is null)
+            return AppResponse<AddToCartResponseDto>.NotFound("Customer profile not found");
+
         // 2) Load product
         var product = await unitOfWork.Products.GetByIdNoTrackingAsync(dto.ProductId, ct);
         if (product is null)
             return AppResponse<AddToCartResponseDto>.NotFound("Product not found");
+
+        if (product.StoreId != dto.StoreId)
+            return AppResponse<AddToCartResponseDto>.ValidationError("Product does not belong to the selected store");
+
+        var activeCart = await unitOfWork.Carts.GetActiveByCustomerAsync(customer.Id, ct);
+        if (activeCart is not null && activeCart.StoreId != dto.StoreId)
+            return AppResponse<AddToCartResponseDto>.BusinessRuleViolation("Clear the active cart before switching stores");
 
         // 3) Validate unit level rules
         var unitValidation = ValidateUnitLevelRules(dto, product);
@@ -57,7 +71,7 @@ public class CartService : ICartService
         var pricing = BuildCartPricing(dto, product);
 
         // 6) Get or create active cart
-        var cart = await GetOrCreateActiveCartAsync(dto, ct);
+        var cart = await GetOrCreateActiveCartAsync(dto, customer.Id, ct);
 
         // 7) Prevent mixing normal and redemption items
         var mixingValidation = await ValidateCartMixingAsync(cart.Id, sourceType, ct);
@@ -84,28 +98,19 @@ public class CartService : ICartService
 
         // Future improvements:
         // - Add transaction or retry policy for active cart race conditions
-        // - Replace CustomerId with token claims
+        // - Add retry handling for concurrent active-cart creation
     }
 
     // -------------------------
     // Get My Cart Async
     // ------------------------- 
-    public async Task<AppResponse<CartViewDto>> GetMyCartAsync(int customerId, CancellationToken ct)
+    public async Task<AppResponse<CartViewDto>> GetMyCartAsync(CancellationToken ct)
     {
-        // 1) Validate inputs
-        if (customerId <= 0)
-        {
-            return AppResponse<CartViewDto>.ValidationErrors(
-                new Dictionary<string, string[]>
-                {
-                    ["customerId"] = new[] { "customerId is required" }
-                },
-                detail: "Validation failed"
-            );
-        }
+        var customer = await GetAuthenticatedCustomerAsync(ct);
+        if (customer is null) return AppResponse<CartViewDto>.NotFound("Customer profile not found");
 
         // 2) Load cart view (read-only)
-        var cart = await unitOfWork.Carts.GetMyCartAsync(customerId, ct);
+        var cart = await unitOfWork.Carts.GetMyCartAsync(customer.Id, ct);
 
         // 3) Return response
         return AppResponse<CartViewDto>.Ok(cart, title: "Cart retrieved successfully");
@@ -125,16 +130,8 @@ public class CartService : ICartService
             );
         }
 
-        if (dto.CustomerId <= 0)
-        {
-            return AppResponse<int>.ValidationErrors(
-                new Dictionary<string, string[]>
-                {
-                    ["CustomerId"] = new[] { "CustomerId is required" }
-                },
-                detail: "Validation failed"
-            );
-        }
+        var customer = await GetAuthenticatedCustomerAsync(ct);
+        if (customer is null) return AppResponse<int>.NotFound("Customer profile not found");
 
         // Quantity cannot be 0 (remove is a separate endpoint)
         if (dto.Quantity < 1)
@@ -149,7 +146,7 @@ public class CartService : ICartService
         }
 
         // 2) Load cart item (with ownership check)
-        var item = await unitOfWork.Carts.GetCartItemForUpdateAsync(cartItemId, dto.CustomerId, ct);
+        var item = await unitOfWork.Carts.GetCartItemForUpdateAsync(cartItemId, customer.Id, ct);
         if (item is null)
         {
             return AppResponse<int>.NotFound("Cart item not found");
@@ -173,11 +170,11 @@ public class CartService : ICartService
         // Future improvements:
         // - Verify stock availability and return AvailableQty in response
         // - Detect price changes and set cart invalid server-side (if you later decide)
-        // - Replace CustomerId in body with CustomerId from token claims
+        // - Add optimistic concurrency to avoid last-write-wins issues
         // - Add optimistic concurrency (RowVersion) to avoid last-write-wins issues
     }
 
-    public async Task<AppResponse<int>> RemoveItemAsync(int cartItemId, int customerId, CancellationToken ct)
+    public async Task<AppResponse<int>> RemoveItemAsync(int cartItemId, CancellationToken ct)
     {
         // 1) Basic validation
         if (cartItemId <= 0)
@@ -191,19 +188,11 @@ public class CartService : ICartService
             );
         }
 
-        if (customerId <= 0)
-        {
-            return AppResponse<int>.ValidationErrors(
-                new Dictionary<string, string[]>
-                {
-                    ["customerId"] = new[] { "customerId is required" }
-                },
-                detail: "Validation failed"
-            );
-        }
+        var customer = await GetAuthenticatedCustomerAsync(ct);
+        if (customer is null) return AppResponse<int>.NotFound("Customer profile not found");
 
         // 2) Load cart item with ownership check (tracked entity)
-        var item = await unitOfWork.Carts.GetCartItemForUpdateAsync(cartItemId, customerId, ct);
+        var item = await unitOfWork.Carts.GetCartItemForUpdateAsync(cartItemId, customer.Id, ct);
         if (item is null)
             return AppResponse<int>.NotFound("Cart item not found");
 
@@ -225,22 +214,13 @@ public class CartService : ICartService
         // - Add optimistic concurrency (RowVersion) to avoid race conditions
     }
 
-    public async Task<AppResponse<int>> ClearCartAsync(int customerId, CancellationToken ct)
+    public async Task<AppResponse<int>> ClearCartAsync(CancellationToken ct)
     {
-        // 1) Validate inputs
-        if (customerId <= 0)
-        {
-            return AppResponse<int>.ValidationErrors(
-                new Dictionary<string, string[]>
-                {
-                    ["CustomerId"] = new[] { "CustomerId is required" }
-                },
-                detail: "Validation failed"
-            );
-        }
+        var customer = await GetAuthenticatedCustomerAsync(ct);
+        if (customer is null) return AppResponse<int>.NotFound("Customer profile not found");
 
-        // 2) Load latest cart for this customer (any status)
-        var cart = await unitOfWork.Carts.GetLatestCartByCustomerAsync(customerId, ct);
+        // Clear only the customer's active cart, never a cart already checked out or abandoned.
+        var cart = await unitOfWork.Carts.GetActiveByCustomerAsync(customer.Id, ct);
         if (cart is null)
             return AppResponse<int>.NotFound("No cart found for this customer");
 
@@ -288,13 +268,16 @@ public class CartService : ICartService
         if (validation is not null)
             return validation;
 
+        var customer = await GetAuthenticatedCustomerAsync(ct);
+        if (customer is null) return AppResponse<CartPreviewResponseDto>.NotFound("Customer profile not found");
+
         // 2) Validate address ownership
-        var addressOk = await unitOfWork.Carts.AddressExistsAsync(dto.AddressId, dto.CustomerId, ct);
+        var (addressOk, addressSnapshot) = await unitOfWork.Orders.GetAddressSnapshotAsync(dto.AddressId, customer.Id, ct);
         if (!addressOk)
             return AppResponse<CartPreviewResponseDto>.ValidationError("Invalid address");
 
         // 3) Load active cart for preview
-        var cartData = await unitOfWork.Carts.GetActiveCartDataForPreviewAsync(dto.CartId, dto.CustomerId, ct);
+        var cartData = await unitOfWork.Carts.GetActiveCartDataForPreviewAsync(dto.CartId, customer.Id, ct);
         if (cartData is null)
             return AppResponse<CartPreviewResponseDto>.NotFound("Active cart not found");
 
@@ -310,7 +293,7 @@ public class CartService : ICartService
             await unitOfWork.CompleteAsync(ct);
 
             // Reload cart after deletion to keep response accurate
-            cartData = await unitOfWork.Carts.GetActiveCartDataForPreviewAsync(dto.CartId, dto.CustomerId, ct);
+            cartData = await unitOfWork.Carts.GetActiveCartDataForPreviewAsync(dto.CartId, customer.Id, ct);
             if (cartData is null || cartData.Items.Count == 0)
                 return FailCannotProceed("Cart has no valid items");
         }
@@ -333,8 +316,11 @@ public class CartService : ICartService
 
         // 11) Compute totals (fixed delivery fee)
         var redeemMoney = pointsResult.RedeemValueMoney;
-        var deliveryFee = DeliveryFeeFixed;
-        var grandTotal = Round2(subtotalAfterPromos - redeemMoney + deliveryFee);
+        var deliveryFee = await _deliveryZoneService.ResolveDeliveryFeeAsync(
+            cartData.StoreId, addressSnapshot, subtotalAfterPromos, ct);
+        if (!deliveryFee.HasValue)
+            return FailCannotProceed("The store does not have an active delivery zone covering this address");
+        var grandTotal = Round2(subtotalAfterPromos - redeemMoney + deliveryFee.Value);
         if (grandTotal < 0) grandTotal = 0;
 
         // 12) Build response
@@ -352,7 +338,7 @@ public class CartService : ICartService
             AppliedRedeemPoints = pointsResult.AppliedRedeemPoints,
             RedeemValueMoney = pointsResult.RedeemValueMoney,
 
-            DeliveryFee = Round2(deliveryFee),
+            DeliveryFee = Round2(deliveryFee.Value),
             GrandTotal = grandTotal,
 
             HasPriceChanges = pricedItems.Any(x => x.CurrentUnitPrice != x.CurrentUnitPriceSnapshot),
@@ -380,12 +366,6 @@ public class CartService : ICartService
         if (dto.CartId <= 0)
             return AppResponse<CartPreviewResponseDto>.ValidationErrors(
                 new Dictionary<string, string[]> { ["CartId"] = new[] { "CartId is required" } },
-                detail: "Validation failed"
-            );
-
-        if (dto.CustomerId <= 0)
-            return AppResponse<CartPreviewResponseDto>.ValidationErrors(
-                new Dictionary<string, string[]> { ["CustomerId"] = new[] { "CustomerId is required" } },
                 detail: "Validation failed"
             );
 
@@ -630,11 +610,6 @@ public class CartService : ICartService
         if (dto is null)
             return AppResponse<AddToCartResponseDto>.ValidationError("Request body is required");
 
-        if (dto.CustomerId <= 0)
-            return AppResponse<AddToCartResponseDto>.ValidationErrors(
-                new Dictionary<string, string[]> { ["CustomerId"] = new[] { "CustomerId is required" } },
-                detail: "Validation failed");
-
         if (dto.StoreId <= 0)
             return AppResponse<AddToCartResponseDto>.ValidationErrors(
                 new Dictionary<string, string[]> { ["StoreId"] = new[] { "StoreId is required" } },
@@ -653,8 +628,21 @@ public class CartService : ICartService
         return null;
     }
 
+    private async Task<Customer?> GetAuthenticatedCustomerAsync(CancellationToken ct)
+    {
+        if (!int.TryParse(_currentUser.UserId, out var userId) || userId <= 0)
+            return null;
+
+        return await unitOfWork.Customers.FirstOrDefaultAsync(
+            customer => customer.UserId == userId && customer.IsActive,
+            ct: ct);
+    }
+
     private static AppResponse<AddToCartResponseDto>? ValidateUnitLevelRules(CartAddItemDto dto, Product product)
     {
+        if (!Enum.IsDefined(dto.UnitLevel))
+            return AppResponse<AddToCartResponseDto>.ValidationError("UnitLevel is invalid");
+
         // 1) Validate inner unit rules
         if (dto.UnitLevel == UnitLevel.Inner)
         {
@@ -729,10 +717,10 @@ public class CartService : ICartService
         };
     }
 
-    private async Task<Cart> GetOrCreateActiveCartAsync(CartAddItemDto dto, CancellationToken ct)
+    private async Task<Cart> GetOrCreateActiveCartAsync(CartAddItemDto dto, int customerId, CancellationToken ct)
     {
         // 1) Load active cart
-        var cart = await unitOfWork.Carts.GetActiveByCustomerAsync(dto.CustomerId, ct);
+        var cart = await unitOfWork.Carts.GetActiveByCustomerAsync(customerId, ct);
         if (cart is not null)
             return cart;
 
@@ -741,7 +729,7 @@ public class CartService : ICartService
 
         cart = new Cart
         {
-            CustomerId = dto.CustomerId,
+            CustomerId = customerId,
             StoreId = dto.StoreId,
             Status = (byte)CartStatus.Active,
             StatusUpdatedAt = now,
