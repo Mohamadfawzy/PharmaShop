@@ -4,6 +4,15 @@
 
 ## ملفات الدليل
 
+- [جرد الوحدات وجميع المسارات (191 عملية)](API_ENDPOINTS_OVERVIEW.md)
+- [تحليل التنفيذ وControllers/Services](API_ENDPOINTS_DETAILS.md)
+- [أمثلة Requests وResponses](API_REQUEST_RESPONSE_EXAMPLES.md)
+- [مرجع خصائص DTOs والأنواع المتداخلة](API_RESPONSE_MODELS.md)
+- [المصادقة والأدوار وJWT](API_AUTHENTICATION.md)
+- [جميع Enums والقيم الرقمية](API_ENUMS.md)
+- [استجابات الأخطاء وStatus Codes](API_ERRORS.md)
+- [مشكلات التكامل ومراجعة التنفيذ](API_INTEGRATION_ISSUES.md)
+- [العقد المختصر لتطبيق .NET MAUI](mobile-api-contract.md)
 - [المصادقة والأدوار وشكل الاستجابة](common.md)
 - [مرجع حقول DTOs والـ Query models](request-models.md)
 - [تطبيق الهاتف والعميل والموظف ومندوب التوصيل](mobile-client.md)
@@ -17,4 +26,4 @@
 
 ## النطاق
 
-تشمل هذه النسخة 191 Endpoint فعليًا استخرجت من Controllers الحالية. تكامل ERP مؤجل إلى حين تحديد بنية قاعدة بيانات ERP وعقد الوسيط. لا يوجد مزود دفع خارجي محدد حاليًا؛ واجهات محاولات الدفع والاسترداد تحفظ سجلات تشغيلية فقط.
+تشمل هذه النسخة 191 Action فعالة ذات HTTP attributes في Controllers الحالية. خمس عمليات صور تطويرية مستبعدة من ApiExplorer عمدًا، بينما توجد مقتطفات قديمة داخل التعليقات لا تُعد Routes. تفصيل الفروق والملاحظات في API_ENDPOINTS_OVERVIEW.md وAPI_INTEGRATION_ISSUES.md. تكامل ERP مؤجل إلى حين تحديد بنية قاعدة بيانات ERP وعقد الوسيط. لا يوجد مزود دفع خارجي محدد حاليًا؛ واجهات محاولات الدفع والاسترداد تحفظ سجلات تشغيلية فقط.

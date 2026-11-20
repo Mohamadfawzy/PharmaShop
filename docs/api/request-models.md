@@ -565,10 +565,20 @@
 
 | JSON field | C# type | Validation attributes |
 |---|---|---|
-| pageNumber | int | — |
+| pageNumber | int | Default 1; no DataAnnotation range in this class |
+| pageSize | int | Default 10; setter clamps values above 50 to 50; values below 1 are not clamped here |
 | isActive | bool? | — |
 | isDeleted | bool? | — |
 | orderDescending | bool | — |
+
+## PagingParameters
+
+| JSON field | C# type | Validation attributes |
+|---|---|---|
+| pageNumber | int | Default 1, Range(1, int.MaxValue) |
+| pageSize | int | Default 10, Range(1, 10) |
+
+هذا النوع منفصل عن RequestParameters؛ لا تفترض أن حدود الصفحة واحدة في كل Endpoint.
 
 ## ResendConfirmEmailRequestDto
 
