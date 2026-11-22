@@ -17,6 +17,14 @@ public partial class Store
 
     public string? Address { get; set; }
 
+    public string? ContactPhone { get; set; }
+
+    public string? ContactWhatsApp { get; set; }
+
+    public string? ContactEmail { get; set; }
+
+    public string? WorkingHours { get; set; }
+
     public bool IsDefault { get; set; }
 
     public bool IsActive { get; set; }

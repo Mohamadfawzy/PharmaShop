@@ -1038,6 +1038,10 @@ public partial class RepositoryContext : DbContext
                 .HasFilter("([IsDefault]=(1) AND [DeletedAt] IS NULL)");
 
             entity.Property(e => e.Address).HasMaxLength(300);
+            entity.Property(e => e.ContactPhone).HasMaxLength(50);
+            entity.Property(e => e.ContactWhatsApp).HasMaxLength(50);
+            entity.Property(e => e.ContactEmail).HasMaxLength(256);
+            entity.Property(e => e.WorkingHours).HasMaxLength(500);
             entity.Property(e => e.Code)
                 .HasMaxLength(30)
                 .IsUnicode(false);

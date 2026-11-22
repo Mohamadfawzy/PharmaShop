@@ -1,0 +1,59 @@
+{
+  "info": {
+    "_postman_id": "dc0d0612-80a2-4730-8be8-56b597deabda",
+    "name": "PharmaShop - Store Contact",
+    "description": "Public contact lookup by store ID plus the existing admin store update contract extended with optional branch contact fields.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "storeId", "value": "1" },
+    { "key": "adminToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Get contact details for a store",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stores", "{{storeId}}", "contact"]
+            },
+            "description": "Public endpoint. Store 1 matches the current fixed branch. Missing contact fields are returned as null."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - configure branch contact",
+      "item": [
+        {
+          "name": "Replace store contact information",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+201000000000\",\n  \"whatsApp\": \"+201000000000\",\n  \"email\": \"branch@example.com\",\n  \"address\": \"عنوان الفرع\",\n  \"workingHours\": \"يوميًا من 9 صباحًا حتى 11 مساءً\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "stores", "{{storeId}}", "contact"]
+            },
+            "description": "Admin endpoint to replace this branch's contact profile. Omitted optional fields are cleared. Replace all sample values before sending; rowVersion may be included when available."
+          }
+        }
+      ]
+    }
+  ]
+}

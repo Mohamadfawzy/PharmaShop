@@ -33,6 +33,10 @@ public sealed class AdminStoresController : AdminBaseApiController
     public async Task<IActionResult> Update(int id, [FromBody] StoreUpdateDto dto, CancellationToken ct)
         => FromAppResponse(await _service.UpdateAsync(id, dto, ct));
 
+    [HttpPut("{id:int}/contact")]
+    public async Task<IActionResult> UpdateContact(int id, [FromBody] StoreContactUpdateDto dto, CancellationToken ct)
+        => FromAppResponse(await _service.UpdateContactAsync(id, dto, ct));
+
     [HttpPatch("{id:int}/active")]
     public async Task<IActionResult> SetActive(int id, [FromBody] StoreActiveDto dto, CancellationToken ct)
         => FromAppResponse(await _service.SetActiveAsync(id, dto, ct));

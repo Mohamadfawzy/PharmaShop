@@ -20,4 +20,8 @@ public sealed class StoresController : BaseApiController
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
         => FromAppResponse(await _service.GetPublicByIdAsync(id, ct));
+
+    [HttpGet("{id:int}/contact")]
+    public async Task<IActionResult> GetContact(int id, CancellationToken ct)
+        => FromAppResponse(await _service.GetPublicContactAsync(id, ct));
 }

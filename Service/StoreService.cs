@@ -35,6 +35,22 @@ public sealed class StoreService : IStoreService
             : AppResponse<StoreDto>.Ok(Map(store));
     }
 
+    public async Task<AppResponse<StoreContactDto>> GetPublicContactAsync(int id, CancellationToken ct)
+    {
+        var store = await FindStoreAsync(id, activeOnly: true, ct);
+        if (store is null)
+            return AppResponse<StoreContactDto>.NotFound("Store not found");
+
+        return AppResponse<StoreContactDto>.Ok(new StoreContactDto
+        {
+            Phone = store.ContactPhone,
+            WhatsApp = store.ContactWhatsApp,
+            Email = store.ContactEmail,
+            Address = store.Address,
+            WorkingHours = store.WorkingHours
+        }, "Store contact details retrieved successfully");
+    }
+
     public async Task<AppResponse<List<StoreDto>>> GetAdminAsync(int? pharmacyId, CancellationToken ct)
     {
         var stores = await _unitOfWork.Stores.GetAllAsync(
@@ -72,6 +88,10 @@ public sealed class StoreService : IStoreService
             NameEn = dto.NameEn.Trim(),
             Code = code,
             Address = Normalize(dto.Address),
+            ContactPhone = Normalize(dto.Phone),
+            ContactWhatsApp = Normalize(dto.WhatsApp),
+            ContactEmail = Normalize(dto.Email),
+            WorkingHours = Normalize(dto.WorkingHours),
             IsDefault = dto.IsDefault,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
@@ -116,6 +136,32 @@ public sealed class StoreService : IStoreService
         {
             await _unitOfWork.CompleteAsync(ct);
             return AppResponse<int>.Ok(store.Id, "Store updated successfully");
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return AppResponse<int>.Conflict("Store changed by another request; reload it and try again");
+        }
+    }
+
+    public async Task<AppResponse<int>> UpdateContactAsync(int id, StoreContactUpdateDto dto, CancellationToken ct)
+    {
+        var store = await _unitOfWork.Stores.GetByIdAsync(id, ct);
+        if (store is null || store.DeletedAt is not null)
+            return AppResponse<int>.NotFound("Store not found");
+
+        if (!TrySetOriginalRowVersion(id, dto.RowVersion, store, out var concurrencyError))
+            return AppResponse<int>.ValidationError(concurrencyError!);
+
+        store.ContactPhone = Normalize(dto.Phone);
+        store.ContactWhatsApp = Normalize(dto.WhatsApp);
+        store.ContactEmail = Normalize(dto.Email);
+        store.Address = Normalize(dto.Address);
+        store.WorkingHours = Normalize(dto.WorkingHours);
+
+        try
+        {
+            await _unitOfWork.CompleteAsync(ct);
+            return AppResponse<int>.Ok(store.Id, "Store contact information updated successfully");
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -234,6 +280,10 @@ public sealed class StoreService : IStoreService
         NameEn = s.NameEn,
         Code = s.Code,
         Address = s.Address,
+        Phone = s.ContactPhone,
+        WhatsApp = s.ContactWhatsApp,
+        Email = s.ContactEmail,
+        WorkingHours = s.WorkingHours,
         IsDefault = s.IsDefault,
         IsActive = s.IsActive,
         RowVersion = s.RowVersion is { Length: > 0 } ? Convert.ToBase64String(s.RowVersion) : null
