@@ -25,11 +25,11 @@ public sealed class BannerService : IBannerService
     {
         var now = DateTime.UtcNow;
         var rows = await _uow.Banners.GetAllAsync(
-            x => x.IsActive && x.DeletedAt == null
+            criteria: x => x.IsActive && x.DeletedAt == null
                 && (!x.StartsAt.HasValue || x.StartsAt <= now)
                 && (!x.EndsAt.HasValue || x.EndsAt >= now)
                 && (!placement.HasValue || x.Placement == (byte)placement.Value),
-            q => q.OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id),
+            orderBy: q => q.OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id),
             ct: ct);
         return AppResponse<List<BannerDto>>.Ok(rows.Select(x => ToDto(x, publicBaseUrl)).ToList(), "Banners retrieved successfully");
     }
@@ -44,12 +44,12 @@ public sealed class BannerService : IBannerService
             && (!query.IsActive.HasValue || x.IsActive == query.IsActive.Value)
             && (name == null || x.Name.Contains(name)), ct);
         var rows = await _uow.Banners.GetAllAsync(
-            x => x.DeletedAt == null
+            criteria: x => x.DeletedAt == null
                 && (!query.Placement.HasValue || x.Placement == (byte)query.Placement.Value)
                 && (!query.IsActive.HasValue || x.IsActive == query.IsActive.Value)
                 && (name == null || x.Name.Contains(name)),
-            q => q.OrderBy(x => x.Placement).ThenBy(x => x.DisplayOrder).ThenBy(x => x.Id),
-            (page - 1) * pageSize, pageSize, ct: ct);
+            orderBy: q => q.OrderBy(x => x.Placement).ThenBy(x => x.DisplayOrder).ThenBy(x => x.Id),
+            skip: (page - 1) * pageSize, take: pageSize, ct: ct);
         return AppResponse<List<BannerDto>>.Ok(rows.Select(x => ToDto(x, publicBaseUrl)).ToList(),
             PaginationInfo.Create(page, pageSize, count), "Banners retrieved successfully");
     }
@@ -124,7 +124,8 @@ public sealed class BannerService : IBannerService
         if (dto.Items.Any(x => x.Id <= 0 || x.DisplayOrder < 0) || dto.Items.Select(x => x.Id).Distinct().Count() != dto.Items.Count)
             return AppResponse<int>.ValidationErrors(new() { ["items"] = ["Ids must be unique and positive; DisplayOrder cannot be negative."] });
         var ids = dto.Items.Select(x => x.Id).ToHashSet();
-        var rows = await _uow.Banners.GetAllAsync(x => ids.Contains(x.Id) && x.DeletedAt == null, asNoTracking: false, ct: ct);
+        var rows = await _uow.Banners.GetAllAsync(criteria: x => ids.Contains(x.Id) && x.DeletedAt == null,
+            asNoTracking: false, ct: ct);
         if (rows.Count != ids.Count) return AppResponse<int>.NotFound("One or more active banners were not found");
         await using var tx = await _uow.BeginTransactionAsync(ct);
         try
