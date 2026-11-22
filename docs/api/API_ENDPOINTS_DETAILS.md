@@ -13,6 +13,7 @@
 | الشركات والوحدات | `ReferenceDataController`, `AdminReferenceDataController` | Controller → `IReferenceDataService` → `ReferenceDataService` |
 | الوسوم | `PublicTagsController`, `TagsController`, `AdminProductTagsController` | Controller → `ITagService` → `TagService` → Tags/ProductTags |
 | العروض | `PublicPromotionsController`, `PromotionsController` | Controller → `IPromotionService` → `PromotionService` → Promotions/PromotionProducts |
+| البنرات | `PublicBannersController`, `AdminBannersController` | Controller → `IBannerService` → `BannerService` → `PromotionalBanners` وخدمة الصور |
 | الصيدليات والمتاجر | `StoresController`, `AdminStoresController`, `AdminPharmaciesController` | Controller → `IStoreService`/`IPharmacyService` → Service → المتجر والصيدلية |
 | الموظفون | `CurrentEmployeeController`, `AdminEmployeesController` | Controller → `IEmployeeService` → `EmployeeService` وIdentity عند إنشاء الحساب |
 | السلة | `CartsController` | Controller → `ICartService` → `CartService` → السلة، المنتجات، العروض والنقاط |
@@ -29,8 +30,8 @@
 
 الجداول أدناه في دليل الهاتف والإدارة تشمل لكل عملية method والمسار واسم Action والمدخلات. يستخدم [مرجع النماذج](request-models.md) لتعريف الحقول الفعلية لأنواع الطلب والـQuery. هذا الربط يمنع نسخ DTO قديم إلى توثيق جديد:
 
-- [Endpoints غير الإدارية وعددها 72](mobile-client.md#جميع-endpoints-غير-الإدارية)
-- [Endpoints الإدارية وعددها 119](admin-dashboard.md#جميع-endpoints-الإدارية)
+- [Endpoints غير الإدارية وعددها 73](mobile-client.md#جميع-endpoints-غير-الإدارية)
+- [Endpoints الإدارية وعددها 126](admin-dashboard.md#جميع-endpoints-الإدارية)
 - [قائمة مختصرة شاملة وعدد الوحدات](API_ENDPOINTS_OVERVIEW.md)
 - [تعريفات DTOs وخصائص الأنواع المتداخلة](API_RESPONSE_MODELS.md)
 - [حقول Request DTOs والـQuery models](request-models.md)
@@ -274,6 +275,15 @@
 | Users / Profile | GET | `/api/v1/me/permissions` | `GetPermissions` | `` | Authenticated; Update=Customer | `WebAPI/Controllers/Auth/CurrentUserController.cs` |
 | Users / Profile | PUT | `/api/v1/me` | `?` | `` | Authenticated; Update=Customer | `WebAPI/Controllers/Auth/CurrentUserController.cs` |
 
+| Promotional banners | GET | `/api/v1/banners` | `Get` | `[FromQuery] BannerPlacement? placement, CancellationToken ct` | Public | `WebAPI/Controllers/PublicBannersController.cs` |
+| Promotional banners | GET | `/api/v1/admin/banners` | `Search` | `[FromQuery] BannerListQueryDto query, CancellationToken ct` | Admin | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| Promotional banners | GET | `/api/v1/admin/banners/{id:int}` | `GetById` | `int id, CancellationToken ct` | Admin | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| Promotional banners | POST | `/api/v1/admin/banners` | `Create` | `[FromForm] BannerAdminFormDto form, CancellationToken ct` | Admin | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| Promotional banners | PUT | `/api/v1/admin/banners/{id:int}` | `Update` | `int id, [FromForm] BannerAdminFormDto form, CancellationToken ct` | Admin | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| Promotional banners | DELETE | `/api/v1/admin/banners/{id:int}` | `Delete` | `int id, CancellationToken ct` | Admin | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| Promotional banners | PATCH | `/api/v1/admin/banners/{id:int}/active` | `SetActive` | `int id, [FromBody] BannerSetActiveDto dto, CancellationToken ct` | Admin | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| Promotional banners | PATCH | `/api/v1/admin/banners/reorder` | `Reorder` | `[FromBody] BannerReorderDto dto, CancellationToken ct` | Admin | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+
 ## Response contract map for every endpoint
 
 Response types below are resolved from the concrete Service interface when the Controller delegates through AppResponse. For fields and nested DTO schemas, use API_RESPONSE_MODELS.md. Direct file/controller responses are marked separately. HTTP success behavior reflects BaseApiController, not only the body statusCode.
@@ -471,3 +481,11 @@ Response types below are resolved from the concrete Service interface when the C
 | `/api/v1/me` | `GET Get` | `AppResponse<CurrentUserDto>` | 200 on FromAppResponse success; error uses wrapper StatusCode | Concrete response from Controller/Service | `WebAPI/Controllers/Auth/CurrentUserController.cs` |
 | `/api/v1/me/permissions` | `GET GetPermissions` | `AppResponse<List<string>>` | 200 on FromAppResponse success; error uses wrapper StatusCode | Concrete response from Controller/Service | `WebAPI/Controllers/Auth/CurrentUserController.cs` |
 | `/api/v1/me` | `PUT UpdateCustomerProfile` | `File/binary response` | 200 on FromAppResponse success; error uses wrapper StatusCode | Direct Controller result | `WebAPI/Controllers/Auth/CurrentUserController.cs` |
+| `/api/v1/banners` | `GET Get` | `AppResponse<List<BannerDto>>` | 200 on success; imageUrl and thumbnailUrl are absolute URLs | `BannerService.GetPublicAsync` | `WebAPI/Controllers/PublicBannersController.cs` |
+| `/api/v1/admin/banners` | `GET Search` | `AppResponse<List<BannerDto>>` | 200 on success with pagination | `BannerService.SearchAdminAsync` | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| `/api/v1/admin/banners/{id:int}` | `GET GetById` | `AppResponse<BannerDto>` | 200 on success | `BannerService.GetAdminByIdAsync` | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| `/api/v1/admin/banners` | `POST Create` | `AppResponse<BannerDto>` | 200 on FromAppResponse success | `BannerService.CreateAsync` | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| `/api/v1/admin/banners/{id:int}` | `PUT Update` | `AppResponse<BannerDto>` | 200 on success | `BannerService.UpdateAsync` | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| `/api/v1/admin/banners/{id:int}` | `DELETE Delete` | `AppResponse<int>` | 200 on success; soft-delete | `BannerService.SoftDeleteAsync` | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| `/api/v1/admin/banners/{id:int}/active` | `PATCH SetActive` | `AppResponse<int>` | 200 on success | `BannerService.SetActiveAsync` | `WebAPI/Controllers/Admin/AdminBannersController.cs` |
+| `/api/v1/admin/banners/reorder` | `PATCH Reorder` | `AppResponse<int>` | 200 on success; operation uses a database transaction | `BannerService.ReorderAsync` | `WebAPI/Controllers/Admin/AdminBannersController.cs` |

@@ -159,6 +159,13 @@
 | PUT | /api/v1/admin/Tags/{id} | Update tag | Path: id<br>JSON: TagCreateDto |
 | DELETE | /api/v1/admin/Tags/{id} | Deactivate tag | Path: id |
 | PATCH | /api/v1/admin/Tags/{id}/activate | PATCH Activate | Path: id |
+| GET | /api/v1/admin/banners | Search banners | Query: q, placement, isActive, page, pageSize |
+| GET | /api/v1/admin/banners/{id} | Get banner details | Path: id |
+| POST | /api/v1/admin/banners | Create banner | Multipart: BannerAdminFormDto fields + image file |
+| PUT | /api/v1/admin/banners/{id} | Update banner | Path: id<br>Multipart: BannerAdminFormDto fields + optional image file |
+| DELETE | /api/v1/admin/banners/{id} | Soft-delete banner | Path: id |
+| PATCH | /api/v1/admin/banners/{id}/active | Activate/deactivate banner | Path: id<br>JSON: {"isActive":true} |
+| PATCH | /api/v1/admin/banners/reorder | Reorder banners | JSON: BannerReorderDto |
 
 ## رفع صور المنتجات
 

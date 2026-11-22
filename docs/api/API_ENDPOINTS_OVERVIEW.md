@@ -1,6 +1,6 @@
 # API Endpoints Overview
 
-هذا الجرد مأخوذ من Actions الفعلية في `WebAPI/Controllers` بعد استبعاد أسطر التعليقات. العدد **191 عملية HTTP**. يشمل المسارات المخفية عن Swagger ما دامت Action حية، ويستبعد الكود القديم المعلّق.
+هذا الجرد مأخوذ من Actions الفعلية في `WebAPI/Controllers` بعد استبعاد أسطر التعليقات. العدد **199 عملية HTTP**. يشمل المسارات المخفية عن Swagger ما دامت Action حية، ويستبعد الكود القديم المعلّق.
 
 ## الوحدات وعدد العمليات
 
@@ -14,6 +14,7 @@
 | Companies / Units | 14 | `ReferenceDataController`, `AdminReferenceDataController` |
 | Tags | 7 | واجهة عامة وإدارة الوسوم |
 | Promotions | 11 | عروض العميل وإدارة العروض وربط المنتجات |
+| Promotional banners | 8 | بنرات الهاتف واستهداف المنتج/العرض/التصنيف/الشركة |
 | Locations | 12 | المحافظات والمناطق: قراءة عامة وإدارة إدارية |
 | Addresses | 6 | عناوين العميل |
 | Stores / Pharmacies | 13 | القراءة العامة وإدارة الصيدليات والمتاجر |
@@ -29,11 +30,11 @@
 | Delivery | 8 | قوائم المندوبين، الإسناد، وحالة التوصيل |
 | Payments | 5 | تسجيل محاولات الدفع والاسترداد يدويًا |
 | Images | 10 | صور المنتجات ومسارات أدوات الصور التطويرية |
-| **الإجمالي** | **191** | |
+| **الإجمالي** | **199** | |
 
 ## الفهرس الكامل
 
-كل مسار وطريقة HTTP واسم Action ومدخلاتها مدرج في الجداول التالية، بواقع 72 عملية غير إدارية و119 عملية إدارية:
+كل مسار وطريقة HTTP واسم Action ومدخلاتها مدرج في الجداول التالية، بواقع 73 عملية غير إدارية و126 عملية إدارية:
 
 - [جداول تطبيق الهاتف والعميل والموظف والمندوب](mobile-client.md#جميع-endpoints-غير-الإدارية)
 - [جداول لوحة الإدارة](admin-dashboard.md#جميع-endpoints-الإدارية)
@@ -133,6 +134,7 @@
 | Products | GET | `/api/v1/products/{id}` | Product details |
 | Promotions | GET | `/api/v1/promotions/active` | List active promotions |
 | Promotions | GET | `/api/v1/promotions/{id}` | Get active promotion detail |
+| Promotional banners | GET | `/api/v1/banners` | List active banners by optional placement |
 | Tags | GET | `/api/v1/tags` | Tags list |
 | Companies / Units | GET | `/api/v1/companies` | Companies list |
 | Companies / Units | GET | `/api/v1/units` | Units list |
@@ -251,6 +253,13 @@
 | Promotions | POST | `/api/v1/admin/promotions/{id}/products` | Add products |
 | Promotions | DELETE | `/api/v1/admin/promotions/{id}/products/{promotionProductId}` | Remove product from promotion |
 | Promotions | PUT | `/api/v1/admin/promotions/{id}/products` | Replace product set |
+| Promotional banners | GET | `/api/v1/admin/banners` | Search admin banners |
+| Promotional banners | GET | `/api/v1/admin/banners/{id}` | Get banner details |
+| Promotional banners | POST | `/api/v1/admin/banners` | Create banner with multipart image |
+| Promotional banners | PUT | `/api/v1/admin/banners/{id}` | Update banner and optionally replace image |
+| Promotional banners | DELETE | `/api/v1/admin/banners/{id}` | Soft-delete banner |
+| Promotional banners | PATCH | `/api/v1/admin/banners/{id}/active` | Activate or deactivate banner |
+| Promotional banners | PATCH | `/api/v1/admin/banners/reorder` | Change display order |
 | Tags | POST | `/api/v1/admin/Tags` | Create tag |
 | Tags | GET | `/api/v1/admin/Tags` | GET GetAll |
 | Tags | GET | `/api/v1/admin/Tags/{id}` | GET GetById |

@@ -127,6 +127,7 @@ POST /api/v1/prescriptions باستخدام multipart/form-data: الحقول st
 | GET | /api/v1/products/{id} | Product details | Path: id |
 | GET | /api/v1/promotions/active | List active promotions | Query: page, pageSize, sort (PromotionListQueryDto) |
 | GET | /api/v1/promotions/{id} | Get active promotion detail | Path: id |
+| GET | /api/v1/banners | List current public banners | Query: placement (Home, Offers, Categories; optional) |
 | GET | /api/v1/tags | Tags list | Query: page, pageSize, q (TagQueryDto) |
 | GET | /api/v1/companies | Companies list | — |
 | GET | /api/v1/units | Units list | — |

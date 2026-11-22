@@ -1,0 +1,141 @@
+{
+  "info": {
+    "_postman_id": "ba494500-00ad-4c02-a806-18696ea102b1",
+    "name": "PharmaShop - Promotional Banners",
+    "description": "Public banner retrieval and complete admin lifecycle: list, details, multipart create/update, activate/deactivate, reorder, and soft delete. See README.md and docs/api/promotional-banners.md for setup and target rules.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "adminToken", "value": "" },
+    { "key": "bannerId", "value": "1" },
+    { "key": "targetProductId", "value": "1" },
+    { "key": "targetOfferId", "value": "1" },
+    { "key": "targetCategoryId", "value": "1" },
+    { "key": "parentCategoryId", "value": "1" },
+    { "key": "targetBrandId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Get banners - Home",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/banners?placement=Home", "host": ["{{baseUrl}}"], "path": ["api", "v1", "banners"], "query": [{ "key": "placement", "value": "Home" }] },
+            "description": "Returns active, non-deleted Home banners within their UTC date window, ordered by displayOrder."
+          },
+          "response": []
+        },
+        {
+          "name": "Get banners - all placements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/banners", "host": ["{{baseUrl}}"], "path": ["api", "v1", "banners"] },
+            "description": "Omit placement to retrieve all placements."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Search banners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/banners?q=&placement=Home&isActive=true&page=1&pageSize=20", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "banners"], "query": [{ "key": "q", "value": "", "disabled": true }, { "key": "placement", "value": "Home" }, { "key": "isActive", "value": "true" }, { "key": "page", "value": "1" }, { "key": "pageSize", "value": "20" }] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get banner by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/banners/{{bannerId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "banners", "{{bannerId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create banner (multipart)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["if (pm.response.code < 400) {", "  const body = pm.response.json();", "  if (body && body.data && body.data.id) pm.collectionVariables.set('bannerId', String(body.data.id));", "}"] } }],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "formdata", "formdata": [
+              { "key": "name", "value": "Mobile home banner", "type": "text" },
+              { "key": "placement", "value": "Home", "type": "text" },
+              { "key": "actionType", "value": "Product", "type": "text" },
+              { "key": "targetId", "value": "{{targetProductId}}", "type": "text" },
+              { "key": "parentTargetId", "value": "", "type": "text", "disabled": true },
+              { "key": "actionUrl", "value": "", "type": "text", "disabled": true },
+              { "key": "image", "type": "file", "src": "", "description": "Choose a JPEG, PNG or WebP image, up to 10 MB." },
+              { "key": "altText", "value": "Featured product", "type": "text" },
+              { "key": "displayOrder", "value": "0", "type": "text" },
+              { "key": "isActive", "value": "true", "type": "text" },
+              { "key": "startsAt", "value": "", "type": "text", "disabled": true },
+              { "key": "endsAt", "value": "", "type": "text", "disabled": true }
+            ] },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/banners", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "banners"] },
+            "description": "Select a local file for image. The test script stores data.id as bannerId. Replace targetProductId with an active product."
+          },
+          "response": []
+        },
+        {
+          "name": "Update banner (multipart; optional image)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": { "mode": "formdata", "formdata": [
+              { "key": "name", "value": "Updated mobile home banner", "type": "text" },
+              { "key": "placement", "value": "Home", "type": "text" },
+              { "key": "actionType", "value": "Product", "type": "text" },
+              { "key": "targetId", "value": "{{targetProductId}}", "type": "text" },
+              { "key": "parentTargetId", "value": "", "type": "text", "disabled": true },
+              { "key": "actionUrl", "value": "", "type": "text", "disabled": true },
+              { "key": "image", "type": "file", "src": "", "disabled": true, "description": "Enable and choose a file only to replace the current image." },
+              { "key": "altText", "value": "Updated featured product", "type": "text" },
+              { "key": "displayOrder", "value": "0", "type": "text" },
+              { "key": "isActive", "value": "true", "type": "text" },
+              { "key": "startsAt", "value": "", "type": "text", "disabled": true },
+              { "key": "endsAt", "value": "", "type": "text", "disabled": true }
+            ] },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/banners/{{bannerId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "banners", "{{bannerId}}"] },
+            "description": "Send all metadata fields. Leave image disabled to keep the existing file."
+          },
+          "response": []
+        },
+        {
+          "name": "Activate banner",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"isActive\": true\n}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/v1/admin/banners/{{bannerId}}/active", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "banners", "{{bannerId}}", "active"] } },
+          "response": []
+        },
+        {
+          "name": "Deactivate banner",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/v1/admin/banners/{{bannerId}}/active", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "banners", "{{bannerId}}", "active"] } },
+          "response": []
+        },
+        {
+          "name": "Reorder banners",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    { \"id\": {{bannerId}}, \"displayOrder\": 0 }\n  ]\n}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/v1/admin/banners/reorder", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "banners", "reorder"] }, "description": "Add more {id, displayOrder} objects to reorder several banners together." },
+          "response": []
+        },
+        {
+          "name": "Soft-delete banner",
+          "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/api/v1/admin/banners/{{bannerId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "banners", "{{bannerId}}"] }, "description": "Soft-deletes the banner and sets isActive=false; image files are retained." },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

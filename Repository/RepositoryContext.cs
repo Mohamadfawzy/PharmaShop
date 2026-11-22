@@ -86,6 +86,8 @@ public partial class RepositoryContext : DbContext
 
     public virtual DbSet<PromotionProduct> PromotionProducts { get; set; }
 
+    public virtual DbSet<PromotionalBanner> PromotionalBanners { get; set; }
+
     public virtual DbSet<Store> Stores { get; set; }
 
     public virtual DbSet<Tag> Tags { get; set; }
@@ -991,6 +993,25 @@ public partial class RepositoryContext : DbContext
             entity.HasOne(d => d.Product).WithMany(p => p.PromotionProducts).HasForeignKey(d => d.ProductId);
 
             entity.HasOne(d => d.Promotion).WithMany(p => p.PromotionProducts).HasForeignKey(d => d.PromotionId);
+        });
+
+        modelBuilder.Entity<PromotionalBanner>(entity =>
+        {
+            entity.HasIndex(e => new { e.Placement, e.IsActive, e.DisplayOrder }, "IX_PromotionalBanners_PublicOrder")
+                .HasFilter("([DeletedAt] IS NULL)");
+            entity.HasIndex(e => new { e.StartsAt, e.EndsAt }, "IX_PromotionalBanners_DateWindow")
+                .HasFilter("([IsActive]=(1) AND [DeletedAt] IS NULL)");
+            entity.Property(e => e.Name).HasMaxLength(150);
+            entity.Property(e => e.ActionUrl).HasMaxLength(2048);
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.ThumbnailUrl).HasMaxLength(500);
+            entity.Property(e => e.AltText).HasMaxLength(200);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.StartsAt).HasPrecision(0);
+            entity.Property(e => e.EndsAt).HasPrecision(0);
+            entity.Property(e => e.DeletedAt).HasPrecision(0);
+            entity.Property(e => e.RowVersion).IsRowVersion().IsConcurrencyToken();
         });
 
         modelBuilder.Entity<Store>(entity =>

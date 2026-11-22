@@ -42,6 +42,7 @@ public static class ServiceExtensions
         services.AddTransient<IReferenceDataService, ReferenceDataService>();
         services.AddTransient<ICartService, CartService>();
         services.AddTransient<IPromotionService, PromotionService>();
+        services.AddTransient<IBannerService, BannerService>();
         services.AddTransient<IOrderService, OrderService>();
         services.AddTransient<IPrescriptionService, PrescriptionService>();
         services.AddTransient<IPointsService, PointsService>();

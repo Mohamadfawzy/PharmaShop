@@ -4,7 +4,10 @@
 
 ## ملفات الدليل
 
-- [جرد الوحدات وجميع المسارات (191 عملية)](API_ENDPOINTS_OVERVIEW.md)
+- [وحدة البنرات الترويجية وتكامل واجهة الهاتف](promotional-banners.md)
+
+- [جرد الوحدات وجميع المسارات (199 عملية)](API_ENDPOINTS_OVERVIEW.md)
+- [Postman Collection الخاصة بالبنرات](../../postman/promotional-banners/PharmaShop-Promotional-Banners.postman_collection.json)
 - [تحليل التنفيذ وControllers/Services](API_ENDPOINTS_DETAILS.md)
 - [أمثلة Requests وResponses](API_REQUEST_RESPONSE_EXAMPLES.md)
 - [مرجع خصائص DTOs والأنواع المتداخلة](API_RESPONSE_MODELS.md)
@@ -26,4 +29,4 @@
 
 ## النطاق
 
-تشمل هذه النسخة 191 Action فعالة ذات HTTP attributes في Controllers الحالية. خمس عمليات صور تطويرية مستبعدة من ApiExplorer عمدًا، بينما توجد مقتطفات قديمة داخل التعليقات لا تُعد Routes. تفصيل الفروق والملاحظات في API_ENDPOINTS_OVERVIEW.md وAPI_INTEGRATION_ISSUES.md. تكامل ERP مؤجل إلى حين تحديد بنية قاعدة بيانات ERP وعقد الوسيط. لا يوجد مزود دفع خارجي محدد حاليًا؛ واجهات محاولات الدفع والاسترداد تحفظ سجلات تشغيلية فقط.
+تشمل هذه النسخة 199 Action فعالة ذات HTTP attributes في Controllers الحالية. خمس عمليات صور تطويرية مستبعدة من ApiExplorer عمدًا، بينما توجد مقتطفات قديمة داخل التعليقات لا تُعد Routes. تفصيل الفروق والملاحظات في API_ENDPOINTS_OVERVIEW.md وAPI_INTEGRATION_ISSUES.md. تكامل ERP مؤجل إلى حين تحديد بنية قاعدة بيانات ERP وعقد الوسيط. لا يوجد مزود دفع خارجي محدد حاليًا؛ واجهات محاولات الدفع والاسترداد تحفظ سجلات تشغيلية فقط.

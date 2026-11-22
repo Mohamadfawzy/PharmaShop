@@ -34,6 +34,7 @@ public class UnitOfWork : IUnitOfWork
         Tags = new GenericRepository<Tag>(_context);
         ProductImages = new GenericRepository<ProductImage>(_context);
         ProductTags = new GenericRepository<ProductTag>(_context);
+        Banners = new GenericRepository<PromotionalBanner>(_context);
         CartItems = new GenericRepository<CartItem>(_context);
         Orders = new OrderRepository(_context);
         Points = new PointsRepository(_context);
@@ -73,6 +74,7 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<Tag> Tags { get; private set; }
     public IGenericRepository<ProductImage> ProductImages { get; private set; }
     public IGenericRepository<ProductTag> ProductTags { get; private set; }
+    public IGenericRepository<PromotionalBanner> Banners { get; private set; }
 
     // METHODS
     public void SetOriginalRowVersion<T>(T entity, byte[] rowVersion) where T : class

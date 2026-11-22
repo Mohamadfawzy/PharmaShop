@@ -25,6 +25,7 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<Tag> Tags { get; }
     IGenericRepository<ProductImage> ProductImages { get; }
     IGenericRepository<ProductTag> ProductTags { get; }
+    IGenericRepository<PromotionalBanner> Banners { get; }
     IGenericRepository<CartItem> CartItems { get; }
 
     ICategoryRepository Categories { get; }

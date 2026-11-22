@@ -15,6 +15,8 @@ Program.cs يضيف JsonStringEnumConverter(allowIntegerValues: true) إلى MVC
 | ProductSortOption | NameAsc=0, NameDesc=1, PriceAsc=2, PriceDesc=3, Newest=4, Oldest=5, Id=6 | ترتيب بحث المنتجات. |
 | TagMatchMode | Any=0, All=1 | منطق مطابقة عدة tagIds في البحث. |
 | PromotionSortOption | Newest=1, Oldest=2, StartAtAsc=3, StartAtDesc=4 | ترتيب العروض. |
+| BannerPlacement | Home=0, Offers=1, Categories=2 | موضع ظهور البنر. |
+| BannerActionType | None=0, Product=1, Offer=2, Category=3, Brand=4, ExternalUrl=5 | نوع الإجراء عند ضغط البنر. |
 | ImageOutputFormat | Auto=0, Jpeg=1, Png=2, Webp=3 | Query parameter format لمسارات رفع الصور. |
 | ImageVariant | Original=0, Medium=1, Small=2 | نوع نسخة الصورة. |
 | StoredImageFormat | Jpeg=1, Png=2, Webp=3 | الصيغة المخزنة metadata للصورة. |

@@ -2097,3 +2097,9 @@ Source: WebAPI/SpecificDtos/ProductCreateWithImageDto.cs
 | image | IFormFile? |
 | images | List<IFormFile>? |
 
+## Promotional banners
+
+`BannerDto` response properties: `Id:int`, `Name:string`, `Placement:BannerPlacement`, `ActionType:BannerActionType`, `TargetId:int?`, `ParentTargetId:int?`, `ActionUrl:string?`, `ImageUrl:string`, `ThumbnailUrl:string`, `AltText:string?`, `DisplayOrder:int`, `IsActive:bool`, `StartsAt:DateTime?`, `EndsAt:DateTime?`, `CreatedAt:DateTime`, `UpdatedAt:DateTime?`.
+
+Admin multipart model: `BannerAdminFormDto` contains the upsert fields described in [promotional-banners.md](promotional-banners.md), plus `Image:IFormFile?`. Create requires an image; update does not. `BannerSetActiveDto` has `IsActive:bool`. `BannerReorderDto` contains `Items:List<BannerOrderItemDto>` with `Id:int` and `DisplayOrder:int`.
+

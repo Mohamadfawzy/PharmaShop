@@ -31,7 +31,7 @@
 | الملاحظة | الدليل | الأثر |
 |---|---|---|
 | endpoint لتأكيد البريد موجود بصيغتي GET وPOST، وGET يضع token في Query | AuthController | روابط البريد قد تسجل token في سجلات الوكيل/المتصفح؛ قلل مدة صلاحية رمز Identity واحرص على عدم تسجيل query الحساسة. |
-| Categories القديمة ونسخ Actions السابقة في Products/AdminCategories موجودة داخل التعليقات | CategoriesController.cs وProductsController.cs وAdminCategoriesController.cs | ليست Routes فعالة ولا تدخل جرد الـ191؛ يجب عدم استدعائها من العملاء. |
+| Categories القديمة ونسخ Actions السابقة في Products/AdminCategories موجودة داخل التعليقات | CategoriesController.cs وProductsController.cs وAdminCategoriesController.cs | ليست Routes فعالة ولا تدخل جرد الـAPI الحالي؛ يجب عدم استدعائها من العملاء. |
 | Tag route يستخدم حالة أحرف كبيرة في المسار | TagsController.cs:9 | استخدم المسار كما هو في دليل الإدارة، وتحقق من إعدادات proxy التي قد تكون حساسة لحالة الأحرف. |
 | لا يوجد Refresh Token أو OTP أو logout/revocation | Auth DTOs/Controller/Service | دورة الجلسة الحالية تعتمد انتهاء Access Token ثم تسجيل دخول جديد. |
 | الدفع يمثل سجلات محاولات واسترداد فقط ولا يتكامل مع مزود | Payment DTOs/Service | لا تعتبر إنشاء محاولة دفع إثباتًا أن الأموال سُحبت أو أعيدت. |

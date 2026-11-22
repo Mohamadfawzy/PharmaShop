@@ -760,3 +760,9 @@
 
 - Outer = 1
 - Inner = 2
+
+## Promotional banners
+
+Admin `POST /api/v1/admin/banners` and `PUT /api/v1/admin/banners/{id}` use multipart fields in `BannerAdminFormDto`: `name`, `placement`, `actionType`, `targetId`, `parentTargetId`, `actionUrl`, `image`, `altText`, `displayOrder`, `isActive`, `startsAt`, and `endsAt`. Create requires image; update accepts it optionally. See [promotional-banners.md](promotional-banners.md) for constraints and examples.
+
+`PATCH /api/v1/admin/banners/{id}/active` uses `BannerSetActiveDto { isActive: bool }`. `PATCH /api/v1/admin/banners/reorder` uses `BannerReorderDto { items: [{ id, displayOrder }] }`.
