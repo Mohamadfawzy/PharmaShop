@@ -26,6 +26,7 @@ public interface IOrderRepository
     Task<List<CheckoutLineData>> GetLinesFromPointsRedemptionCartAsync(int cartId, int customerId, CancellationToken ct);
     Task<List<CheckoutLineData>> GetLinesFromPrescriptionAsync(int prescriptionId, int customerId, CancellationToken ct);
     Task<Order?> GetOrderForStatusUpdateAsync(int orderId, CancellationToken ct);
+    Task<Order?> GetOrderByIdempotencyKeyForUpdateAsync(int customerId, string idempotencyKey, CancellationToken ct);
     Task LockOrderForStatusUpdateAsync(int orderId, CancellationToken ct);
     Task<int?> GetStorePharmacyIdAsync(int storeId, CancellationToken ct);
     Task<Employee?> GetActiveDeliveryAgentAsync(int userId, CancellationToken ct);

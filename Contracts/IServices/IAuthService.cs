@@ -10,6 +10,8 @@ public interface IAuthService
     Task<AppResponse<ConfirmEmailResponseDto>> ConfirmEmailAsync(ConfirmEmailRequestDto dto, CancellationToken ct);
 
     Task<AppResponse<LoginResponseDto>> LoginAsync(LoginRequestDto dto, LoginRequestContext ctx, CancellationToken ct);
+    Task<AppResponse<LoginResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto dto, CancellationToken ct);
+    Task<AppResponse> RevokeRefreshTokenAsync(int userId, LogoutRequestDto dto, CancellationToken ct);
 
     Task<AppResponse> ResendConfirmEmailAsync(ResendConfirmEmailRequestDto dto, CancellationToken ct);
 

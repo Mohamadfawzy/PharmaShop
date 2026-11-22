@@ -11,8 +11,7 @@ public sealed class LoginResponseDto
     public int UserId { get; set; }
     public string AccessToken { get; set; } = default!;
     public DateTime ExpiresAtUtc { get; set; }
-
-    // in the future RefreshToken + TokenType
-    // public string RefreshToken { get; set; } = default!;
-    // public string TokenType { get; set; } = "Bearer";
+    public string RefreshToken { get; set; } = default!;
+    public DateTime RefreshTokenExpiresAtUtc { get; set; }
+    public string TokenType { get; set; } = "Bearer";
 }

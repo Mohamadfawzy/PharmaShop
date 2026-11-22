@@ -7,6 +7,9 @@ using Shared.Enums.Order;
 using Shared.Models.Dtos.Order;
 using Shared.Models.Dtos.Order.order;
 using Shared.Responses;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace Service;
 
@@ -133,22 +136,42 @@ public class OrderService : IOrderService
     }
     
 
-    public async Task<AppResponse<CheckoutResultDto>> CheckoutAsync(CheckoutRequestDto dto, CancellationToken ct)
+    public async Task<AppResponse<CheckoutResultDto>> CheckoutAsync(CheckoutRequestDto dto, string? idempotencyKey, CancellationToken ct)
     {
         if (dto is null) return AppResponse<CheckoutResultDto>.ValidationError("Request body is required");
         var customer = await FindCurrentCustomerAsync(ct);
         if (customer is null) return AppResponse<CheckoutResultDto>.Unauthorized("An active customer account is required");
         dto.CustomerId = customer.Id;
+        dto.Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim();
+        idempotencyKey = idempotencyKey?.Trim();
         // 1) Validate request before opening transaction
         var validation = ValidateCheckoutRequest(dto);
         if (validation is not null)
             return validation;
+        if (string.IsNullOrWhiteSpace(idempotencyKey) || idempotencyKey.Length > 100)
+            return AppResponse<CheckoutResultDto>.ValidationErrors(new() { ["Idempotency-Key"] = new[] { "Idempotency-Key is required and must be at most 100 characters" } }, "Validation failed");
+        var requestHash = CreateCheckoutRequestHash(dto);
 
         // 2) Open transaction
         await using var tx = await unitOfWork.BeginTransactionAsync(ct);
 
         try
         {
+            // HOLDLOCK serializes requests that use the same customer/key, including the first request.
+            var previousOrder = await unitOfWork.Orders.GetOrderByIdempotencyKeyForUpdateAsync(dto.CustomerId, idempotencyKey, ct);
+            if (previousOrder is not null)
+            {
+                await tx.RollbackAsync(ct);
+                if (!string.Equals(previousOrder.CheckoutRequestHash, requestHash, StringComparison.Ordinal))
+                    return AppResponse<CheckoutResultDto>.Conflict("This Idempotency-Key was already used with different checkout data.");
+                var savedResponse = previousOrder.CheckoutResponseJson is null
+                    ? null
+                    : JsonSerializer.Deserialize<CheckoutResultDto>(previousOrder.CheckoutResponseJson, JsonSerializerOptions.Web);
+                return savedResponse is null
+                    ? AppResponse<CheckoutResultDto>.Conflict("The saved checkout response is unavailable. Retrieve the order by its ID.")
+                    : AppResponse<CheckoutResultDto>.Created(savedResponse, $"/api/v1/orders/{previousOrder.Id}", "Order created successfully");
+            }
+
             // 3) Load address snapshot
             var (addressOk, addressSnap) = await unitOfWork.Orders.GetAddressSnapshotAsync(dto.AddressId, dto.CustomerId, ct);
             if (!addressOk)
@@ -227,19 +250,20 @@ public class OrderService : IOrderService
                     promo,
                     earnedPoints: 0,
                     ct);
+                order.CheckoutIdempotencyKey = idempotencyKey;
+                order.CheckoutRequestHash = requestHash;
 
                 await ConsumePointsForOrderAsync(dto.CustomerId, order.Id, points.RedeemedPoints, ct);
 
                 // 7) Save all pending changes
                 await unitOfWork.CompleteAsync(ct);
 
-                // 8) Commit transaction before returning
+                var response = BuildCheckoutResponse(order, priced, totals, promo, points);
+                order.CheckoutResponseJson = JsonSerializer.Serialize(response, JsonSerializerOptions.Web);
+                await unitOfWork.CompleteAsync(ct);
                 await tx.CommitAsync(ct);
 
                 await _notifications.NotifyCustomerAsync(order.CustomerId, "Order", "تم استلام طلبك", $"تم إنشاء الطلب رقم {order.OrderNumber}.", "Order", order.Id, ct);
-
-                // 9) Build response after commit
-                var response = BuildCheckoutResponse(order, priced, totals, promo, points);
 
                 return AppResponse<CheckoutResultDto>.Created(
                     response,
@@ -284,6 +308,8 @@ public class OrderService : IOrderService
                 normalPromo,
                 earnedPoints: earned,
                 ct);
+            normalOrder.CheckoutIdempotencyKey = idempotencyKey;
+            normalOrder.CheckoutRequestHash = requestHash;
 
             // 16) Create pending earned point lot
             await CreatePendingEarnLotIfNeededAsync(dto.CustomerId, normalOrder.Id, earned, ct);
@@ -292,13 +318,12 @@ public class OrderService : IOrderService
             // 18) Save all pending changes
             await unitOfWork.CompleteAsync(ct);
 
-            // 19) Commit transaction before returning
+            var normalResult = BuildCheckoutResponse(normalOrder, priced, normalTotals, normalPromo, normalPoints);
+            normalOrder.CheckoutResponseJson = JsonSerializer.Serialize(normalResult, JsonSerializerOptions.Web);
+            await unitOfWork.CompleteAsync(ct);
             await tx.CommitAsync(ct);
 
             await _notifications.NotifyCustomerAsync(normalOrder.CustomerId, "Order", "تم استلام طلبك", $"تم إنشاء الطلب رقم {normalOrder.OrderNumber}.", "Order", normalOrder.Id, ct);
-
-            // 20) Build response after commit
-            var normalResult = BuildCheckoutResponse(normalOrder, priced, normalTotals, normalPromo, normalPoints);
 
             return AppResponse<CheckoutResultDto>.Created(
                 normalResult,
@@ -311,6 +336,19 @@ public class OrderService : IOrderService
             await tx.RollbackAsync(ct);
             throw;
         }
+    }
+
+    private static string CreateCheckoutRequestHash(CheckoutRequestDto dto)
+    {
+        var canonical = JsonSerializer.Serialize(new
+        {
+            dto.SourceType,
+            dto.SourceId,
+            dto.AddressId,
+            PaymentMethod = (byte)dto.PaymentMethod,
+            Notes = dto.Notes
+        }, JsonSerializerOptions.Web);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
     }
 
     public async Task<AppResponse<List<AdminOrderListItemDto>>> GetAdminOrdersAsync(
@@ -398,6 +436,8 @@ public class OrderService : IOrderService
 
         if (!Enum.IsDefined(dto.SourceType)) return AppResponse<CheckoutResultDto>.ValidationError("Invalid checkout source type");
         if (!Enum.IsDefined(dto.PaymentMethod)) return AppResponse<CheckoutResultDto>.ValidationError("Invalid payment method");
+        if (dto.Notes?.Length > 500)
+            return AppResponse<CheckoutResultDto>.ValidationErrors(new() { ["Notes"] = new[] { "Notes must not exceed 500 characters" } }, "Validation failed");
 
         return null;
     }
@@ -739,6 +779,7 @@ public class OrderService : IOrderService
             DeliveryLatitude = address.Latitude,
             DeliveryLongitude = address.Longitude,
             DeliveryPhone = address.Phone,
+            CustomerNotes = dto.Notes,
 
             CreatedAt = now
         };

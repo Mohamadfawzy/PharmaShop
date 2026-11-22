@@ -47,6 +47,7 @@ public sealed class AdminOrderDetailsDto : CustomerOrderDetailsDto
     public int CustomerId { get; set; }
     public string CustomerNameAr { get; set; } = default!;
     public string? CustomerPhone { get; set; }
+    public string? InternalNotes { get; set; }
 }
 
 public sealed class OrderItemSnapshotDto

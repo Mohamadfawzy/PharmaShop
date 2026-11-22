@@ -15,7 +15,7 @@ public sealed class OrdersController : BaseApiController
 
     [HttpPost("checkout")]
     public async Task<IActionResult> Checkout([FromBody] CheckoutRequestDto dto, CancellationToken ct)
-        => FromAppResponse(await _orderService.CheckoutAsync(dto, ct));
+        => FromAppResponse(await _orderService.CheckoutAsync(dto, Request.Headers["Idempotency-Key"].FirstOrDefault(), ct));
 
     [HttpPost("checkout/preview")]
     public async Task<IActionResult> Preview([FromBody] CheckoutPreviewRequestDto dto, CancellationToken ct)

@@ -1,0 +1,222 @@
+{
+  "info": {
+    "_postman_id": "bbf1df73-7d6a-4608-b286-9349e3639de8",
+    "name": "PharmaShop - Mobile Contract Updates",
+    "description": "Only new or changed mobile API contracts: best sellers, checkout notes and idempotency, COD value, refresh, and logout. Includes the updated login response fields needed to start a session.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7001" },
+    { "key": "loginIdentifier", "value": "" },
+    { "key": "loginPassword", "value": "" },
+    { "key": "customerToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "storeId", "value": "1" },
+    { "key": "periodDays", "value": "30" },
+    { "key": "checkoutSourceId", "value": "12" },
+    { "key": "addressId", "value": "5" },
+    { "key": "checkoutKey", "value": "mobile-order-2026-000042" },
+    { "key": "checkoutNoNotesKey", "value": "mobile-order-2026-000043" },
+    { "key": "orderId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Best sellers for a store",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/best-sellers?storeId={{storeId}}&periodDays={{periodDays}}&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "best-sellers"],
+              "query": [
+                { "key": "storeId", "value": "{{storeId}}" },
+                { "key": "periodDays", "value": "{{periodDays}}" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Public endpoint. Returns the same product card shape as product search, ranked by net quantity sold in the rolling UTC period. Defaults: storeId=1, periodDays=30."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders - updated checkout contract",
+      "item": [
+        {
+          "name": "Confirm checkout with customer note",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body && body.data && body.data.orderId) pm.collectionVariables.set('orderId', body.data.orderId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+              { "key": "Idempotency-Key", "value": "{{checkoutKey}}", "description": "Reuse with the exact same body for retries." },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{checkoutSourceId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1,\n  \"notes\": \"اتصل بي عند الوصول\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/v1/orders/checkout",
+            "description": "SourceType 1=Cart, 2=Prescription, 3=PointsRedemption. COD is paymentMethod=1. Notes are optional and limited to 500 characters."
+          }
+        },
+        {
+          "name": "Retry checkout after a lost response",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+              { "key": "Idempotency-Key", "value": "{{checkoutKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{checkoutSourceId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1,\n  \"notes\": \"اتصل بي عند الوصول\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/v1/orders/checkout",
+            "description": "Run after the first confirmation using the identical key and body. It should return the same 201 order result without creating another order."
+          }
+        },
+        {
+          "name": "Reject changed checkout data under same key",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+              { "key": "Idempotency-Key", "value": "{{checkoutKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{checkoutSourceId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1,\n  \"notes\": \"ملاحظة مختلفة بنفس المفتاح\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/v1/orders/checkout",
+            "description": "Run after the successful checkout/retry above. Same key with changed notes should return 409 Conflict."
+          }
+        },
+        {
+          "name": "Confirm checkout without notes",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+              { "key": "Idempotency-Key", "value": "{{checkoutNoNotesKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{checkoutSourceId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/v1/orders/checkout",
+            "description": "Example proving notes can be omitted. Use a fresh cart/source and a unique key because checkout consumes the source."
+          }
+        },
+        {
+          "name": "Get order details including customer note",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}",
+            "description": "Set orderId from the successful checkout response. Verify data.notes contains the submitted customer note."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication - refresh and logout",
+      "item": [
+        {
+          "name": "Login - receive initial refresh token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body && body.data) {",
+                  "    pm.collectionVariables.set('customerToken', body.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', body.data.refreshToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"identifier\": \"{{loginIdentifier}}\",\n  \"password\": \"{{loginPassword}}\",\n  \"rememberMe\": true\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Existing login endpoint with the updated response contract. Enter test credentials in collection variables; the response script saves the access and refresh tokens."
+          }
+        },
+        {
+          "name": "Rotate refresh token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body && body.data) {",
+                  "    pm.collectionVariables.set('customerToken', body.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', body.data.refreshToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/refresh",
+            "description": "Public endpoint. Uses current refreshToken and rotates it. The test script replaces customerToken and refreshToken with the response values. The prior refresh token becomes invalid."
+          }
+        },
+        {
+          "name": "Logout and revoke current refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "Requires an access token and revokes the supplied refresh token. Discard the access token locally after logout."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders - COD preview value",
+      "item": [
+        {
+          "name": "Preview checkout using COD=1",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceType\": 1,\n  \"sourceId\": {{checkoutSourceId}},\n  \"addressId\": {{addressId}},\n  \"paymentMethod\": 1\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/v1/orders/checkout/preview",
+            "description": "Updated payment enum contract: COD is the only supported method and has value 1. Preview does not confirm or consume the source."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -57,6 +57,14 @@ public partial class Order
 
     public string? Notes { get; set; }
 
+    public string? CustomerNotes { get; set; }
+
+    public string? CheckoutIdempotencyKey { get; set; }
+
+    public string? CheckoutRequestHash { get; set; }
+
+    public string? CheckoutResponseJson { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }

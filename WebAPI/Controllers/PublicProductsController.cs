@@ -15,6 +15,11 @@ public sealed class PublicProductsController : BaseApiController
         query.IsActive = true;
         return FromAppResponse(await _service.SearchProductsAsync(query, ct));
     }
+
+    [HttpGet("best-sellers")]
+    public async Task<IActionResult> BestSellers([FromQuery] int storeId = 1, [FromQuery] int periodDays = 30,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+        => FromAppResponse(await _service.GetBestSellersAsync(storeId, periodDays, page, pageSize, ct));
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, CancellationToken ct) => FromAppResponse(await _service.GetProductAsync(id, false, ct));
 }

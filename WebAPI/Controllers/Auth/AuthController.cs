@@ -66,6 +66,23 @@ public class AuthController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto, CancellationToken ct)
+    {
+        var result = await _authService.RefreshTokenAsync(dto, ct);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] LogoutRequestDto dto, CancellationToken ct)
+    {
+        if (!int.TryParse(_currentUser.UserId, out var userId))
+            return StatusCode(401, AppResponse.Unauthorized("Unauthorized"));
+        var result = await _authService.RevokeRefreshTokenAsync(userId, dto, ct);
+        return StatusCode(result.StatusCode, result);
+    }
+
 
     [HttpPost("resend-confirm-email")]
     public async Task<IActionResult> ResendConfirmEmail([FromBody] ResendConfirmEmailRequestDto dto, CancellationToken ct)

@@ -1,6 +1,7 @@
 ﻿using Shared.Enums.Cart;
 using Shared.Enums.Order;
 using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations;
 
 namespace Shared.Models.Dtos.Order;
 
@@ -13,5 +14,7 @@ public sealed class CheckoutRequestDto
     public int SourceId { get; set; }             // CartId or PrescriptionId
     public int AddressId { get; set; }
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.COD;
+    [MaxLength(500)]
+    public string? Notes { get; set; }
 }
 

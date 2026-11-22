@@ -11,6 +11,7 @@ public class IdentityDbContext: IdentityDbContext<ApplicationUser, ApplicationRo
 
 
     public DbSet<LoginAudit> LoginAudits => Set<LoginAudit>();
+    public DbSet<RefreshTokenRecord> RefreshTokens => Set<RefreshTokenRecord>();
 
     public IdentityDbContext(DbContextOptions<IdentityDbContext> options)
         : base(options)
@@ -68,6 +69,19 @@ public class IdentityDbContext: IdentityDbContext<ApplicationUser, ApplicationRo
 
             entity.Property(x => x.TraceId)
                 .HasMaxLength(64);
+        });
+
+        builder.Entity<RefreshTokenRecord>(entity =>
+        {
+            entity.ToTable("RefreshTokens", "dbo");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.Property(x => x.TokenHash).HasMaxLength(64).IsUnicode(false).IsRequired();
+            entity.Property(x => x.ReplacedByTokenHash).HasMaxLength(64).IsUnicode(false);
+            entity.Property(x => x.CreatedAtUtc).HasPrecision(3);
+            entity.Property(x => x.ExpiresAtUtc).HasPrecision(3);
+            entity.Property(x => x.RevokedAtUtc).HasPrecision(3);
+            entity.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

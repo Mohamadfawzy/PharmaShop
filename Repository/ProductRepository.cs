@@ -163,6 +163,68 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         };
     }
 
+    public async Task<PagedResult<ProductListItemDto>> GetBestSellersAsync(int storeId, int periodDays, int page, int pageSize, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var from = now.AddDays(-periodDays);
+        byte[] countedOrderStatuses = [2, 3, 4, 5]; // confirmed through delivered
+
+        var soldRows = await context.OrderItems.AsNoTracking()
+            .Where(i => i.Order.StoreId == storeId && i.Product.DeletedAt == null && i.Product.IsActive && i.Product.IsAvailable
+                && i.Product.Store.IsActive && i.Product.Store.DeletedAt == null
+                && i.Order.CreatedAt >= from && i.Order.CreatedAt <= now
+                && countedOrderStatuses.Contains(i.Order.Status))
+            .GroupBy(i => i.ProductId)
+            .Select(g => new { ProductId = g.Key, Quantity = g.Sum(i => i.Quantity) })
+            .ToListAsync(ct);
+
+        if (soldRows.Count == 0)
+            return new PagedResult<ProductListItemDto> { Items = [], TotalCount = 0 };
+
+        var productIds = soldRows.Select(x => x.ProductId).ToList();
+        var returnedRows = await context.ReturnRequestItems.AsNoTracking()
+            .Where(i => productIds.Contains(i.OrderItem.ProductId)
+                && i.ReturnRequest.Status == 2
+                && i.ReturnRequest.Order.StoreId == storeId
+                && i.ReturnRequest.Order.CreatedAt >= from
+                && i.ReturnRequest.Order.CreatedAt <= now
+                && countedOrderStatuses.Contains(i.ReturnRequest.Order.Status))
+            .GroupBy(i => i.OrderItem.ProductId)
+            .Select(g => new { ProductId = g.Key, Quantity = g.Sum(i => i.Quantity) })
+            .ToListAsync(ct);
+
+        var returnedByProduct = returnedRows.ToDictionary(x => x.ProductId, x => x.Quantity);
+        var netSales = soldRows
+            .Select(x => new { x.ProductId, Quantity = Math.Max(0m, x.Quantity - returnedByProduct.GetValueOrDefault(x.ProductId)) })
+            .Where(x => x.Quantity > 0)
+            .ToList();
+
+        var rankedIds = netSales.OrderByDescending(x => x.Quantity).ThenBy(x => x.ProductId).Select(x => x.ProductId).ToList();
+        var totalCount = rankedIds.Count;
+        var pageIds = rankedIds.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        if (pageIds.Count == 0)
+            return new PagedResult<ProductListItemDto> { Items = [], TotalCount = totalCount };
+
+        var cards = await context.Products.AsNoTracking()
+            .Where(p => pageIds.Contains(p.Id) && p.StoreId == storeId && p.DeletedAt == null
+                && p.IsActive && p.IsAvailable && p.Store.IsActive && p.Store.DeletedAt == null)
+            .Select(p => new ProductListItemDto
+            {
+                Id = p.Id, NameAr = p.NameAr, NameEn = p.NameEn,
+                PrimaryImageUrl = p.ProductImages.Where(i => i.DeletedAt == null && i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault(),
+                CategoryNameAr = p.Category.NameAr, CompanyNameAr = p.Company != null ? p.Company.NameAr : null,
+                OuterUnitNameAr = p.OuterUnit.NameAr, OuterUnitPrice = p.OuterUnitPrice,
+                HasPromotion = p.HasPromotion, PromotionDiscountPercent = p.PromotionDiscountPercent,
+                PromotionStartsAt = p.PromotionStartsAt, PromotionEndsAt = p.PromotionEndsAt,
+                IsFeatured = p.IsFeatured, Points = p.Points, RequiresPrescription = p.RequiresPrescription,
+                IsAvailable = p.IsAvailable, IsActive = p.IsActive, TagsCount = p.ProductTags.Count
+            }).ToListAsync(ct);
+
+        var byId = cards.ToDictionary(x => x.Id);
+        var orderedCards = pageIds.Where(byId.ContainsKey).Select(id => byId[id]).ToList();
+        return new PagedResult<ProductListItemDto> { Items = orderedCards, TotalCount = totalCount };
+    }
+
 
 }
 

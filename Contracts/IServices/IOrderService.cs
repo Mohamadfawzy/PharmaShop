@@ -11,7 +11,7 @@ namespace Contracts.IServices;
 
 public interface IOrderService
 {
-    Task<AppResponse<CheckoutResultDto>> CheckoutAsync(CheckoutRequestDto dto, CancellationToken ct);
+    Task<AppResponse<CheckoutResultDto>> CheckoutAsync(CheckoutRequestDto dto, string? idempotencyKey, CancellationToken ct);
     Task<AppResponse<List<CustomerOrderListItemDto>>> GetMyOrdersAsync(CustomerOrderListQueryDto query, CancellationToken ct);
     Task<AppResponse<CustomerOrderDetailsDto>> GetMyOrderAsync(int orderId, CancellationToken ct);
     Task<AppResponse<List<AdminOrderListItemDto>>> GetAdminOrdersAsync(AdminOrderListQueryDto query, CancellationToken ct);

@@ -8,6 +8,8 @@ using Service.Auth.Extensions;
 using Shared.Constants;
 using Shared.Models.Auth;
 using Shared.Responses;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Service.Auth;
 public sealed class AuthService : IAuthService
@@ -21,6 +23,7 @@ public sealed class AuthService : IAuthService
     private readonly ILoginAuditService _loginAuditService;
     private readonly IEmailSender _emailSender;
     private readonly IConfiguration configuration;
+    private readonly IdentityDbContext _identityDb;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -29,7 +32,8 @@ public sealed class AuthService : IAuthService
         JwtTokenService jwtTokenService,
         ILoginAuditService loginAuditService,
         IEmailSender emailSender,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IdentityDbContext identityDb)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -38,6 +42,7 @@ public sealed class AuthService : IAuthService
         _loginAuditService = loginAuditService;
         _emailSender = emailSender;
         this.configuration = configuration;
+        _identityDb = identityDb;
     }
 
     // -----------------------------------------------
@@ -320,6 +325,7 @@ public sealed class AuthService : IAuthService
         // JWT expiry (نحسبها من config بدل ما نفك JWT)
         var minutes = int.Parse(configuration.GetSection("Jwt")["AccessTokenMinutes"]!);
         var expiresAt = DateTime.UtcNow.AddMinutes(minutes);
+        var (refreshToken, refreshExpiresAt) = await CreateRefreshTokenAsync(user.Id, ct);
 
         // ===== [AUDIT - NEW] success audit just before returning =====
         auditSuccess = true;
@@ -331,9 +337,100 @@ public sealed class AuthService : IAuthService
         {
             UserId = user.Id,
             AccessToken = accessToken,
-            ExpiresAtUtc = expiresAt
+            ExpiresAtUtc = expiresAt,
+            RefreshToken = refreshToken,
+            RefreshTokenExpiresAtUtc = refreshExpiresAt
         }, "Login successful");
     }
+
+    public async Task<AppResponse<LoginResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto dto, CancellationToken ct)
+    {
+        var rawToken = dto?.RefreshToken?.Trim();
+        if (string.IsNullOrWhiteSpace(rawToken))
+            return AppResponse<LoginResponseDto>.ValidationError("RefreshToken is required");
+
+        var tokenHash = HashRefreshToken(rawToken);
+        await using var transaction = await _identityDb.Database.BeginTransactionAsync(ct);
+        var stored = await _identityDb.RefreshTokens
+            .FromSqlInterpolated($"SELECT * FROM [dbo].[RefreshTokens] WITH (UPDLOCK, ROWLOCK) WHERE [TokenHash] = {tokenHash}")
+            .SingleOrDefaultAsync(ct);
+        var now = DateTime.UtcNow;
+        if (stored is null || stored.RevokedAtUtc.HasValue || stored.ExpiresAtUtc <= now)
+        {
+            await transaction.RollbackAsync(ct);
+            return AppResponse<LoginResponseDto>.Unauthorized("Refresh token is invalid, expired, or revoked");
+        }
+
+        var user = await _userManager.FindByIdAsync(stored.UserId.ToString());
+        if (user is null || !user.IsActive)
+        {
+            stored.RevokedAtUtc = now;
+            await _identityDb.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return AppResponse<LoginResponseDto>.Unauthorized("User account is unavailable");
+        }
+
+        var (replacement, replacementExpiry) = CreateRefreshTokenValue();
+        var replacementHash = HashRefreshToken(replacement);
+        stored.RevokedAtUtc = now;
+        stored.ReplacedByTokenHash = replacementHash;
+        _identityDb.RefreshTokens.Add(new RefreshTokenRecord
+        {
+            UserId = user.Id, TokenHash = replacementHash, CreatedAtUtc = now,
+            ExpiresAtUtc = replacementExpiry
+        });
+        await _identityDb.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        var minutes = int.Parse(configuration.GetSection("Jwt")["AccessTokenMinutes"]!);
+        return AppResponse<LoginResponseDto>.Ok(new LoginResponseDto
+        {
+            UserId = user.Id,
+            AccessToken = await _jwtTokenService.CreateAccessTokenAsync(user, pharmacyId: 1),
+            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(minutes),
+            RefreshToken = replacement,
+            RefreshTokenExpiresAtUtc = replacementExpiry
+        }, "Session refreshed successfully");
+    }
+
+    public async Task<AppResponse> RevokeRefreshTokenAsync(int userId, LogoutRequestDto dto, CancellationToken ct)
+    {
+        var rawToken = dto?.RefreshToken?.Trim();
+        if (userId <= 0 || string.IsNullOrWhiteSpace(rawToken))
+            return AppResponse.ValidationError("Authenticated user and RefreshToken are required");
+        var tokenHash = HashRefreshToken(rawToken);
+        var stored = await _identityDb.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == tokenHash && x.UserId == userId, ct);
+        if (stored is not null && !stored.RevokedAtUtc.HasValue)
+        {
+            stored.RevokedAtUtc = DateTime.UtcNow;
+            await _identityDb.SaveChangesAsync(ct);
+        }
+        return AppResponse.Ok("Refresh token revoked");
+    }
+
+    private async Task<(string Token, DateTime ExpiresAtUtc)> CreateRefreshTokenAsync(int userId, CancellationToken ct)
+    {
+        var (token, expiresAt) = CreateRefreshTokenValue();
+        _identityDb.RefreshTokens.Add(new RefreshTokenRecord
+        {
+            UserId = userId, TokenHash = HashRefreshToken(token), CreatedAtUtc = DateTime.UtcNow,
+            ExpiresAtUtc = expiresAt
+        });
+        await _identityDb.SaveChangesAsync(ct);
+        return (token, expiresAt);
+    }
+
+    private (string Token, DateTime ExpiresAtUtc) CreateRefreshTokenValue()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(64);
+        var token = Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var days = int.TryParse(configuration.GetSection("Jwt")["RefreshTokenDays"], out var configuredDays) && configuredDays > 0
+            ? configuredDays : 30;
+        return (token, DateTime.UtcNow.AddDays(days));
+    }
+
+    private static string HashRefreshToken(string token)
+        => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
 
     public async Task<AppResponse> ResendConfirmEmailAsync(ResendConfirmEmailRequestDto dto, CancellationToken ct)

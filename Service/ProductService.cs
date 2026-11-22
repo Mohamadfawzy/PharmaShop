@@ -134,6 +134,19 @@ public class ProductService : IProductService
         return AppResponse<List<ProductListItemDto>>.Ok(result.Items, pagination, title: "Products retrieved successfully");
     }
 
+    public async Task<AppResponse<List<ProductListItemDto>>> GetBestSellersAsync(int storeId, int periodDays, int page, int pageSize, CancellationToken ct)
+    {
+        if (storeId <= 0)
+            return AppResponse<List<ProductListItemDto>>.ValidationError("storeId must be greater than zero");
+        if (periodDays is < 1 or > 365)
+            return AppResponse<List<ProductListItemDto>>.ValidationError("periodDays must be between 1 and 365");
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var result = await unitOfWork.Products.GetBestSellersAsync(storeId, periodDays, page, pageSize, ct);
+        return AppResponse<List<ProductListItemDto>>.Ok(result.Items,
+            PaginationInfo.Create(page, pageSize, result.TotalCount), title: "Best-selling products retrieved successfully");
+    }
+
     public async Task<AppResponse<ProductDetailsDto>> GetProductAsync(int id, bool includeInactive, CancellationToken ct)
     {
         var p = await unitOfWork.Products.FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null && (includeInactive || (x.IsActive && x.Store.IsActive && x.Store.DeletedAt == null)),

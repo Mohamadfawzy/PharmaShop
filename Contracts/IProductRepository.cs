@@ -8,4 +8,5 @@ namespace Contracts;
 public interface IProductRepository : IGenericRepository<Product>
 {
     Task<PagedResult<ProductListItemDto>> SearchAsync(ProductSearchQueryParams q, CancellationToken ct);
+    Task<PagedResult<ProductListItemDto>> GetBestSellersAsync(int storeId, int periodDays, int page, int pageSize, CancellationToken ct);
 }

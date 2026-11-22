@@ -518,6 +518,9 @@ public partial class RepositoryContext : DbContext
 
             entity.HasIndex(e => e.OrderNumber, "UX_Orders_OrderNumber").IsUnique();
 
+            entity.HasIndex(e => new { e.CustomerId, e.CheckoutIdempotencyKey }, "UX_Orders_CustomerId_CheckoutIdempotencyKey")
+                .IsUnique().HasFilter("([CheckoutIdempotencyKey] IS NOT NULL)");
+
             entity.HasIndex(e => e.PrescriptionId, "UX_Orders_PrescriptionId")
                 .IsUnique()
                 .HasFilter("([PrescriptionId] IS NOT NULL)");
@@ -534,6 +537,10 @@ public partial class RepositoryContext : DbContext
             entity.Property(e => e.GrandTotal).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.ItemsDiscountTotal).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.CustomerNotes).HasMaxLength(500);
+            entity.Property(e => e.CheckoutIdempotencyKey).HasMaxLength(100);
+            entity.Property(e => e.CheckoutRequestHash).HasMaxLength(64).IsUnicode(false);
+            entity.Property(e => e.CheckoutResponseJson).HasColumnType("nvarchar(max)");
             entity.Property(e => e.OrderNumber).HasMaxLength(30);
             entity.Property(e => e.OrderSource).HasDefaultValue((byte)1);
             entity.Property(e => e.PaymentMethod).HasDefaultValue((byte)1);

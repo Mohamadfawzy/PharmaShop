@@ -3,7 +3,6 @@
 
 public enum PaymentMethod : byte
 {
-    CashOnDelivery = 0,
-    Card = 1,
-    COD = 2
+    COD = 1,
+    CashOnDelivery = COD
 }

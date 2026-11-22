@@ -272,7 +272,7 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
                 RedeemedPoints = o.RedeemedPoints, RedeemedAmount = o.RedeemedAmount, EarnedPoints = o.EarnedPoints,
                 PrescriptionId = o.PrescriptionId, DeliveryTitle = o.DeliveryTitle, DeliveryCity = o.DeliveryCity,
                 DeliveryRegion = o.DeliveryRegion, DeliveryStreet = o.DeliveryStreet, DeliveryLatitude = o.DeliveryLatitude,
-                DeliveryLongitude = o.DeliveryLongitude, DeliveryPhone = o.DeliveryPhone, Notes = o.Notes,
+                DeliveryLongitude = o.DeliveryLongitude, DeliveryPhone = o.DeliveryPhone, Notes = o.CustomerNotes,
                 Items = o.OrderItems.OrderBy(i => i.Id).Select(i => new OrderItemSnapshotDto
                 {
                     Id = i.Id, ProductId = i.ProductId, ProductNameAr = i.Product.NameAr, ProductNameEn = i.Product.NameEn,
@@ -295,7 +295,8 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
                 RedeemedPoints = o.RedeemedPoints, RedeemedAmount = o.RedeemedAmount, EarnedPoints = o.EarnedPoints,
                 PrescriptionId = o.PrescriptionId, DeliveryTitle = o.DeliveryTitle, DeliveryCity = o.DeliveryCity,
                 DeliveryRegion = o.DeliveryRegion, DeliveryStreet = o.DeliveryStreet, DeliveryLatitude = o.DeliveryLatitude,
-                DeliveryLongitude = o.DeliveryLongitude, DeliveryPhone = o.DeliveryPhone, Notes = o.Notes,
+                DeliveryLongitude = o.DeliveryLongitude, DeliveryPhone = o.DeliveryPhone, Notes = o.CustomerNotes,
+                InternalNotes = o.Notes,
                 CustomerId = o.CustomerId, CustomerNameAr = o.Customer.FullNameAr, CustomerPhone = o.Customer.PhoneNumber,
                 Items = o.OrderItems.OrderBy(i => i.Id).Select(i => new OrderItemSnapshotDto
                 {
@@ -477,6 +478,10 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
 
         // Future improvement: add StoreId scope for admin authorization
     }
+
+    public Task<Order?> GetOrderByIdempotencyKeyForUpdateAsync(int customerId, string idempotencyKey, CancellationToken ct)
+        => _db.Orders.FromSqlInterpolated($"SELECT * FROM [dbo].[Orders] WITH (UPDLOCK, HOLDLOCK) WHERE [CustomerId] = {customerId} AND [CheckoutIdempotencyKey] = {idempotencyKey}")
+            .SingleOrDefaultAsync(ct);
 
     public async Task LockOrderForStatusUpdateAsync(int orderId, CancellationToken ct)
         => _ = await _db.Orders.FromSqlInterpolated($"SELECT * FROM [dbo].[Orders] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {orderId}")
