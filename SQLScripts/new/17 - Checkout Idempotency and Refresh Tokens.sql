@@ -8,6 +8,13 @@ GO
 */
 
 SET XACT_ABORT ON;
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+SET QUOTED_IDENTIFIER ON;
 BEGIN TRANSACTION;
 
 IF COL_LENGTH(N'dbo.Orders', N'CheckoutIdempotencyKey') IS NULL
@@ -28,9 +35,9 @@ IF NOT EXISTS
     WHERE [object_id] = OBJECT_ID(N'dbo.Orders')
       AND [name] = N'UX_Orders_CustomerId_CheckoutIdempotencyKey'
 )
-    CREATE UNIQUE INDEX [UX_Orders_CustomerId_CheckoutIdempotencyKey]
+    EXEC sys.sp_executesql N'CREATE UNIQUE INDEX [UX_Orders_CustomerId_CheckoutIdempotencyKey]
         ON [dbo].[Orders] ([CustomerId], [CheckoutIdempotencyKey])
-        WHERE [CheckoutIdempotencyKey] IS NOT NULL;
+        WHERE [CheckoutIdempotencyKey] IS NOT NULL;';
 
 IF OBJECT_ID(N'dbo.RefreshTokens', N'U') IS NULL
 BEGIN
@@ -55,15 +62,15 @@ IF NOT EXISTS
     SELECT 1 FROM sys.indexes
     WHERE [object_id] = OBJECT_ID(N'dbo.RefreshTokens') AND [name] = N'UX_RefreshTokens_TokenHash'
 )
-    CREATE UNIQUE INDEX [UX_RefreshTokens_TokenHash] ON [dbo].[RefreshTokens] ([TokenHash]);
+    EXEC sys.sp_executesql N'CREATE UNIQUE INDEX [UX_RefreshTokens_TokenHash] ON [dbo].[RefreshTokens] ([TokenHash]);';
 
 IF NOT EXISTS
 (
     SELECT 1 FROM sys.indexes
     WHERE [object_id] = OBJECT_ID(N'dbo.RefreshTokens') AND [name] = N'IX_RefreshTokens_UserId_ExpiresAtUtc'
 )
-    CREATE INDEX [IX_RefreshTokens_UserId_ExpiresAtUtc]
-        ON [dbo].[RefreshTokens] ([UserId], [ExpiresAtUtc]);
+    EXEC sys.sp_executesql N'CREATE INDEX [IX_RefreshTokens_UserId_ExpiresAtUtc]
+        ON [dbo].[RefreshTokens] ([UserId], [ExpiresAtUtc]);';
 
 COMMIT TRANSACTION;
 GO
