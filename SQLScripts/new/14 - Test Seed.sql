@@ -196,7 +196,7 @@ BEGIN TRY
     INSERT dbo.Companies(NameAr,NameEn)
     SELECT c.NameAr,c.NameEn FROM @Companies c WHERE NOT EXISTS(SELECT 1 FROM dbo.Companies x WHERE x.NameAr=c.NameAr AND x.DeletedAt IS NULL);
 
-    /* Product test catalog: 27 products, one under every starter category. */
+    /* Product test catalog: 20 main categories and 9 direct subcategories. */
     DECLARE @Catalog TABLE(CategoryAr nvarchar(200),CategoryEn nvarchar(200),ProductAr nvarchar(250),ProductEn nvarchar(250),CompanyAr nvarchar(150),Price decimal(18,2));
     INSERT @Catalog VALUES
     (N'صحة الطفل',N'Child Health',N'باراسيتامول 500 مجم',N'Paracetamol 500 mg',N'إيبيكو',35),
@@ -225,24 +225,85 @@ BEGIN TRY
     (N'مكملات العظام',N'Bone Supplements',N'كالسيوم وفيتامين د',N'Calcium and Vitamin D',N'نوفارتس',170),
     (N'منتجات العناية بالجسم',N'Body Care Products',N'لوشن للجسم',N'Body Lotion',N'فاركو',115),
     (N'منتجات العناية بالمنطقة الحساسة',N'Intimate Care Products',N'منتج عناية شخصية',N'Personal Hygiene Product',N'فاركو',100),
-    (N'منتجات العناية بالشعر',N'Hair Care Products',N'شامبو للعناية بالشعر',N'Hair Care Shampoo',N'فاركو',125);
+    (N'منتجات العناية بالشعر',N'Hair Care Products',N'شامبو للعناية بالشعر',N'Hair Care Shampoo',N'فاركو',125),
+    (N'صحة القلب',N'Heart Health',N'مكمل صحة القلب',N'Heart Health Supplement',N'الحكمة',165),
+    (N'مستلزمات طبية',N'Medical Supplies',N'ميزان حرارة رقمي',N'Digital Thermometer',N'سيديكو',240);
 
-    /* Insert categories as a flat test catalog if the supplied category seed was not applied. */
+    /* Insert any missing categories needed by the test catalog. */
     INSERT dbo.Categories(NameAr,NameEn,Description,IsActive,IsDeleted)
     SELECT c.CategoryAr,c.CategoryEn,N'فئة بيانات اختبارية',1,0 FROM @Catalog c
     WHERE NOT EXISTS(SELECT 1 FROM dbo.Categories x WHERE (x.NameEn=c.CategoryEn OR x.NameAr=c.CategoryAr) AND x.IsDeleted=0);
+
+    /* Exactly two category levels: 20 roots, with five children under the first and four under the second. */
+    DECLARE @CategoryParents TABLE(ChildNameEn nvarchar(200) PRIMARY KEY, ParentNameEn nvarchar(200));
+    INSERT @CategoryParents VALUES
+      (N'Children Medicines',N'Child Health'),(N'Children Vitamins',N'Child Health'),
+      (N'Antipyretics',N'Child Health'),(N'Cough Medicines',N'Child Health'),(N'Allergy Medicines',N'Child Health'),
+      (N'Face Wash',N'Skin Care'),(N'Moisturizers',N'Skin Care'),(N'Sun Screen',N'Skin Care'),(N'Acne Treatment',N'Skin Care');
+    UPDATE child SET ParentCategoryId=parent.Id
+    FROM dbo.Categories child JOIN @CategoryParents m ON m.ChildNameEn=child.NameEn
+    JOIN dbo.Categories parent ON parent.NameEn=m.ParentNameEn AND parent.IsDeleted=0
+    WHERE child.IsDeleted=0;
+    UPDATE root SET ParentCategoryId=NULL
+    FROM dbo.Categories root JOIN @Catalog c ON c.CategoryEn=root.NameEn
+    WHERE root.IsDeleted=0 AND NOT EXISTS(SELECT 1 FROM @CategoryParents m WHERE m.ChildNameEn=root.NameEn);
 
     DECLARE @BoxUnitId int=(SELECT TOP(1) Id FROM dbo.Units WHERE Code='BOX');
     INSERT dbo.Products(StoreId,CategoryId,CompanyId,InternationalCode,NameAr,NameEn,DescriptionAr,DescriptionEn,
         SearchKeywords,OuterUnitId,OuterUnitPrice,MinOrderQty,Quantity,HasExpiry,NearestExpiryDate,
         IsFeatured,IsIntegrated,Points,RequiresPrescription,IsAvailable,IsActive)
     SELECT @StoreId,cat.Id,co.Id,
-        CONCAT('TEST-',RIGHT(CONCAT('000000',CAST(ROW_NUMBER() OVER(ORDER BY c.ProductEn) AS varchar(6))),6)),
+        CONCAT('TEST-CAT-',RIGHT(CONCAT('000',CAST(ROW_NUMBER() OVER(ORDER BY c.ProductEn) AS varchar(3))),3)),
         c.ProductAr,c.ProductEn,N'بيانات منتج تجريبية للاختبار',N'Test product data',CONCAT(c.ProductAr,N' ',c.ProductEn),
         @BoxUnitId,c.Price,1,100,1,DATEADD(year,2,CONVERT(date,GETDATE())),0,0,10,0,1,1
     FROM @Catalog c JOIN (SELECT NameEn, MIN(Id) AS Id FROM dbo.Categories WHERE IsDeleted=0 GROUP BY NameEn) cat ON cat.NameEn=c.CategoryEn
     LEFT JOIN dbo.Companies co ON co.NameAr=c.CompanyAr AND co.DeletedAt IS NULL
     WHERE NOT EXISTS(SELECT 1 FROM dbo.Products p WHERE p.StoreId=@StoreId AND p.NameEn=c.ProductEn AND p.DeletedAt IS NULL);
+
+    /* Add a second distinct product for every root and child category. */
+    ;WITH CategoryProducts AS
+    (
+        SELECT c.CategoryEn,c.CategoryAr,MIN(cat.Id) AS CategoryId,MIN(co.Id) AS CompanyId,
+               MIN(c.Price) AS BasePrice,ROW_NUMBER() OVER(ORDER BY c.CategoryEn) AS SeedNo
+        FROM @Catalog c
+        JOIN dbo.Categories cat ON cat.NameEn=c.CategoryEn AND cat.IsDeleted=0
+        LEFT JOIN dbo.Companies co ON co.NameAr=c.CompanyAr AND co.DeletedAt IS NULL
+        GROUP BY c.CategoryEn,c.CategoryAr
+    )
+    INSERT dbo.Products(StoreId,CategoryId,CompanyId,InternationalCode,NameAr,NameEn,DescriptionAr,DescriptionEn,
+        SearchKeywords,OuterUnitId,OuterUnitPrice,MinOrderQty,Quantity,HasExpiry,NearestExpiryDate,Points,
+        RequiresPrescription,IsAvailable,IsActive)
+    SELECT @StoreId,cp.CategoryId,cp.CompanyId,CONCAT('TEST-EXTRA-',RIGHT(CONCAT('000',CAST(cp.SeedNo AS varchar(3))),3)),
+        CONCAT(N'منتج إضافي - ',cp.CategoryAr),CONCAT(N'Additional Test Product - ',cp.CategoryEn),
+        N'منتج ثانٍ تجريبي للتصنيف',N'Second test product in category',CONCAT(cp.CategoryAr,N' ',cp.CategoryEn),
+        @BoxUnitId,cp.BasePrice+5,1,100,1,DATEADD(year,2,CONVERT(date,GETDATE())),5,0,1,1
+    FROM CategoryProducts cp
+    WHERE NOT EXISTS(SELECT 1 FROM dbo.Products p WHERE p.StoreId=@StoreId
+        AND p.NameEn=CONCAT(N'Additional Test Product - ',cp.CategoryEn) AND p.DeletedAt IS NULL);
+
+    /* Every seeded product is sold by box; a rotating subset also has a strip or ampoule unit. */
+    DECLARE @StripUnitId int=(SELECT TOP(1) Id FROM dbo.Units WHERE Code='STRIP');
+    DECLARE @AmpouleUnitId int=(SELECT TOP(1) Id FROM dbo.Units WHERE Code='AMPOULE');
+    ;WITH SeedUnits AS
+    (
+        SELECT p.Id,p.OuterUnitPrice,ROW_NUMBER() OVER(ORDER BY p.NameEn,p.Id) AS UnitRow
+        FROM dbo.Products p
+        WHERE p.StoreId=@StoreId AND p.DeletedAt IS NULL AND p.InternationalCode LIKE 'TEST-%'
+    )
+    UPDATE p SET InnerUnitId=CASE WHEN su.UnitRow%3=1 THEN @StripUnitId WHEN su.UnitRow%3=2 THEN @AmpouleUnitId ELSE NULL END,
+        InnerPerOuter=CASE WHEN su.UnitRow%3=1 THEN 10 WHEN su.UnitRow%3=2 THEN 5 ELSE NULL END,
+        InnerUnitPrice=CASE WHEN su.UnitRow%3=1 THEN ROUND(su.OuterUnitPrice/10.0,2)
+                            WHEN su.UnitRow%3=2 THEN ROUND(su.OuterUnitPrice/5.0,2) ELSE NULL END,
+        AllowSplitSale=CASE WHEN su.UnitRow%3=0 THEN 0 ELSE 1 END
+    FROM dbo.Products p JOIN SeedUnits su ON su.Id=p.Id;
+
+    /* Reusable sample products cover prescription, inactive and unavailable states. */
+    UPDATE dbo.Products SET RequiresPrescription=1
+    WHERE StoreId=@StoreId AND NameEn IN(N'Paracetamol Tablets',N'Allergy Tablets',N'Iron Supplement Tablets',N'Heart Health Supplement') AND DeletedAt IS NULL;
+    UPDATE dbo.Products SET IsActive=0,IsAvailable=1
+    WHERE StoreId=@StoreId AND NameEn IN(N'Additional Test Product - Women Health',N'Additional Test Product - Medical Supplies') AND DeletedAt IS NULL;
+    UPDATE dbo.Products SET IsAvailable=0
+    WHERE StoreId=@StoreId AND NameEn=N'Hair Care Shampoo' AND DeletedAt IS NULL;
 
     /* Customer profile and a default Cairo delivery address for later checkout tests. */
     INSERT dbo.Customers(UserId,FullNameAr,FullNameEn,PhoneNumber,Email,CustomerType,Points,IsActive)
@@ -286,6 +347,14 @@ BEGIN TRY
     FROM dbo.Products p
     WHERE p.StoreId=@StoreId AND p.DeletedAt IS NULL AND p.NameEn IN(N'Paracetamol 500 mg',N'Cough Syrup',N'Children Paracetamol Syrup')
       AND NOT EXISTS(SELECT 1 FROM dbo.PromotionProducts pp WHERE pp.PromotionId=@PromotionId AND pp.ProductId=p.Id AND pp.DeletedAt IS NULL);
+    UPDATE dbo.Promotions SET StartAt=DATEADD(day,-1,SYSUTCDATETIME()),EndAt=DATEADD(day,60,SYSUTCDATETIME()),IsActive=1
+    WHERE Id=@PromotionId;
+    UPDATE dbo.Products SET HasPromotion=0,PromotionDiscountPercent=0,PromotionStartsAt=NULL,PromotionEndsAt=NULL
+    WHERE StoreId=@StoreId AND DeletedAt IS NULL AND InternationalCode LIKE 'TEST-%';
+    UPDATE p SET HasPromotion=1,PromotionDiscountPercent=50,PromotionStartsAt=pr.StartAt,PromotionEndsAt=pr.EndAt
+    FROM dbo.Products p JOIN dbo.PromotionProducts pp ON pp.ProductId=p.Id AND pp.PromotionId=@PromotionId AND pp.DeletedAt IS NULL
+    JOIN dbo.Promotions pr ON pr.Id=pp.PromotionId
+    WHERE p.StoreId=@StoreId AND p.DeletedAt IS NULL;
 
     /* Delivery fee zones: one zone per governorate; assign its five seeded areas. */
     INSERT dbo.DeliveryZones(StoreId,NameAr,NameEn,DeliveryFee,FreeDeliveryMinimumAmount,IsActive)
@@ -591,6 +660,25 @@ SELECT COUNT(*) AS Governorates FROM dbo.Governorates;
 SELECT COUNT(*) AS GovernorateAreas FROM dbo.GovernorateAreas;
 SELECT COUNT(*) AS ActiveTestProducts FROM dbo.Products WHERE StoreId=@StoreId AND DeletedAt IS NULL;
 SELECT COUNT(*) AS ActiveSeedEmployees FROM dbo.Employees WHERE PharmacyId=@PharmacyId AND DeletedAt IS NULL;
+SELECT COUNT(*) AS SeedCategoryCount,
+       SUM(CASE WHEN parent.ChildNameEn IS NULL THEN 1 ELSE 0 END) AS MainCategoryCount,
+       SUM(CASE WHEN parent.ChildNameEn IS NOT NULL THEN 1 ELSE 0 END) AS SubcategoryCount
+FROM (SELECT DISTINCT CategoryEn FROM @Catalog) c
+LEFT JOIN @CategoryParents parent ON parent.ChildNameEn=c.CategoryEn;
+SELECT c.NameEn AS CategoryNameEn,COUNT(p.Id) AS SeedProductCount
+FROM (SELECT DISTINCT CategoryEn FROM @Catalog) seed
+JOIN dbo.Categories c ON c.NameEn=seed.CategoryEn AND c.IsDeleted=0
+LEFT JOIN dbo.Products p ON p.CategoryId=c.Id AND p.StoreId=@StoreId AND p.DeletedAt IS NULL
+GROUP BY c.NameEn ORDER BY c.NameEn;
+SELECT u.NameEn AS InnerUnitNameEn,p.InnerPerOuter,COUNT(*) AS ProductCount
+FROM dbo.Products p JOIN dbo.Units u ON u.Id=p.InnerUnitId
+WHERE p.StoreId=@StoreId AND p.DeletedAt IS NULL AND p.InternationalCode LIKE N'TEST-%'
+GROUP BY u.NameEn,p.InnerPerOuter ORDER BY u.NameEn,p.InnerPerOuter;
+SELECT SUM(CASE WHEN IsActive=0 THEN 1 ELSE 0 END) AS InactiveSeedProducts,
+       SUM(CASE WHEN IsAvailable=0 THEN 1 ELSE 0 END) AS UnavailableSeedProducts,
+       SUM(CASE WHEN RequiresPrescription=1 THEN 1 ELSE 0 END) AS PrescriptionRequiredSeedProducts,
+       SUM(CASE WHEN HasPromotion=1 THEN 1 ELSE 0 END) AS SeedProductsWithPromotions
+FROM dbo.Products WHERE StoreId=@StoreId AND DeletedAt IS NULL AND InternationalCode LIKE N'TEST-%';
 SELECT OrderNumber,Status,PaymentStatus,GrandTotal FROM dbo.Orders WHERE CustomerId=@CustomerId AND OrderNumber LIKE N'SEED-ORD-%' ORDER BY OrderNumber;
 SELECT Points AS AvailableCustomerPoints FROM dbo.Customers WHERE Id=@CustomerId;
 SELECT COUNT(*) AS ActiveSeedBanners FROM dbo.PromotionalBanners WHERE DeletedAt IS NULL AND Name LIKE N'بانر %';
